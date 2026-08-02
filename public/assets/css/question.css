@@ -1,0 +1,134 @@
+.option:hover {
+  transition: 1s;
+  background-color: rgba(220, 66, 66, 0.611) !important;
+  border: 1px rgba(220, 66, 66, 0.611) solid !important;
+}
+
+.option-correct:hover {
+  transition: 1s;
+  color: white;
+  background-color: rgb(7, 144, 67) !important;
+  border: 1px rgb(7, 144, 67) solid !important;
+}
+
+body {
+  overflow-x: hidden;
+}
+
+#parent {
+  width: 100%;
+  position: relative;
+}
+
+.overlay {
+  transition: all;
+  display: none;
+  position: fixed;
+  inset: 0;
+  backdrop-filter: blur(2px);
+  z-index: 99;
+}
+
+.popout {
+  position: fixed;
+  display: none;
+  border-radius: 20px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 100;
+}
+
+.popout .optionImage {
+  z-index: 1;
+  height: 500px;
+  border-radius: 20px;
+  width: 500px !important;
+  border: 1px aqua solid;
+}
+
+.optionButton {
+  position: absolute;
+  z-index: 1000;
+  top: 10px;
+  right: 0;
+}
+
+.hover {
+  display: flex;
+  gap: 10px;
+}
+
+.main-length {
+  display: none;
+  gap: 10px;
+}
+
+.length-div {
+  display: flex;
+  opacity: 0;
+  transition: opacity 2s ease;
+  visibility: hidden;
+  gap: 10px;
+}
+
+.fl-flasher {
+  z-index: 10000;
+}
+
+.length-parent:hover .length-div {
+  opacity: 1;
+  visibility: visible;
+}
+
+.hover:hover .difficulty {
+  opacity: 1;
+  visibility: visible;
+}
+
+.difficulty {
+  display: flex;
+  visibility: hidden;
+  transition: opacity 2s ease;
+  opacity: 0;
+  text-align: start;
+  gap: 8px;
+}
+
+.main-text {
+  padding: 0 20px;
+  width: 100px;
+}
+
+.options {
+  background-color: #131b2f;
+  border-radius: 20px;
+  border-color: blue;
+  border-style: solid;
+  border-width: 1px;
+}
+
+.success {
+  border-radius: 20px;
+
+  border-color: rgba(6, 197, 6, 0.324);
+  border-style: solid;
+  border-width: 1px;
+}
+
+.quiz {
+  background-color: #161d31 !important;
+}
+
+.show {
+  display: block;
+}
+
+.hide {
+  display: none;
+}
+
+.showQuiz {
+  display: grid;
+}
+
