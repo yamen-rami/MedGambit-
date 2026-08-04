@@ -12,6 +12,7 @@
           Questions</a></button>
     </div>
     <livewire:detected-quiz :branches="$branches" :specialities="$specialities" :skills="$skills" />
+    
 
   </div>
 </x-user-layout>

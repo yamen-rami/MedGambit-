@@ -5,9 +5,9 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\{DB, Storage};
-use Illuminate\Validation\Rule;
+use Illuminate\Validation\{Rule, ValidationException};
 
-use App\Models\{Option, Questions, SkillsForQuestion, Specialty, BranchOfMedicine};
+use App\Models\{BranchOfMedicine, Option, Questions, SkillsForQuestion, Specialty};
 
 class QuestionsController extends Controller
 {
@@ -72,15 +72,15 @@ class QuestionsController extends Controller
             'speciality' => ['required', 'array'],
             'speciality.*' => ['required', 'exists:specialties,id'],
             'branches' => ['required', 'array'],
-            'branches.*' => ['required', 'exists:BranchOfMedicines,id'],
+            'branches.*' => ['required', 'exists:branch_of_medicines,id'],
             'skills' => ['required', 'array'],
             'skills.*' => ['required', "exists:skills_for_questions,id"],
             "topic" => ["required", "string"],
             "main_explanation" => ["required", "string"],
             "reference" => ["required", Rule::in(["MCC Qe", "MRCP", "UW"])],
             "high_yield" => ["required", "string"],
-            "difficulty" => ["required", Rule::in(["easy", "meduim", "hard", "nerd"])],
-            "length" => ["required", Rule::in(["short", "meduim", "long"])],
+            "difficulty" => ["required", Rule::in(["easy", "medium", "hard", "nerd"])],
+            "length" => ["required", Rule::in(["short", "medium", "long"])],
             "elo_correct" => ["required"],
             "elo_incorrect" => ["required"],
             "image" => ["required"],
@@ -93,6 +93,25 @@ class QuestionsController extends Controller
             "options.*.topic" => ["required", "string"],
         ];
         $questionData = $request->validate($rules);
+        $countOfCorrectAnswers = 0;
+
+        foreach ($questionData["options"] as $option) {
+            if ($option["correct_answer"] == 1) {
+                $countOfCorrectAnswers++;
+            }
+        }
+
+        if ($countOfCorrectAnswers > 1) {
+            throw ValidationException::withMessages([
+                "correct_answer" => "Only 1 option is allowed to be the correct answer"
+            ]);
+        }
+
+        if ($countOfCorrectAnswers < 1) {
+            throw ValidationException::withMessages([
+                "correct_answer" => "Exactly 1 option must be the correct answer"
+            ]);
+        }
         DB::transaction(function () use ($request, $questionData) {
             if ($questionData["image"]) {
                 $questionData["image"] = $questionData["image"]->store("questions", "public");

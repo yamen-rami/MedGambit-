@@ -114,26 +114,26 @@ new class extends Component {
           <h1>Question {{ $loop->iteration }} from {{ $quiz->questions->count() }} </h1>
           @if($this->remainingSeconds != null)
             <div x-data="{
-                                              seconds: {{ $this->remainingSeconds ?? 0 }}, 
-                                              timer : null , 
-                                              get minutes(){
-                                              return Math.floor(this.seconds / 60)
-                                              },
-                                              get displaySeconds(){
-                                              return this.seconds % 60 
-                                              },
-                                              start(){
-                                              this.timer = setInterval(() => {
-                                              this.seconds-- ;
-                                              if(this.seconds <= 0 ){
-                                                clearInterval(this.timer); 
-                                                $wire.finishQuiz();
-                                              }
-                                              } ,1000)
-                                              }
+                                                  seconds: {{ $this->remainingSeconds ?? 0 }}, 
+                                                  timer : null , 
+                                                  get minutes(){
+                                                  return Math.floor(this.seconds / 60)
+                                                  },
+                                                  get displaySeconds(){
+                                                  return this.seconds % 60 
+                                                  },
+                                                  start(){
+                                                  this.timer = setInterval(() => {
+                                                  this.seconds-- ;
+                                                  if(this.seconds <= 0 ){
+                                                    clearInterval(this.timer); 
+                                                    $wire.finishQuiz();
+                                                  }
+                                                  } ,1000)
+                                                  }
 
 
-                                              }" x-init="start()">
+                                                  }" x-init="start()">
 
               <button class="btn border border-info fs-5 my-4 text-white">
                 <span x-text="minutes"></span>
@@ -197,14 +197,14 @@ new class extends Component {
           @foreach($quiz->questions as $question)
             <button
               class="
-                                                                                                                                                                     @if(isset($this->answers[$question->id]))
-                                                                                                                                                                      question_success
-                                                                                                                                                                    @elseif ($this->current === $loop->iteration)
-                                                                                                                                                                       question_primary
-                                                                                                                                                                    @else
-                                                                                                                                                                      question_number
-                                                                                                                                                                    @endif
-                                                                                                                                                                      "
+                                                                                                                                                                         @if(isset($this->answers[$question->id]))
+                                                                                                                                                                          question_success
+                                                                                                                                                                        @elseif ($this->current === $loop->iteration)
+                                                                                                                                                                           question_primary
+                                                                                                                                                                        @else
+                                                                                                                                                                          question_number
+                                                                                                                                                                        @endif
+                                                                                                                                                                          "
               wire:click='updateCurrent({{ $loop->iteration }})'>{{ $loop->iteration }}</button>
 
           @endforeach
@@ -218,17 +218,6 @@ new class extends Component {
     </h1>
   @enderror
   <script>
-    // function hideQuestion(current) {
-    //     currentDiv = document.getElementById(`question-${current}`);
-    //     currentDiv.style.display = "none";
-    //     previousDiv = document.getElementById(`question-${current - 1}`);
-    //     previousDiv.style.display = "grid";
-    // }
-    // function nextQuestion(current) {
-    //     currentDiv = document.getElementById(`question-${current}`);
-    //     currentDiv.style.display = "none";
-    //     previousDiv = document.getElementById(`question-${current + 1}`);
-    //     previousDiv.style.display = "grid";
-    // }
+
   </script>
 </div>

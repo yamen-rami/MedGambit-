@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\{BelongsTo, HasMany};
 
 class QuizAttempt extends Model
 {
-    //
+    //p
     protected $fillable = [
         "quiz_id",
         'user_id',
@@ -29,6 +29,7 @@ class QuizAttempt extends Model
     {
         return $this->belongsTo(Quiz::class);
     }
+
     public function answers(): HasMany
     {
         return  $this->hasMany(Answers::class);

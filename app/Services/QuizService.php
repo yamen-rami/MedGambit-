@@ -25,7 +25,7 @@ class QuizService
       $quiz_attempt = $quiz->attempts()->create([
         "user_id" => auth()->id(),
         "started_at" => now(),
-        "finished_at" => now()->addHour(),
+        "finished_at" => now()->addMinutes(30),
         "time_taken" => 0,
         "score" => 0,
         "status" => "pending"
@@ -71,7 +71,6 @@ class QuizService
       } else {
         $wrongAnswers++;
       }
-
       $answersData[] = [
         'quiz_attempt_id' => $quizAttempt->id,
         "question_id" => $questionId,
@@ -109,12 +108,12 @@ class QuizService
       "name" => "Detected Topic",
       "topic" => "Detected Topic",
       "type" => "detected",
-      "duration" => $duration ?? null ,
+      "duration" => $duration ?? null,
       "difficulty" => $difficulty,
       "length" => $length,
       "questions_number" => $count ?? 3,
     ]);
-
+    // 
     $quiz_attempt = $quiz->attempts()->create([
       "user_id" => auth()->id(),
       "started_at" => now(),
@@ -123,6 +122,33 @@ class QuizService
       "score" => 0,
       "status" => "pending"
     ]);
+    $quiz->questions()->attachOrFail($questions);
+    return $quiz;
+  }
+  public function learningQuiz(Collection $questions, $length = "short", $count = 3, $difficulty = "easy")
+  {
+    // Create Quiz 
+    // Learning Quiz 
+    // 
+    $quiz = Quiz::create([
+      "name" => "Detected Learning Quiz ",
+      "topic" => "Detected Learning Quiz ",
+      "type" => "learning",
+      "duration" => null,
+      "difficulty" => $difficulty,
+      "length" => $length,
+      "questions_number" => $count ?? 3,
+    ]);
+    // 
+    $quiz_attempt = $quiz->attempts()->create([
+      "user_id" => auth()->id(),
+      "started_at" => now(),
+      "finished_at" => now(),
+      "time_taken" => 0,
+      "score" => 0,
+      "status" => "pending"
+    ]);
+    // And That is the hole case 
     $quiz->questions()->attachOrFail($questions);
     return $quiz;
   }

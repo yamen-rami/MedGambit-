@@ -59,10 +59,10 @@
                 <label for="exampleFormControlInput1" class="form-label">Difficulty </label>
                 <select class="form-select" name="difficulty">
                   <option value="">Select Difficulty</option>
-                  <option value="easy">Easy</option>
-                  <option value="medium">Medium</option>
-                  <option value="hard">Hard</option>
-                  <option value="nerd">Nerd</option>
+                  <option value="easy" @selected(old("difficulty") === "easy")>Easy</option>
+                  <option value="medium" @selected(old("difficulty") === "medium")>Medium</option>
+                  <option value="hard" @selected(old("difficulty") === "hard")>Hard</option>
+                  <option value="nerd" @selected(old("difficulty") === "nerd")>Nerd</option>
                 </select>
                 @error("difficulty")
                   <p class="text-danger py-1">{{ $message }}</p>
@@ -72,10 +72,9 @@
                 <label for="exampleFormControlInput1" class="form-label">Refernce </label>
                 <select class="form-select" name="reference">
                   <option value="">Select Reference</option>
-
-                  <option value="UW">UW</option>
-                  <option value="MRCP">MRCP</option>
-                  <option value="MCC Qe">MCC Qe</option>
+                  <option value="UW" @selected(old("reference") === "UW")>UW</option>
+                  <option value="MRCP" @selected(old("reference") === "MRCP")>MRCP</option>
+                  <option value="MCC Qe" @selected(old("reference") === "MCC Qe")>MCC Qe</option>
                 </select>
                 @error("reference")
                   <p class="text-danger py-1">{{ $message }}</p>
@@ -86,10 +85,9 @@
                 <label for="exampleFormControlInput1" class="form-label">Length</label>
                 <select class="form-select" name="length">
                   <option value="">Select Length</option>
-
-                  <option value="short">Short</option>
-                  <option value="medium">Medium</option>
-                  <option value="long">Long</option>
+                  <option value="short" @selected(old("length") == "short")>Short</option>
+                  <option value="medium" @selected(old("length") == "medium")>Medium</option>
+                  <option value="long" @selected(old("length") == "long")>Long</option>
                 </select>
                 @error("length")
                   <p class="text-danger py-1">{{ $message }}</p>
@@ -99,9 +97,9 @@
                 <label for="exampleFormControlInput1" class="form-label">Elo Correct</label>
                 <select class="form-select" name="elo_correct">
                   <option value="">Select Elo Correct</option>
-                  <option value="4">4</option>
-                  <option value="8">8</option>
-                  <option value="12">12</option>
+                  <option value="4" @selected(old("elo_correct") === "4")>4</option>
+                  <option value="8" @selected(old("elo_correct") === "8")>8</option>
+                  <option value="12" @selected(old("elo_correct") === "12")>12</option>
                 </select>
                 @error("elo_correct")
                   <p class="text-danger py-1">{{ $message }}</p>
@@ -111,9 +109,9 @@
                 <label for="exampleFormControlInput1" class="form-label">Elo InCorrect</label>
                 <select class="form-select" name="elo_incorrect">
                   <option value="">Select Elo InCorrect</option>
-                  <option value="5">5</option>
-                  <option value="10">10</option>
-                  <option value="15">15</option>
+                  <option value="5" @selected(old("elo_incorrect") === "5")>5</option>
+                  <option value="10" @selected(old("elo_incorrect") === "10")>10</option>
+                  <option value="15" @selected(old("elo_incorrect") === "15")>15</option>
                 </select>
                 @error("elo_incorrect")
                   <p class="text-danger py-1">{{ $message }}</p>

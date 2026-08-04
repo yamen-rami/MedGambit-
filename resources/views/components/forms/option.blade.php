@@ -1,6 +1,7 @@
 @props(["number" => 1])
-<x-forms.textarea :value="old('options.' . $number . '.name')" label="Option {{ $number }} Name"
-  name="options[{{ $number }}][name]"> </x-forms.textarea>
+<x-forms.input name="options[{{ $number }}][name]" label="Option {{ $number }} Name"
+  value="{{ ['A', 'B', 'C', 'D', 'E'][$number - 1] ?? '' }}" readonly></x-forms.input>
+
 @error("options.$number.name")
   <p class="text-danger">{{ $message }}</p>
 @enderror
@@ -15,7 +16,7 @@
   <input name="options[{{ $number }}][correct_answer]" value="1" class="form-check-input" type="checkbox"
     id="defaultCheck{{ $number }}" />
   <label class="form-check-label" for="defaultCheck1"> Correct Answer </label>
-  @error("options.$number.correct_answer")
+  @error("correct_answer")
     <p class="text-danger py-1">{{ $message }}</p>
   @enderror
 </div>

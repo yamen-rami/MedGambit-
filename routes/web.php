@@ -31,7 +31,7 @@ Route::middleware("auth")->group(function () {
     Route::get("create/random/quiz", [QuizController::class, "startRandomQuiz"])->name("start.random.quiz");
     Route::get("random/quiz/{quiz}", [QuizController::class, "randomQuiz"])->name("random.quiz");
     Route::get("detecated/quiz/{quiz}", [QuizController::class, "detecatedQuiz"])->name("start.detecated.quiz");
-
+    Route::get("detecated/learning/{quiz}", [QuizController::class, "learningQuiz"])->name("start.learning.quiz");
     Route::get("show/quiz/{quiz}", [QuizController::class, "showQuiz"])->name("show.quiz");
 });
 

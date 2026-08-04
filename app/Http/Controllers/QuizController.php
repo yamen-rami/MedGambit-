@@ -111,11 +111,23 @@ class QuizController extends Controller
         ]);
         // dd($attempt , $question , $quiz);
     }
+    public function learningQuiz(Quiz $quiz)
+    {
+        return view("home.quiz.learningQuiz", [
+            "quiz" => $quiz,
+        ]);
+    }
 
     public function detecatedQuiz(Quiz $quiz)
     {
         return view("home.quiz.start-quiz", [
             "quiz" => $quiz
         ]);
+    }
+    public function destroy(Quiz $quiz)
+    {
+        $quiz->delete();
+        flash()->success("Quiz Has Deleted");
+        return redirect()->route("quizez.index");
     }
 }

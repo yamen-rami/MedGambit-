@@ -82,6 +82,34 @@ new class extends Component {
         );
         return redirect()->route("start.detecated.quiz", $quiz);
     }
+    public function learningQuiz()
+    {
+        if ($this->questions->count() < 2) {
+            throw ValidationException::withMessages([
+                "count" => "The Count Should Be At Least 3 Questions"
+            ]);
+        }
+        $this->validate([
+            "difficulty" => ["nullable", 'array'],
+            "difficulty.*" => [Rule::in(["easy", "medium", "hard", "nerd"])],
+            "length" => ["nullable", "array"],
+            "length.*" => [Rule::in(["short", "medium", "long"])],
+            "branchesList" => ["nullable", "array"],
+            "branchesList.*" => ["exists:branch_of_medicines,id"],
+            "skillsList" => ["nullable", "array"],
+            "skillsList.*" => ["exists:skills_for_questions,id"],
+            "specialitiesList" => ["nullable", "array"],
+            "specialitiesList.*" => ["exists:specialties,id"],
+        ]);
+        $quizService = app(QuizService::class);
+        $quiz = $quizService->learningQuiz(
+            $this->questions,
+            $this->length ? $this->length[0] : "short",
+            $this->questions->count(),
+            $this->difficulty ? $this->difficulty[0] : "hard",
+        );
+        return redirect()->route("start.learning.quiz", $quiz);
+    }
 };
 ?>
 
@@ -182,7 +210,9 @@ new class extends Component {
         <p class="text-danger my-3">{{ $message }}</p>
     @enderror
 
-    <button class="btn btn-success" wire:click='submit'>Start A Quiz</button>
+    <button class="btn btn-outline-warning me-4" wire:click='learningQuiz'>Start Learning Exam </button>
+    <button class="btn btn-success" wire:click='submit'>Start Exam </button>
+
 
 </div>
 
