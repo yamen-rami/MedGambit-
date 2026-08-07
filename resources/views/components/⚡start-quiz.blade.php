@@ -6,16 +6,32 @@ use Livewire\Attributes\{On, Computed, Session};
 use App\Models\{Questions, Option, QuizAttempt};
 new class extends Component {
   public $quiz;
-
+  #[Session(key : "quiz_id")]
+  public $quiz_id;
   #[Session]
   public $current = 1;
   #[Session]
   public array $answers = [];
   public $attempt;
+  // 
   public function mount($quiz)
   {
     // Start A New Quiz Means a New Id which mean that if the 
     $this->quiz = $quiz->loadMissing("questions.options");
+
+    if (session('quiz_id')) {
+      if (session("quiz_id") !== $this->quiz->id) {
+        $this->reset("current", "answers");
+        session()->forget([
+          'current',
+          'answers',
+          "quiz_id"
+        ]);
+      }
+    }
+    $this->quiz_id = $this->quiz->id ;
+    // dd(session("quiz_id"));
+
     $this->attempt = QuizAttempt::where("user_id", auth()->id())->where("quiz_id", $this->quiz->id)->first();
   }
 
@@ -27,10 +43,10 @@ new class extends Component {
   {
 
     // Get Every THings 
-    $option = Option::with("question")->findOrFail($optionId);
-    $question = Questions::with('options')->findOrFail($questionId);
+    // $option = Option::with("question")->findOrFail($optionId);
+    // $question = Questions::with('options')->findOrFail($questionId);
 
-    $this->answers[$question->id] = $option->id;
+    $this->answers[$questionId] = $optionId;
   }
   public function editCurrent($current)
   {
@@ -114,26 +130,26 @@ new class extends Component {
           <h1>Question {{ $loop->iteration }} from {{ $quiz->questions->count() }} </h1>
           @if($this->remainingSeconds != null)
             <div x-data="{
-                                                  seconds: {{ $this->remainingSeconds ?? 0 }}, 
-                                                  timer : null , 
-                                                  get minutes(){
-                                                  return Math.floor(this.seconds / 60)
-                                                  },
-                                                  get displaySeconds(){
-                                                  return this.seconds % 60 
-                                                  },
-                                                  start(){
-                                                  this.timer = setInterval(() => {
-                                                  this.seconds-- ;
-                                                  if(this.seconds <= 0 ){
-                                                    clearInterval(this.timer); 
-                                                    $wire.finishQuiz();
-                                                  }
-                                                  } ,1000)
-                                                  }
+                                                                      seconds: {{ $this->remainingSeconds ?? 0 }}, 
+                                                                      timer : null , 
+                                                                      get minutes(){
+                                                                      return Math.floor(this.seconds / 60)
+                                                                      },
+                                                                      get displaySeconds(){
+                                                                      return this.seconds % 60 
+                                                                      },
+                                                                      start(){
+                                                                      this.timer = setInterval(() => {
+                                                                      this.seconds-- ;
+                                                                      if(this.seconds <= 0 ){
+                                                                        clearInterval(this.timer); 
+                                                                        $wire.finishQuiz();
+                                                                      }
+                                                                      } ,1000)
+                                                                      }
 
 
-                                                  }" x-init="start()">
+                                                                      }" x-init="start()">
 
               <button class="btn border border-info fs-5 my-4 text-white">
                 <span x-text="minutes"></span>
@@ -197,21 +213,21 @@ new class extends Component {
           @foreach($quiz->questions as $question)
             <button
               class="
-                                                                                                                                                                         @if(isset($this->answers[$question->id]))
-                                                                                                                                                                          question_success
-                                                                                                                                                                        @elseif ($this->current === $loop->iteration)
-                                                                                                                                                                           question_primary
-                                                                                                                                                                        @else
-                                                                                                                                                                          question_number
-                                                                                                                                                                        @endif
-                                                                                                                                                                          "
+               @if(isset($this->answers[$question->id]))
+               question_success
+             @elseif ($this->current === $loop->iteration)
+                 question_primary
+             @else
+               question_number
+             @endif
+                "
               wire:click='updateCurrent({{ $loop->iteration }})'>{{ $loop->iteration }}</button>
 
           @endforeach
         </div>
       </div>
     </div>
-  @endforeach
+  @endforeach 
   @error("answers")
     <h1 class="my-2 text-center text-danger fs-5">Please Add Answers Left Questions Answers =
       {{ $this->quiz->questions->count() - count($this->answers) }}

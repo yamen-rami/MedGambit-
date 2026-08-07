@@ -15,7 +15,6 @@ return new class extends Migration
             $table->id();
             $table->string("name");
             $table->text("topic");
-
             $table->enum("difficulty", ['easy', "medium", "hard", "nerd"]);
             $table->enum("length", ['short', "medium", "long"]);
             $table->enum("type", ["random", "detected", "admin" , "learning"]);

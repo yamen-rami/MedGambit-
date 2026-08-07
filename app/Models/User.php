@@ -27,7 +27,7 @@ use Database\Factories\UserFactory;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['name', 'email', 'password', "image", "year", "graduated", "role"])]
+#[Fillable(['name', 'email', 'password', "image", "year", "graduated", "rank", "role"])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements PasskeyUser
 {
@@ -62,6 +62,8 @@ class User extends Authenticatable implements PasskeyUser
     {
         return $this->hasMany(QuizAttempt::class);
     }
-
-
+    public function playedQuestions(): BelongsToMany
+    {
+        return $this->belongsToMany(Questions::class, "user_played_questions");
+    }
 }

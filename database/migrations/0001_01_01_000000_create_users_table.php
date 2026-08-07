@@ -15,6 +15,8 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->integer('rank')->default(1500);
+            $table->integer("phone")->nullable();
+            $table->text("location")->nullable();
             $table->string('image')->nullable();
             $table->enum("year",[1,2,3,4,5,6])->nullable();
             $table->enum("role",["user" , "admin"])->default("user");

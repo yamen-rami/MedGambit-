@@ -39,19 +39,19 @@ class QuizController extends Controller
         $quiz = Quiz::findOrFail($id);
         return view("quiz.show", compact("quiz"));
     }
-    public function store(Request $request)
-    {
-        // ? Validate 
-        $quiz = $request->validate([
-            "content" => ["required", "string", "min:3"],
-            "topic" => ["required", "string", "min:3"],
-            "difficulty" => ["required", Rule::in(["easy", "meduim", "hard", "nerd"])],
-            "length" => ["required", Rule::in(["short", "medium", "long"])],
-            "questions_number" => ['required', "integer", "min:3", "max:32"],
-            "questions" => ["required", "array"],
-            "questions.*" => ["exists:questions,id"],
-        ]);
-    }
+    // public function store(Request $request)
+    // {
+    //     // ? Validate 
+    //     $quiz = $request->validate([
+    //         "content" => ["required", "string", "min:3"],
+    //         "topic" => ["required", "string", "min:3"],
+    //         "difficulty" => ["required", Rule::in(["easy", "meduim", "hard", "nerd"])],
+    //         "length" => ["required", Rule::in(["short", "medium", "long"])],
+    //         "questions_number" => ['required', "integer", "min:3", "max:32"],
+    //         "questions" => ["required", "array"],
+    //         "questions.*" => ["exists:questions,id"],
+    //     ]);
+    // }
     public function edit(int $id)
     {
         $quiz = Quiz::with(['questions'])->findOrFail($id);

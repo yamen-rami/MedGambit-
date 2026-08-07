@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-use App\Models\{Quiz, User};
+use App\Models\{PlayedQuestions, Questions, User};
 
 return new class extends Migration
 {
@@ -13,13 +13,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('attempts', function (Blueprint $table) {
+        Schema::create('user_played_questions', function (Blueprint $table) {
             $table->id();
-            $table->foreignIdFor(Quiz::class)->constrained()->cascadeOnDelete();
             $table->foreignIdFor(User::class)->constrained()->cascadeOnDelete();
-            $table->time('start_time')->nullable();
-            $table->time('end_time')->nullable();
-            $table->integer("points")->nullable();
+            $table->foreignIdFor(Questions::class)->constrained()->cascadeOnDelete();
             $table->timestamps();
         });
     }
@@ -29,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('attempts');
+        Schema::dropIfExists('user_played_questions');
     }
 };

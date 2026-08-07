@@ -26,6 +26,8 @@ class CreateNewUser implements CreatesNewUsers
             'image' => ['nullable', 'image', 'max:2048'], // Validate as image
             'year' => ['nullable', 'integer' , "max:6"],
             'graduated' => ['required'],
+            'location' => ['required' , "string" , "min:3" , "max:255"],
+            "phone" => ["required" , "integer"],
         ])->validate();
         $imagePath = null;
         if (isset($input['image'])) {
@@ -33,6 +35,9 @@ class CreateNewUser implements CreatesNewUsers
         }
         return User::create([
             'name' => $input['name'],
+            'location' => $input['location'],
+            'phone' => $input['phone'],
+
             "image" => $imagePath ,
             "year" => $input["year"],
             "graduated" => $input["graduated"] ==="true" ? true : false,

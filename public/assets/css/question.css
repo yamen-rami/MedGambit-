@@ -132,3 +132,7 @@ body {
   display: grid;
 }
 
+.file-container{
+  border-color: gray;
+  border-style: groove;
+}

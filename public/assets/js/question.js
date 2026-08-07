@@ -12,6 +12,7 @@ function showNext(event, current) {
     top: 0, behavio: "smooth"
   });
 }
+
 function showPrevious(event, current) {
   event.preventDefault();
   document.getElementById(`step-${current}`).style.display = "none";
@@ -53,7 +54,7 @@ function toggleStep(step, show) {
     element.disabled = !show;
   })
 }
-function here (){
+function here() {
   alert("here");
 }
 function before(current) {

@@ -1,6 +1,4 @@
 <x-user-layout>
-
-
   <div class="container-xxl col-lg-6">
     <div class="authentication-wrapper authentication-basic container-p-y">
       <div class="authentication-inner py-6">
@@ -33,7 +31,8 @@
             <h4 class="mb-1">Welcome To MedGambit</h4>
             <p class="mb-6">Fast You Learning up to 50%</p>
 
-            <form id="formAuthentication" class="mb-6" action="{{ route('register.store') }}" method="POST">
+            <form id="formAuthentication" class="mb-6" action="{{ route('register.store') }}" method="POST"
+              enctype="multipart/form-data">
               @csrf
               <div class="mb-6 form-control-validation">
                 <label for="username" class="form-label">Username</label>
@@ -43,7 +42,14 @@
                   <p class="text-danger my-2">{{ $message }}</p>
                 @enderror
               </div>
-
+              <div class="mb-6 form-control-validation">
+                <label for="username" class="form-label">Phone</label>
+                <input :value="old('phone')" type="number" required autofocus class="form-control" name="phone"
+                  placeholder="59 760 8722 " autofocus />
+                @error("phone")
+                  <p class="text-danger my-2">{{ $message }}</p>
+                @enderror
+              </div>
               <div class="mb-6 form-control-validation">
                 <label for="email" class="form-label">Email</label>
                 <input class="form-control" name="email" :label="__('Email address')" :value="old('email')" type="email"
@@ -52,8 +58,16 @@
                   <p class="text-danger my-2">{{ $message }}</p>
                 @enderror
               </div>
-              {{-- ? Graduated --}}
 
+              <div class="mb-6 form-control-validation">
+                <label for="username" class="form-label">Location</label>
+                <input :value="old('location')" type="text" required autofocus class="form-control" name="location"
+                  placeholder="Aidia Street " autofocus />
+                @error("location")
+                  <p class="text-danger my-2">{{ $message }}</p>
+                @enderror
+              </div>
+              {{-- ? Graduated --}}
               <div x-data="{show: false}">
                 <div class="my-4">
                   <label class="for  m-lable">Graduated</label>
@@ -75,7 +89,15 @@
                 </div>
               </div>
               {{-- ? End Graduated --}}
-
+              <div class="preview">
+                <img width="100%"  height="300px" src="" alt="" id="preview">
+              </div>
+              <div
+                class=" d-flex justify-content-center align-items-center py-10 border border-secondary border-dashed rounded my-4">
+                <div class="fallback">
+                  <input class="" id="userImage" name="image" type="file" />
+                </div>
+              </div>
               <div class="mb-6 form-password-toggle form-control-validation">
                 <label class="form-label" for="password">Password</label>
                 <div class="input-group input-group-merge">
@@ -92,8 +114,7 @@
                 <label class="form-label" for="password">Password Confirmation</label>
                 <div class="input-group input-group-merge">
                   <input type="text" id="password" class="form-control" name="password_confirmation"
-                    placeholder="Password Confirmation"
-                    aria-describedby="password" />
+                    placeholder="Password Confirmation" aria-describedby="password" />
                   <span class="input-group-text cursor-pointer"><i class="icon-base ti tabler-eye-off"></i></span>
                 </div>
                 @error("password")
@@ -126,7 +147,20 @@
       </div>
     </div>
   </div>
-
+  <script>
+    let input = document.getElementById("userImage");
+    let preview = document.getElementById("preview");
+    if (preview) {
+      preview.style.display = "none";
+    }
+    input.addEventListener('change', () => {
+      const file = input.files[0];
+      preview.style.display = "block";
+      if (file) {
+        preview.src = URL.createObjectURL(file);
+      }
+    });
+  </script>
   {{--
   <script>
     function selected(e) {

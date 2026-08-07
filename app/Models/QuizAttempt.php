@@ -27,9 +27,8 @@ class QuizAttempt extends Model
     }
     public function user(): BelongsTo
     {
-        return $this->belongsTo(Quiz::class);
+        return $this->belongsTo(User::class);
     }
-
     public function answers(): HasMany
     {
         return  $this->hasMany(Answers::class);

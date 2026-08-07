@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Collection;
 use Exception;
 
-use App\Models\{Answers, Questions, Quiz, QuizAttempt};
+use App\Models\{Answers, PlayedQuestions, Questions, Quiz, QuizAttempt, User};
 
 class QuizService
 {
@@ -30,13 +30,28 @@ class QuizService
         "score" => 0,
         "status" => "pending"
       ]);
+      $userId = auth()->id();
 
-      $quesitonsId = Questions::query()
+      $questionsId = Questions::query()
+        ->whereNotIn("id", function ($query) use ($userId) {
+          $query->select('questions_id')->from("user_played_questions")->where("user_id", $userId);
+        })
         ->inRandomOrder()
-        ->limit($count)
+      ->limit($count)
         ->pluck("id");
       // ? Attach 
-      $quiz->questions()->attachOrFail($quesitonsId);
+      if ($questionsId->count() < $count) {
+        $remaining = $count - $questionsId->count();
+
+        $fallbackIds = Questions::query()
+          ->whereNotIn('id', $questionsId)
+          ->inRandomOrder()
+          ->limit($remaining)
+          ->pluck('id');
+
+        $questionsId = $questionsId->concat($fallbackIds);
+      }
+      $quiz->questions()->attach($questionsId);
       return $quiz;
     });
   }
@@ -62,13 +77,27 @@ class QuizService
     // 0 ++ $score l
     $wrongAnswers = 0;
     $answersData = [];
+    $user = auth()->user();
+    $rank = $user->rank;
+    $playedQuestionIds = $user->playedQuestions->pluck('id');
+
     $questions = Questions::with("correctAnswer")->whereIn("id", array_keys($answers))->get()->keyBy("id");
+
     foreach ($answers as $questionId => $optionId) {
+
       $question = $questions[$questionId];
+
       $is_correct = $question->correctAnswer?->id == $optionId;
+
       if ($is_correct) {
+        if (!$playedQuestionIds->contains($question->id)) {
+          $rank += (int) $question->elo_correct;
+        }
         $score++;
       } else {
+        if (!$playedQuestionIds->contains($question->id)) {
+          $rank -= (int) $question->elo_incorrect;
+        }
         $wrongAnswers++;
       }
       $answersData[] = [
@@ -82,15 +111,20 @@ class QuizService
         "updated_at" => $now,
       ];
     }
-    DB::transaction(function () use ($answersData, $score, $quizAttempt, $userId, $now) {
+    DB::transaction(function () use ($answersData, $score, $quizAttempt, $userId, $now, $quizId, $rank, $user) {
       Answers::insert($answersData);
       $quizAttempt->update([
-        "user_id" => auth()->id(),
+        "user_id" => $user->id,
         "finished_at" => $now,
         "time_taken" => $quizAttempt->started_at->diffInSeconds($now),
         "score" => $score,
         "status" => "completed"
       ]);
+      $quiz = Quiz::with("questions")->where("id", $quizId)->first();
+      $questionsId = $quiz->questions->pluck("id");
+      $user->playedQuestions()->syncWithoutDetaching($questionsId);
+      $rank = max(0, $rank);
+      $user->update(["rank" => $rank]);
     });
     // $question -> 
     return [

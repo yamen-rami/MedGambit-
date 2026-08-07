@@ -39,7 +39,6 @@ class QuestionsFactory extends Factory
         return $this->afterCreating(function ($question) {
 
             $correctIndex = rand(0, 3);
-
             for ($i = 0; $i < 4; $i++) {
                 Option::create([
                     'questions_id' => $question->id,

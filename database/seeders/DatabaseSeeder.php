@@ -19,21 +19,21 @@ class DatabaseSeeder extends Seeder
     {
         // Option::factory(1000)->create();
         Questions::factory(100)
-            ->hasAttached(
-                SkillsForQuestion::factory()->count(4),
-                [],
-                'skills'
-            )
-            ->hasAttached(
-                BranchOfMedicine::factory()->count(4),
-                [],
-                'branches'
-            )
-            ->hasAttached(
-                Specialty::factory()->count(4),
-                [],
-                'specialties'
-            )
+            // ->hasAttached(
+            //     SkillsForQuestion::factory()->count(4),
+            //     [],
+            //     'skills'
+            // )
+            // ->hasAttached(
+            //     BranchOfMedicine::factory()->count(4),
+            //     [],
+            //     'branches'
+            // )
+            // ->hasAttached(
+            //     Specialty::factory()->count(4),
+            //     [],
+            //     'specialties'
+            // )
             ->create();
     }
 }

@@ -54,4 +54,8 @@ class Questions extends Model
     {
         return  $this->hasMany(Answers::class);
     }
+    public function user(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, "user_played_questions");
+    }
 }

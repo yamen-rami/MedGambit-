@@ -12,7 +12,6 @@ new class extends Component {
   public $current = 1;
   #[Session]
   public array $answers = [];
-  public array $questionsCorrectAnswers = [];
 
   public $attempt;
   public function mount($quiz)
@@ -28,13 +27,8 @@ new class extends Component {
   }
   public function submit($optionId, $questionId)
   {
-
-    // Get Every THings 
-    $option = Option::with("question")->findOrFail($optionId);
-    $question = Questions::with('options', "correctAnswer")->findOrFail($questionId);
-    if (!array_key_exists($question->id, $this->answers)) {
-      $this->answers[$question->id] = $option->id;
-      $this->questionsCorrectAnswers[$question->id] = $question->correctAnswer->id;
+    if (!array_key_exists($questionId, $this->answers)) {
+      $this->answers[$questionId] = $optionId;
     }
 
 
@@ -100,10 +94,12 @@ new class extends Component {
       <hr>
       @foreach($question->options as $option)
         <div wire:click='submit({{ $option->id }} , {{ $question->id }})'
-          class="option border  border-secondary rounded px-4 my-2" x-data="{show : false , correct : {{ $option->id }} == {{ $question->correctAnswer->id }} }" @click="show = !show" :class="{
-                            'border-success': show && correct,
-                            'border-danger': show && ! correct
-                        }">
+          class="option border  border-secondary rounded px-4 my-2"
+          x-data="{show : false , correct : {{ $option->id }} == {{ $question->correctAnswer->id }} }" @click="show = !show"
+          :class="{
+                                        'border-success': show && correct,
+                                        'border-danger': show && ! correct
+                                    }">
           <div class="">
             <div class="d-flex  align-items-center gap-4  text-white py-3 rounded">
               <span class="text-white fs-6  "> @if($loop->iteration === 1)
@@ -121,7 +117,7 @@ new class extends Component {
                 name="option-{{ $question->id }}" wire:model.live="answers.{{ $question->id }}">
               <p class="mb-0  option-content">{{ $option->content }}</p>
             </div>
-            <div x-show="show">
+            <div x-show="show" x-cloak x-transition.100ms>
               <div class="row align-items-center">
                 <div class="col-lg-1">
 
@@ -172,14 +168,14 @@ new class extends Component {
           @foreach($quiz->questions as $question)
             <button
               class="
-                                                                                                                                                                                                                                                                                                                         @if(isset($this->answers[$question->id]))
-                                                                                                                                                                                                                                                                                                                          question_success
-                                                                                                                                                                                                                                                                                                                        @elseif ($this->current === $loop->iteration)
-                                                                                                                                                                                                                                                                                                                           question_primary
-                                                                                                                                                                                                                                                                                                                        @else
-                                                                                                                                                                                                                                                                                                                          question_number
-                                                                                                                                                                                                                                                                                                                        @endif
-                                                                                                                                                                                                                                                                                                                          "
+                                                                                                                                                                                                                                                                                                                                     @if(isset($this->answers[$question->id]))
+                                                                                                                                                                                                                                                                                                                                      question_success
+                                                                                                                                                                                                                                                                                                                                    @elseif ($this->current === $loop->iteration)
+                                                                                                                                                                                                                                                                                                                                       question_primary
+                                                                                                                                                                                                                                                                                                                                    @else
+                                                                                                                                                                                                                                                                                                                                      question_number
+                                                                                                                                                                                                                                                                                                                                    @endif
+                                                                                                                                                                                                                                                                                                                                      "
               wire:click='updateCurrent({{ $loop->iteration }})'>{{ $loop->iteration }}</button>
 
           @endforeach

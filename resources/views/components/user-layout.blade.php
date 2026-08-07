@@ -27,7 +27,7 @@
     <link rel="stylesheet" href="{{ asset('assets/vendor/libs/select2/select2.css') }}" />
     <link rel="stylesheet" href="{{ asset("assets/css/demo.css") }}">
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.15.12/dist/cdn.min.js"></script>
-
+    <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@25.3.1/build/js/intlTelInput.min.js"></script>
     @livewireStyles
 
 
@@ -128,6 +128,20 @@
                                 <div data-i18n="Page ">Start A Quiz</div>
                             </a>
                         </li>
+                        
+                        {{-- <li class="menu-item {{ request()->routeIs('quizGame') ? 'active' : '' }}">
+                            <a href="{{ route('quizGame') }}" class="menu-link">
+                                <i class="menu-icon icon-base me-2 d-flex align-items-center"
+                                    style="width: 24px; height: 24px;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                        stroke-width="1.5" stroke="currentColor" class="size-6">
+                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                            d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
+                                    </svg>
+                                </i>
+                                <div data-i18n="Page ">Start A Game</div>
+                            </a>
+                        </li> --}}
                     @endauth
                 </ul>
             </aside>
@@ -221,8 +235,10 @@
                                             <div class="dropdown-divider my-1 mx-n2"></div>
                                         </li>
                                         <li>
-                                            <a class="dropdown-item" href="#">
-                                                <i class="icon-base ti tabler-user icon-md me-3"></i><span>My Profile</span>
+                                            <a class="dropdown-item" href="{{ route("user.profile", auth()->user()) }}">
+                                                <i class="icon-base ti tabler-user icon-md me-3"></i><span>
+                                                    My Profile
+                                                </span>
                                             </a>
                                         </li>
 
@@ -231,12 +247,15 @@
                                             <div class="dropdown-divider my-1 mx-n2"></div>
                                         </li>
                                         <li>
-                                            <a class="dropdown-item d-flex" href="javascript:void(0);">
+                                            <a class="dropdown-item d-flex align-items-center" href="javascript:void(0);">
                                                 <i class="icon-base ti tabler-power icon-md me-3"></i>
-                                                <form action="{{ route("logout") }}" method="post">
-                                                    @csrf
-                                                    <button class="btn">Log Out</button>
-                                                </form>
+                                                <span>
+                                                    <form action="{{ route("logout") }}" method="post">
+                                                        @csrf
+                                                        <button class="text-danger card ">Log Out</button>
+                                                    </form>
+                                                </span>
+
                                             </a>
                                         </li>
                                     </ul>
@@ -298,7 +317,15 @@
     <script src="{{ asset('assets/vendor/js/template-customizer.js')}}"></script>
     <script src="{{ asset('assets/js/config.js')}}"></script>
     <script src="{{ asset('assets/js/main.js') }}"></script>
+    <script>
+        const input = document.querySelector("#phone");
 
+        const iti = window.intlTelInput(input, {
+            initialCountry: "ps", // Palestine
+            separateDialCode: true,
+            preferredCountries: ["ps", "eg", "jo"],
+        });
+    </script>
     <!-- Page JS -->
 </body>
 

@@ -4,6 +4,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
+use App\Models\User;
+
 return new class extends Migration
 {
     /**
@@ -11,9 +13,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('branch_of_medicines', function (Blueprint $table) {
+        Schema::create('games', function (Blueprint $table) {
             $table->id();
-            $table->string("name")->index();
+            $table->foreignIdFor(User::class , "player_1")->constrained()->cascadeOnDelete();
+            $table->foreignIdFor(User::class , "player_2")->constrained()->cascadeOnDelete();
+            $table->string("status");
             $table->timestamps();
         });
     }
@@ -23,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('BranchOfMedicines');
+        Schema::dropIfExists('games');
     }
 };

@@ -10,7 +10,7 @@ class Quiz extends Model
 {
     /** @use HasFactory<\Database\Factories\QuizFactory> */
     use HasFactory;
-    protected $fillable = ["questions_number", "topic", "name", "difficulty", "length" , "duration"];
+    protected $fillable = ["questions_number", "topic", "type" , "name", "difficulty", "length" , "duration"];
     public function questions(): BelongsToMany
     {
         return $this->belongsToMany(Questions::class, "quizez_questions");

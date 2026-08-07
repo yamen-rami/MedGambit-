@@ -56,16 +56,23 @@ new class extends Component {
 
     }
     if (!empty($this->specialties)) {
-      $query->whereRelation("specialties", "specialties.id", $this->specialties);
+      // $query->whereRelation("specialties", "specialties.id", $this->specialties);
+      $query->whereHas("specialties", function ($q) {
+        $q->whereIn("specialties.id", $this->specialties);
+      });
 
     }
     if (!empty($this->branches)) {
-      $query->whereRelation("branches", "branch_of_medicines.id", $this->branches);
-
+      // $query->whereRelation("branches", "branch_of_medicines.id", $this->branches);
+      $query->whereHas("branches", function ($q) {
+        $q->whereIn("branch_of_medicines.id", $this->branches);
+      });
     }
     if (!empty($this->skills)) {
-      $query->whereRelation("skills", "skills_for_questions.id", $this->skills);
-
+      // $query->whereRelation("skills", "skills_for_questions.id", $this->skills);
+      $query->whereHas("skills", function ($q) {
+        $q->whereIn("skills_for_questions.id", $this->skills);
+      });
     }
     $questions = $query->orderBy("id", $this->sort)->paginate(10);
     return $questions;
@@ -237,7 +244,7 @@ new class extends Component {
               </div>
               <div class="py-2">
                 <label for="exampleFormControlInput1" class="form-label">Branch Of Medicine</label>
-                <div class="d-flex gap-2">
+                <div class="d-flex flex-wrap gap-2">
                   @foreach ($this->branchesList as $branch)
                     <div class="form-check">
                       <label>{{ $branch->name }}</label>
@@ -245,11 +252,12 @@ new class extends Component {
                         type="checkbox" />
                     </div>
                   @endforeach
+                  <hr>
                 </div>
               </div>
               <div class="py-2">
                 <label for="exampleFormControlInput1" class="form-label">Skills For Questions</label>
-                <div class="d-flex gap-2">
+                <div class="d-flex flex-wrap gap-2">
                   @foreach ($this->skillsList as $skill)
                     <div class="form-check">
                       <label>{{ $skill->name }}</label>
@@ -260,7 +268,7 @@ new class extends Component {
               </div>
               <div class="py-2">
                 <label for="exampleFormControlInput1" class="form-label">Speciality</label>
-                <div class="d-flex gap-2">
+                <div class="d-flex flex-wrap gap-2">
                   @foreach ($this->specialityList as $specality)
                     <div class="form-check">
                       <label>{{ $specality->name }}</label>

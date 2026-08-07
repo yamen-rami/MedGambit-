@@ -21,11 +21,12 @@ return new class extends Migration
             $table->time("start_time")->nullable();
             $table->string("end_time")->nullable();
             $table->boolean("solved")->default(false);
-            $table->enum("difficulty", ["easy", "medium", "hard", "nerd"]);
+            $table->enum("difficulty", ["easy", "medium", "hard", "nerd"])->index();
             $table->enum("length", ["short", "medium", "long"]);
             $table->enum("elo_correct", [4, 8, 12]);
             $table->enum("elo_incorrect", [5, 10, 15]);
             $table->enum("reference", ["UW", "MRCP", "MCC Qe"]);
+            $table->fullText(["content" , "topic"]);
             $table->timestamps();
         });
     }

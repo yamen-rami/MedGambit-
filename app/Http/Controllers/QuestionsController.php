@@ -128,15 +128,18 @@ class QuestionsController extends Controller
                 "elo_incorrect" => $questionData['elo_incorrect'],
                 "image" => $questionData['image'],
             ]);
-            foreach ($questionData["speciality"] as $speciality) {
-                $question->specialties()->attach($speciality);
-            }
-            foreach ($questionData["skills"] as $skill) {
-                $question->skills()->attach($skill);
-            }
-            foreach ($questionData["branches"] as $branch) {
-                $question->branches()->attach($branch);
-            }
+            $question->specialties()->attach($questionData["speciality"]);
+            $question->skills()->attach($questionData["skills"]);
+            $question->branches()->attach($questionData["branches"]);
+            // foreach ($questionData["speciality"] as $speciality) {
+            //     $question->specialties()->attach($speciality);
+            // }
+            // foreach ($questionData["skills"] as $skill) {
+            //     $question->skills()->attach($skill);
+            // }
+            // foreach ($questionData["branches"] as $branch) {
+            //     $question->branches()->attach($branch);
+            // }
             foreach ($questionData["options"] as $option) {
                 if (in_array("image", $option, true)) {
                     $option["image"] = $option["image"]->store("questions", "public");
@@ -150,9 +153,6 @@ class QuestionsController extends Controller
     public function show(int $id)
     {
         $question = Questions::with(['options', "branches", "skills", "specialties"])->findOrFail($id);
-        $branches = BranchOfMedicine::all();
-        $skills = SkillsForQuestion::all();
-        $speciality = Specialty::all();
         $correctAnswer = $question->options->where("correct_answer", true)->first();
         return view("questions.show", compact("question", "correctAnswer"));
     }

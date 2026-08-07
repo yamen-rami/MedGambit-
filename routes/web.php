@@ -2,7 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 
-use App\Http\Controllers\{BranchOfMedicineController, OptionsController, QuestionsController, QuizController, SkillsForQuestionController, SpecialtyController};
+use App\Http\Controllers\{ApiController, BranchOfMedicineController, OptionsController, QuestionsController, QuizController, SkillsForQuestionController, SpecialtyController, UserController};
 use App\Http\Middleware\admin;
 use App\Models\SkillsForQuestion;
 
@@ -33,8 +33,10 @@ Route::middleware("auth")->group(function () {
     Route::get("detecated/quiz/{quiz}", [QuizController::class, "detecatedQuiz"])->name("start.detecated.quiz");
     Route::get("detecated/learning/{quiz}", [QuizController::class, "learningQuiz"])->name("start.learning.quiz");
     Route::get("show/quiz/{quiz}", [QuizController::class, "showQuiz"])->name("show.quiz");
+    // Route::get("start/game/quiz" , [Game])
 });
-
+Route::get("user/profile/{user}" , [UserController::class , "profile"])->name("user.profile");
+Route::get("get/branches/{search}", [ApiController::class, "branches"])->name("getBranches");
 
 
 
