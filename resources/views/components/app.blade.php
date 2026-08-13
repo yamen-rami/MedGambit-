@@ -1,12 +1,20 @@
 <!doctype html>
 
-<html lang="en" class=" layout-navbar-fixed layout-menu-fixed layout-compact " dir="ltr" data-skin="default"
-    data-bs-theme="light" data-assets-path="../../assets/" data-template="vertical-menu-template-starter">
-
+<html
+    lang="en"
+    class="layout-navbar-fixed layout-menu-fixed layout-compact"
+    dir="ltr"
+    data-skin="default"
+    data-bs-theme="light"
+    data-assets-path="../../assets/"
+    data-template="vertical-menu-template-starter"
+>
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport"
-        content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0" />
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0"
+    />
     <meta name="robots" content="noindex, nofollow" />
     <title>{{ $title ?? "Home Page" }}</title>
     <meta name="description" content="" />
@@ -15,20 +23,19 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
         href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&ampdisplay=swap"
-        rel="stylesheet" />
-    <link rel="stylesheet" href="{{ asset('assets/vendor/fonts/iconify-icons.css')}}" />
-    <link rel="stylesheet" href="{{ asset('assets/vendor/libs/node-waves/node-waves.css')}}" />
-    <link rel="stylesheet" href="{{ asset('assets/vendor/libs/pickr/pickr-themes.css')}}" />
-    <link rel="stylesheet" href="{{ asset('assets/vendor/css/core.css')}}" />
+        rel="stylesheet"
+    />
+    <link rel="stylesheet" href="{{ asset('assets/vendor/fonts/iconify-icons.css') }}" />
+    <link rel="stylesheet" href="{{ asset('assets/vendor/libs/node-waves/node-waves.css') }}" />
+    <link rel="stylesheet" href="{{ asset('assets/vendor/libs/pickr/pickr-themes.css') }}" />
+    <link rel="stylesheet" href="{{ asset('assets/vendor/css/core.css') }}" />
     <link rel="stylesheet" href="{{ asset('assets/vendor/libs/bootstrap-select/bootstrap-select.css') }}" />
-    <link rel="stylesheet" href="{{ asset('assets/css/demo.css')}}" />
-    <link rel="stylesheet" href="{{ asset('assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.css')}}" />
-    <link rel="stylesheet" href="{{ asset('assets/css/question.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/css/demo.css') }}" />
+    <link rel="stylesheet" href="{{ asset('assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.css') }}" />
+    <link rel="stylesheet" href="{{ asset('assets/css/question.css') }}" />
     <link rel="stylesheet" href="{{ asset('assets/vendor/libs/select2/select2.css') }}" />
-    <link rel="stylesheet" href="{{ asset("assets/css/demo.css") }}">
+    <link rel="stylesheet" href="{{ asset("assets/css/demo.css") }}" />
     @livewireStyles
-
-
 </head>
 
 <body class="position-relative">
@@ -38,24 +45,43 @@
         <div class="layout-container">
             <!-- Menu -->
             <aside id="layout-menu" class="layout-menu menu-vertical menu">
-                <div class="app-brand demo ">
+                <div class="app-brand demo">
                     <a href="index.html" class="app-brand-link">
                         <span class="app-brand-logo demo">
                             <span class="text-primary">
-                                <svg width="32" height="22" viewBox="0 0 32 22" fill="none"
-                                    xmlns="http://www.w3.org/2000/svg">
-                                    <path fill-rule="evenodd" clip-rule="evenodd"
+                                <svg
+                                    width="32"
+                                    height="22"
+                                    viewBox="0 0 32 22"
+                                    fill="none"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                >
+                                    <path
+                                        fill-rule="evenodd"
+                                        clip-rule="evenodd"
                                         d="M0.00172773 0V6.85398C0.00172773 6.85398 -0.133178 9.01207 1.98092 10.8388L13.6912 21.9964L19.7809 21.9181L18.8042 9.88248L16.4951 7.17289L9.23799 0H0.00172773Z"
-                                        fill="currentColor" />
-                                    <path opacity="0.06" fill-rule="evenodd" clip-rule="evenodd"
+                                        fill="currentColor"
+                                    />
+                                    <path
+                                        opacity="0.06"
+                                        fill-rule="evenodd"
+                                        clip-rule="evenodd"
                                         d="M7.69824 16.4364L12.5199 3.23696L16.5541 7.25596L7.69824 16.4364Z"
-                                        fill="#161616" />
-                                    <path opacity="0.06" fill-rule="evenodd" clip-rule="evenodd"
+                                        fill="#161616"
+                                    />
+                                    <path
+                                        opacity="0.06"
+                                        fill-rule="evenodd"
+                                        clip-rule="evenodd"
                                         d="M8.07751 15.9175L13.9419 4.63989L16.5849 7.28475L8.07751 15.9175Z"
-                                        fill="#161616" />
-                                    <path fill-rule="evenodd" clip-rule="evenodd"
+                                        fill="#161616"
+                                    />
+                                    <path
+                                        fill-rule="evenodd"
+                                        clip-rule="evenodd"
                                         d="M7.77295 16.3566L23.6563 0H32V6.88383C32 6.88383 31.8262 9.17836 30.6591 10.4057L19.7824 22H13.6938L7.77295 16.3566Z"
-                                        fill="currentColor" />
+                                        fill="currentColor"
+                                    />
                                 </svg>
                             </span>
                         </span>
@@ -81,40 +107,41 @@
                     <li class="menu-item {{ request()->routeIs("questions.*") ? "active" : '' }}">
                         <a href="{{ route("questions.index") }}" class="menu-link">
                             <i class="menu-icon icon-base ti tabler-app-window"></i>
-                            <div data-i18n="Page 2">Questions </div>
+                            <div data-i18n="Page 2">Questions</div>
                         </a>
                     </li>
                     <li class="menu-item {{ request()->routeIs("speciality.*") ? "active" : '' }}">
                         <a href="{{ route("speciality.index") }}" class="menu-link">
                             <i class="menu-icon icon-base ti tabler-app-window"></i>
-                            <div data-i18n="Page 2">Specialities </div>
+                            <div data-i18n="Page 2">Specialities</div>
                         </a>
                     </li>
                     <li class="menu-item {{ request()->routeIs("branch.*") ? "active" : '' }}">
                         <a href="{{ route("branch.index") }}" class="menu-link">
                             <i class="menu-icon icon-base ti tabler-app-window"></i>
-                            <div data-i18n="Page 2">Branch </div>
+                            <div data-i18n="Page 2">Branch</div>
                         </a>
                     </li>
                     <li class="menu-item {{ request()->routeIs("skills.*") ? "active" : '' }}">
                         <a href="{{ route("skills.index") }}" class="menu-link">
                             <i class="menu-icon icon-base ti tabler-app-window"></i>
-                            <div data-i18n="Page 2">Skills For Question </div>
+                            <div data-i18n="Page 2">Skills For Question</div>
                         </a>
                     </li>
                     <li class="menu-item {{ request()->routeIs("quizez.*") ? "active" : '' }}">
-                        <a href="{{ route('quizez.index')}}" class="menu-link">
+                        <a href="{{ route('quizez.index') }}" class="menu-link">
                             <i class="menu-icon icon-base ti tabler-app-window"></i>
                             <div data-i18n="Page 2">Quizez</div>
                         </a>
                     </li>
-
                 </ul>
             </aside>
 
             <div class="menu-mobile-toggler d-xl-none rounded-1">
-                <a href="javascript:void(0);"
-                    class="layout-menu-toggle menu-link text-large text-bg-secondary p-2 rounded-1">
+                <a
+                    href="javascript:void(0);"
+                    class="layout-menu-toggle menu-link text-large text-bg-secondary rounded-1 p-2"
+                >
                     <i class="ti tabler-menu icon-base"></i>
                     <i class="ti tabler-chevron-right icon-base"></i>
                 </a>
@@ -125,90 +152,125 @@
             <div class="layout-page">
                 <!-- Navbar -->
 
-                <nav class="layout-navbar container-xxl navbar-detached navbar navbar-expand-xl align-items-center bg-navbar-theme"
-                    id="layout-navbar">
-                    <div class="layout-menu-toggle navbar-nav align-items-xl-center me-3 me-xl-0   d-xl-none ">
-                        <a class="nav-item nav-link px-0 me-xl-6" href="javascript:void(0)">
+                <nav
+                    class="layout-navbar container-xxl navbar-detached navbar navbar-expand-xl align-items-center bg-navbar-theme"
+                    id="layout-navbar"
+                >
+                    <div class="layout-menu-toggle navbar-nav align-items-xl-center me-xl-0 d-xl-none me-3">
+                        <a class="nav-item nav-link me-xl-6 px-0" href="javascript:void(0)">
                             <i class="icon-base ti tabler-menu-2 icon-md"></i>
                         </a>
                     </div>
 
                     <div class="navbar-nav-right d-flex align-items-center justify-content-end" id="navbar-collapse">
                         <div class="navbar-nav align-items-center">
-                            <div class="nav-item dropdown me-2 me-xl-0">
-                                <a class="nav-link dropdown-toggle hide-arrow" id="nav-theme" href="javascript:void(0);"
-                                    data-bs-toggle="dropdown">
+                            <div class="nav-item dropdown me-xl-0 me-2">
+                                <a
+                                    class="nav-link dropdown-toggle hide-arrow"
+                                    id="nav-theme"
+                                    href="javascript:void(0);"
+                                    data-bs-toggle="dropdown"
+                                >
                                     <i class="icon-base ti tabler-sun icon-md theme-icon-active"></i>
                                     <span class="d-none ms-2" id="nav-theme-text">Toggle theme</span>
                                 </a>
                                 <ul class="dropdown-menu dropdown-menu-start" aria-labelledby="nav-theme-text">
                                     <li>
-                                        <button type="button" class="dropdown-item align-items-center active"
-                                            data-bs-theme-value="light" aria-pressed="false">
-                                            <span><i class="icon-base ti tabler-sun icon-md me-3"
-                                                    data-icon="sun"></i>Light</span>
+                                        <button
+                                            type="button"
+                                            class="dropdown-item align-items-center active"
+                                            data-bs-theme-value="light"
+                                            aria-pressed="false"
+                                        >
+                                            <span
+                                                ><i class="icon-base ti tabler-sun icon-md me-3" data-icon="sun"></i
+                                                >Light</span>
                                         </button>
                                     </li>
                                     <li>
-                                        <button type="button" class="dropdown-item align-items-center"
-                                            data-bs-theme-value="dark" aria-pressed="true">
-                                            <span><i class="icon-base ti tabler-moon-stars icon-md me-3"
-                                                    data-icon="moon-stars"></i>Dark</span>
+                                        <button
+                                            type="button"
+                                            class="dropdown-item align-items-center"
+                                            data-bs-theme-value="dark"
+                                            aria-pressed="true"
+                                        >
+                                            <span
+                                                ><i
+                                                    class="icon-base ti tabler-moon-stars icon-md me-3"
+                                                    data-icon="moon-stars"
+                                                ></i
+                                                >Dark</span>
                                         </button>
                                     </li>
                                     <li>
-                                        <button type="button" class="dropdown-item align-items-center"
-                                            data-bs-theme-value="system" aria-pressed="false">
-                                            <span><i class="icon-base ti tabler-device-desktop-analytics icon-md me-3"
-                                                    data-icon="device-desktop-analytics"></i>System</span>
+                                        <button
+                                            type="button"
+                                            class="dropdown-item align-items-center"
+                                            data-bs-theme-value="system"
+                                            aria-pressed="false"
+                                        >
+                                            <span
+                                                ><i
+                                                    class="icon-base ti tabler-device-desktop-analytics icon-md me-3"
+                                                    data-icon="device-desktop-analytics"
+                                                ></i
+                                                >System</span>
                                         </button>
                                     </li>
                                 </ul>
                             </div>
                         </div>
 
-                        <ul class="navbar-nav flex-row align-items-center ms-md-auto">
+                        <ul class="navbar-nav align-items-center ms-md-auto flex-row">
                             <!-- User -->
-                            @if(auth()->check())
+                            @if (auth()->check())
                                 <li class="nav-item navbar-dropdown dropdown-user dropdown">
-                                    <a class="nav-link dropdown-toggle hide-arrow p-0" href="javascript:void(0);"
-                                        data-bs-toggle="dropdown">
+                                    <a
+                                        class="nav-link dropdown-toggle hide-arrow p-0"
+                                        href="javascript:void(0);"
+                                        data-bs-toggle="dropdown"
+                                    >
                                         <div class="avatar avatar-online">
-                                            <img src="{{ asset(auth()->user()->image === null ? "assets/img/avatars/1.png" : auth()->user()->image) }}"
-                                                alt class="rounded-circle" />
+                                            <img
+                                                src="{{ asset(auth()->user()->image === null ? "assets/img/avatars/1.png" : auth()->user()->image) }}"
+                                                alt
+                                                class="rounded-circle"
+                                            />
                                         </div>
                                     </a>
                                     <ul class="dropdown-menu dropdown-menu-end">
                                         <li>
                                             <a class="dropdown-item" href="#">
                                                 <div class="d-flex">
-                                                    <div class="flex-shrink-0 me-3">
+                                                    <div class="me-3 flex-shrink-0">
                                                         <div class="avatar avatar-online">
-                                                            <img src="{{ asset(auth()->user()->image === null ? "assets/img/avatars/1.png" : auth()->user()->image) }}"
-                                                                alt class="w-px-40 h-auto rounded-circle" />
+                                                            <img
+                                                                src="{{ asset(auth()->user()->image === null ? "assets/img/avatars/1.png" : auth()->user()->image) }}"
+                                                                alt
+                                                                class="w-px-40 rounded-circle h-auto"
+                                                            />
                                                         </div>
                                                     </div>
                                                     <div class="flex-grow-1">
                                                         <h6 class="mb-0">{{ auth()->user()->name }}</h6>
-                                                        <small
-                                                            class="text-body-secondary">{{ Str::upper(auth()->user()->role) }}</small>
+                                                        <small class="text-body-secondary">{{ Str::upper(auth()->user()->role) }}</small>
                                                     </div>
                                                 </div>
                                             </a>
                                         </li>
 
                                         <li>
-                                            <div class="dropdown-divider my-1 mx-n2"></div>
+                                            <div class="dropdown-divider mx-n2 my-1"></div>
                                         </li>
                                         <li>
                                             <a class="dropdown-item" href="#">
-                                                <i class="icon-base ti tabler-user icon-md me-3"></i><span>My Profile</span>
+                                                <i class="icon-base ti tabler-user icon-md me-3"></i
+                                                ><span>My Profile</span>
                                             </a>
                                         </li>
 
-
                                         <li>
-                                            <div class="dropdown-divider my-1 mx-n2"></div>
+                                            <div class="dropdown-divider mx-n2 my-1"></div>
                                         </li>
                                         <li>
                                             <a class="dropdown-item d-flex" href="javascript:void(0);">
@@ -220,6 +282,7 @@
                                             </a>
                                         </li>
                                     </ul>
+
                             @endif
                             </li>
                             <!--/ User -->
@@ -231,9 +294,7 @@
                 <!-- Content wrapper -->
                 <div class="content-wrapper">
                     <!-- Content -->
-                    <div class="container-xxl flex-grow-1 container-p-y">
-                        {{ $slot ?? "Home Page" }}
-                    </div>
+                    <div class="container-xxl container-p-y flex-grow-1">{{ $slot ?? "Home Page" }}</div>
                     <!-- / Content -->
 
                     <!-- Footer -->
@@ -253,12 +314,9 @@
         <!-- Drag Target Area To SlideIn Menu On Small Screens -->
         <div class="drag-target"></div>
     </div>
-    <!-- 1. jQuery must load before Select2 and Bootstrap -->
     <script src="{{ asset('assets/vendor/libs/jquery/jquery.js') }}"></script>
+    <script src="{{ asset("assets/vendor/libs/select2/select2.js") }}"></script>
 
-    <!-- 2. Select2 JS -->
-
-    <!-- 3. Other Vendor & UI Scripts -->
     <script src="{{ asset('assets/vendor/libs/popper/popper.js') }}"></script>
     <script src="{{ asset('assets/vendor/js/bootstrap.js') }}"></script>
     <script src="{{ asset('assets/vendor/libs/node-waves/node-waves.js') }}"></script>
@@ -266,20 +324,17 @@
     <script src="{{ asset('assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.js') }}"></script>
     <script src="{{ asset('assets/vendor/libs/hammer/hammer.js') }}"></script>
     <script src="{{ asset('assets/vendor/js/menu.js') }}"></script>
-    <script src="{{ asset("assets/vendor/libs/select2/select2.js") }}"></script>
 
-    <!-- 4. Main & Custom Scripts -->
-    <script src="{{ asset('assets/js/question.js') }}"></script>
-    <script src="{{ asset('assets/js/show.js') }}"></script>
-    <script src="{{ asset('assets/js/edit.js') }}"></script>
     <script src="{{ asset('assets/js/forms-selects.js') }}"></script>
-    <script src="{{ asset('assets/vendor/libs/@algolia/autocomplete-js.js')}}"></script>
-    <script src="{{ asset('assets/vendor/js/helpers.js')}}"></script>
-    <script src="{{ asset('assets/vendor/js/template-customizer.js')}}"></script>
-    <script src="{{ asset('assets/js/config.js')}}"></script>
+    <script src="{{ asset('assets/vendor/libs/@algolia/autocomplete-js.js') }}"></script>
+    <script src="{{ asset('assets/vendor/js/helpers.js') }}"></script>
+    <script src="{{ asset('assets/vendor/js/template-customizer.js') }}"></script>
+    <script src="{{ asset('assets/js/config.js') }}"></script>
     <script src="{{ asset('assets/js/main.js') }}"></script>
+    @stack('scripts')
 
-    <!-- Page JS -->
+    {{-- <script src="{{ asset('assets/js/question.js') }}"></script> --}}
+    {{-- <script src="{{ asset('assets/js/show.js') }}"></script> --}}
+    {{-- <script src="{{ asset('assets/js/edit.js') }}"></script> --}}
 </body>
-
 </html>

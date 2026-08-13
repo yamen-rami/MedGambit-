@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('branch_of_medicines', function (Blueprint $table) {
             $table->id();
-            $table->string("name")->index();
+            $table->string('name')->index();
             $table->timestamps();
         });
     }

@@ -20,6 +20,6 @@ function closeButton(id) {
 }
 function closeOverlay(current) {
   overlay.style.display = "none"
-  let popout = document.getElementById(`popout-${current}`);
+  let popout = document.getElementById(`popout-${current}`);s
   popout.style.display = "none";
 }

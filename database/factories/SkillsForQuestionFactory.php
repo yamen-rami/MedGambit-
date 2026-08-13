@@ -2,9 +2,8 @@
 
 namespace Database\Factories;
 
-use Illuminate\Database\Eloquent\Factories\Factory;
-
 use App\Models\SkillsForQuestion;
+use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
  * @extends Factory<SkillsForQuestion>
@@ -20,7 +19,7 @@ class SkillsForQuestionFactory extends Factory
     {
         return [
             //
-            "name" => fake()->name("male"),
+            'name' => fake()->name('male'),
         ];
     }
 }

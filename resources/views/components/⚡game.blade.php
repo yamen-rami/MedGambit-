@@ -1,11 +1,12 @@
 <?php
 
-use Livewire\Component;
 use App\Models\Game;
+use Livewire\Component;
+
 new class extends Component
 {
     //
-    public Game $game ;
+    public Game $game;
 };
 ?>
 

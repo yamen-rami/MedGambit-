@@ -1,167 +1,249 @@
 <x-user-layout>
-  <div class="container-xxl col-lg-6">
-    <div class="authentication-wrapper authentication-basic container-p-y">
-      <div class="authentication-inner py-6">
-        <!-- Register Card -->
-        <div class="card">
-          <div class="card-body">
-            <!-- Logo -->
-            <div class="app-brand justify-content-center mb-6">
-              <a href="index.html" class="app-brand-link">
-                <span class="app-brand-logo demo">
-                  <span class="text-primary">
-                    <svg width="32" height="22" viewBox="0 0 32 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path fill-rule="evenodd" clip-rule="evenodd"
-                        d="M0.00172773 0V6.85398C0.00172773 6.85398 -0.133178 9.01207 1.98092 10.8388L13.6912 21.9964L19.7809 21.9181L18.8042 9.88248L16.4951 7.17289L9.23799 0H0.00172773Z"
-                        fill="currentColor" />
-                      <path opacity="0.06" fill-rule="evenodd" clip-rule="evenodd"
-                        d="M7.69824 16.4364L12.5199 3.23696L16.5541 7.25596L7.69824 16.4364Z" fill="#161616" />
-                      <path opacity="0.06" fill-rule="evenodd" clip-rule="evenodd"
-                        d="M8.07751 15.9175L13.9419 4.63989L16.5849 7.28475L8.07751 15.9175Z" fill="#161616" />
-                      <path fill-rule="evenodd" clip-rule="evenodd"
-                        d="M7.77295 16.3566L23.6563 0H32V6.88383C32 6.88383 31.8262 9.17836 30.6591 10.4057L19.7824 22H13.6938L7.77295 16.3566Z"
-                        fill="currentColor" />
-                    </svg>
-                  </span>
-                </span>
-                <span class="app-brand-text demo text-heading fw-bold">MedGambit</span>
-              </a>
-            </div>
-            <!-- /Logo -->
-            <h4 class="mb-1">Welcome To MedGambit</h4>
-            <p class="mb-6">Fast You Learning up to 50%</p>
+    <div class="container-xxl col-lg-6">
+        <div class="authentication-wrapper authentication-basic container-p-y">
+            <div class="authentication-inner py-6">
+                <!-- Register Card -->
+                <div class="card">
+                    <div class="card-body">
+                        <!-- Logo -->
+                        <div class="app-brand justify-content-center mb-6">
+                            <a href="index.html" class="app-brand-link">
+                                <span class="app-brand-logo demo">
+                                    <span class="text-primary">
+                                        <svg width="32" height="22" viewBox="0 0 32 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <path
+                                                fill-rule="evenodd"
+                                                clip-rule="evenodd"
+                                                d="M0.00172773 0V6.85398C0.00172773 6.85398 -0.133178 9.01207 1.98092 10.8388L13.6912 21.9964L19.7809 21.9181L18.8042 9.88248L16.4951 7.17289L9.23799 0H0.00172773Z"
+                                                fill="currentColor"
+                                            />
+                                            <path
+                                                opacity="0.06"
+                                                fill-rule="evenodd"
+                                                clip-rule="evenodd"
+                                                d="M7.69824 16.4364L12.5199 3.23696L16.5541 7.25596L7.69824 16.4364Z"
+                                                fill="#161616"
+                                            />
+                                            <path
+                                                opacity="0.06"
+                                                fill-rule="evenodd"
+                                                clip-rule="evenodd"
+                                                d="M8.07751 15.9175L13.9419 4.63989L16.5849 7.28475L8.07751 15.9175Z"
+                                                fill="#161616"
+                                            />
+                                            <path
+                                                fill-rule="evenodd"
+                                                clip-rule="evenodd"
+                                                d="M7.77295 16.3566L23.6563 0H32V6.88383C32 6.88383 31.8262 9.17836 30.6591 10.4057L19.7824 22H13.6938L7.77295 16.3566Z"
+                                                fill="currentColor"
+                                            />
+                                        </svg>
+                                    </span>
+                                </span>
+                                <span class="app-brand-text demo text-heading fw-bold">MedGambit</span>
+                            </a>
+                        </div>
+                        <!-- /Logo -->
+                        <h4 class="mb-1">Welcome To MedGambit</h4>
+                        <p class="mb-6">Fast You Learning up to 50%</p>
 
-            <form id="formAuthentication" class="mb-6" action="{{ route('register.store') }}" method="POST"
-              enctype="multipart/form-data">
-              @csrf
-              <div class="mb-6 form-control-validation">
-                <label for="username" class="form-label">Username</label>
-                <input name="name" :value="old('name')" type="text" required autofocus autocomplete="name"
-                  class="form-control" id="username" name="username" placeholder="Enter your username" autofocus />
-                @error("name")
-                  <p class="text-danger my-2">{{ $message }}</p>
-                @enderror
-              </div>
-              <div class="mb-6 form-control-validation">
-                <label for="username" class="form-label">Phone</label>
-                <input :value="old('phone')" type="number" required autofocus class="form-control" name="phone"
-                  placeholder="59 760 8722 " autofocus />
-                @error("phone")
-                  <p class="text-danger my-2">{{ $message }}</p>
-                @enderror
-              </div>
-              <div class="mb-6 form-control-validation">
-                <label for="email" class="form-label">Email</label>
-                <input class="form-control" name="email" :label="__('Email address')" :value="old('email')" type="email"
-                  required autocomplete="email" placeholder="Enter your email" />
-                @error("email")
-                  <p class="text-danger my-2">{{ $message }}</p>
-                @enderror
-              </div>
+                        <form
+                            id="formAuthentication"
+                            class="mb-6"
+                            action="{{ route('register.store') }}"
+                            method="POST"
+                            enctype="multipart/form-data"
+                        >
+                            @csrf
+                            <div class="form-control-validation mb-6">
+                                <label for="username" class="form-label">Username</label>
+                                <input
+                                    name="name"
+                                    :value="old('name')"
+                                    type="text"
+                                    required
+                                    autofocus
+                                    autocomplete="name"
+                                    class="form-control"
+                                    id="username"
+                                    name="username"
+                                    placeholder="Enter your username"
+                                    autofocus
+                                />
+                                @error('name')
+                                    <p class="text-danger my-2">{{ $message }}</p>
+                                @enderror
+                            </div>
+                            <div class="form-control-validation mb-6">
+                                <label for="username" class="form-label">Phone</label>
+                                <input
+                                    :value="old('phone')"
+                                    type="number"
+                                    required
+                                    autofocus
+                                    class="form-control"
+                                    name="phone"
+                                    placeholder="59 760 8722 "
+                                    autofocus
+                                />
+                                @error('phone')
+                                    <p class="text-danger my-2">{{ $message }}</p>
+                                @enderror
+                            </div>
+                            <div class="form-control-validation mb-6">
+                                <label for="email" class="form-label">Email</label>
+                                <input
+                                    class="form-control"
+                                    name="email"
+                                    :label="__('Email address')"
+                                    :value="old('email')"
+                                    type="email"
+                                    required
+                                    autocomplete="email"
+                                    placeholder="Enter your email"
+                                />
+                                @error('email')
+                                    <p class="text-danger my-2">{{ $message }}</p>
+                                @enderror
+                            </div>
 
-              <div class="mb-6 form-control-validation">
-                <label for="username" class="form-label">Location</label>
-                <input :value="old('location')" type="text" required autofocus class="form-control" name="location"
-                  placeholder="Aidia Street " autofocus />
-                @error("location")
-                  <p class="text-danger my-2">{{ $message }}</p>
-                @enderror
-              </div>
-              {{-- ? Graduated --}}
-              <div x-data="{show: false}">
-                <div class="my-4">
-                  <label class="for  m-lable">Graduated</label>
-                  <select name="graduated" x-on:change="show = ! show" class="form-select">
-                    <option value="yes" @selected(old("graduated"))>Yes</option>
-                    <option value="no" @selected(old("graudated"))>No</option>
-                  </select>
-                  @error("graduated")
-                    <p class="text-danger my-1">{{ $message }}</p>
-                  @enderror
+                            <div class="form-control-validation mb-6">
+                                <label for="username" class="form-label">Location</label>
+                                <input
+                                    :value="old('location')"
+                                    type="text"
+                                    required
+                                    autofocus
+                                    class="form-control"
+                                    name="location"
+                                    placeholder="Aidia Street "
+                                    autofocus
+                                />
+                                @error('location')
+                                    <p class="text-danger my-2">{{ $message }}</p>
+                                @enderror
+                            </div>
+                            {{-- ? Graduated --}}
+                            <div x-data="{ show: false }">
+                                <div class="my-4">
+                                    <label class="for m-lable">Graduated</label>
+                                    <select name="graduated" x-on:change="show = ! show" class="form-select">
+                                        <option value="yes" @selected(old('graduated'))>Yes</option>
+                                        <option value="no" @selected(old('graudated'))>No</option>
+                                    </select>
+                                    @error('graduated')
+                                        <p class="text-danger my-1">{{ $message }}</p>
+                                    @enderror
+                                </div>
+                                <div class="my-4" x-show="show">
+                                    <label class="form-lable">Year</label>
+                                    <input
+                                        type="number"
+                                        class="form-control"
+                                        placeholder="Enter Year"
+                                        min="1"
+                                        max="6"
+                                        name="year"
+                                        :value="old('year')"
+                                    />
+                                    @error('year')
+                                        <p class="text-danger my-1">{{ $message }}</p>
+                                    @enderror
+                                </div>
+                            </div>
+                            {{-- ? End Graduated --}}
+                            <div class="preview">
+                                <img width="100%" height="300px" src="" alt="" id="preview" />
+                            </div>
+                            <div class="d-flex justify-content-center align-items-center border-secondary my-4 rounded border border-dashed py-10">
+                                <div class="fallback">
+                                    <input class="" id="userImage" name="image" type="file" />
+                                </div>
+                            </div>
+                            <div class="form-password-toggle form-control-validation mb-6">
+                                <label class="form-label" for="password">Password</label>
+                                <div class="input-group input-group-merge">
+                                    <input
+                                        type="password"
+                                        id="password"
+                                        class="form-control"
+                                        name="password"
+                                        placeholder="&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;"
+                                        aria-describedby="password"
+                                    />
+                                    <span class="input-group-text cursor-pointer"
+                                        ><i class="icon-base ti tabler-eye-off"></i
+                                    ></span>
+                                </div>
+                                @error('password')
+                                    <p class="text-danger my-2">{{ $message }}</p>
+                                @enderror
+                            </div>
+                            <div class="form-password-toggle form-control-validation mb-6">
+                                <label class="form-label" for="password">Password Confirmation</label>
+                                <div class="input-group input-group-merge">
+                                    <input
+                                        type="text"
+                                        id="password"
+                                        class="form-control"
+                                        name="password_confirmation"
+                                        placeholder="Password Confirmation"
+                                        aria-describedby="password"
+                                    />
+                                    <span class="input-group-text cursor-pointer"
+                                        ><i class="icon-base ti tabler-eye-off"></i
+                                    ></span>
+                                </div>
+                                @error('password')
+                                    <p class="text-danger my-2">{{ $message }}</p>
+                                @enderror
+                            </div>
+                            <div class="form-control-validation my-8">
+                                <div class="form-check ms-2 mb-0">
+                                    <input
+                                        class="form-check-input"
+                                        type="checkbox"
+                                        id="terms-conditions"
+                                        name="terms"
+                                    />
+                                    <label class="form-check-label" for="terms-conditions">
+                                        I agree to
+                                        <a href="javascript:void(0);">privacy policy & terms</a>
+                                    </label>
+                                </div>
+                            </div>
+                            <button class="btn btn-primary d-grid w-100">Sign up</button>
+                        </form>
+                        <p class="text-center">
+                            <span>Already have an account?</span>
+                            <a href="{{ route("login") }}">
+                                <span>Sign in instead</span>
+                            </a>
+                        </p>
+                        <div class="divider my-6">
+                            <div class="divider-text">or</div>
+                        </div>
+                    </div>
                 </div>
-                <div class="my-4" x-show="show">
-                  <label class="form-lable">Year</label>
-                  <input type="number" class="form-control" placeholder="Enter Year" min="1" max="6" name="year"
-                    :value="old('year')">
-                  @error("year")
-                    <p class="text-danger my-1">{{ $message }}</p>
-                  @enderror
-                </div>
-              </div>
-              {{-- ? End Graduated --}}
-              <div class="preview">
-                <img width="100%"  height="300px" src="" alt="" id="preview">
-              </div>
-              <div
-                class=" d-flex justify-content-center align-items-center py-10 border border-secondary border-dashed rounded my-4">
-                <div class="fallback">
-                  <input class="" id="userImage" name="image" type="file" />
-                </div>
-              </div>
-              <div class="mb-6 form-password-toggle form-control-validation">
-                <label class="form-label" for="password">Password</label>
-                <div class="input-group input-group-merge">
-                  <input type="password" id="password" class="form-control" name="password"
-                    placeholder="&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;"
-                    aria-describedby="password" />
-                  <span class="input-group-text cursor-pointer"><i class="icon-base ti tabler-eye-off"></i></span>
-                </div>
-                @error("password")
-                  <p class="text-danger my-2">{{ $message }}</p>
-                @enderror
-              </div>
-              <div class="mb-6 form-password-toggle form-control-validation">
-                <label class="form-label" for="password">Password Confirmation</label>
-                <div class="input-group input-group-merge">
-                  <input type="text" id="password" class="form-control" name="password_confirmation"
-                    placeholder="Password Confirmation" aria-describedby="password" />
-                  <span class="input-group-text cursor-pointer"><i class="icon-base ti tabler-eye-off"></i></span>
-                </div>
-                @error("password")
-                  <p class="text-danger my-2">{{ $message }}</p>
-                @enderror
-              </div>
-              <div class="my-8 form-control-validation">
-                <div class="form-check mb-0 ms-2">
-                  <input class="form-check-input" type="checkbox" id="terms-conditions" name="terms" />
-                  <label class="form-check-label" for="terms-conditions">
-                    I agree to
-                    <a href="javascript:void(0);">privacy policy & terms</a>
-                  </label>
-                </div>
-              </div>
-              <button class="btn btn-primary d-grid w-100">Sign up</button>
-            </form>
-            <p class="text-center">
-              <span>Already have an account?</span>
-              <a href="{{ route("login") }}">
-                <span>Sign in instead</span>
-              </a>
-            </p>
-            <div class="divider my-6">
-              <div class="divider-text">or</div>
+                <!-- Register Card -->
             </div>
-          </div>
         </div>
-        <!-- Register Card -->
-      </div>
     </div>
-  </div>
-  <script>
-    let input = document.getElementById("userImage");
-    let preview = document.getElementById("preview");
-    if (preview) {
-      preview.style.display = "none";
-    }
-    input.addEventListener('change', () => {
-      const file = input.files[0];
-      preview.style.display = "block";
-      if (file) {
-        preview.src = URL.createObjectURL(file);
-      }
-    });
-  </script>
-  {{--
+    <script>
+        let input = document.getElementById('userImage');
+        let preview = document.getElementById('preview');
+        if (preview) {
+            preview.style.display = 'none';
+        }
+        input.addEventListener('change', () => {
+            const file = input.files[0];
+            preview.style.display = 'block';
+            if (file) {
+                preview.src = URL.createObjectURL(file);
+            }
+        });
+    </script>
+    {{--
   <script>
     function selected(e) {
       if (e.target.value === "false") {

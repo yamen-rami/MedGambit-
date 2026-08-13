@@ -2,17 +2,20 @@
 
 namespace App\Models;
 
+use Database\Factories\BranchOfMedicineFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class BranchOfMedicine extends Model
 {
-    /** @use HasFactory<\Database\Factories\BranchOfMedicineFactory> */
+    /** @use HasFactory<BranchOfMedicineFactory> */
     use HasFactory;
-    protected $fillable = ["name"];
+
+    protected $fillable = ['name'];
+
     public function questions(): BelongsToMany
     {
-        return $this->belongsToMany(Questions::class, "question_BranchOfMedicine");
+        return $this->belongsToMany(Questions::class, 'question_BranchOfMedicine');
     }
 }

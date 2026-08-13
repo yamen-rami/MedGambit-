@@ -2,9 +2,8 @@
 
 namespace Database\Factories;
 
-use Illuminate\Database\Eloquent\Factories\Factory;
-
 use App\Models\BranchOfMedicine;
+use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
  * @extends Factory<BranchOfMedicine>
@@ -19,7 +18,7 @@ class BranchOfMedicineFactory extends Factory
     public function definition(): array
     {
         return [
-            "name" => fake()->name("male"),
+            'name' => fake()->name('male'),
         ];
     }
 }

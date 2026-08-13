@@ -9,20 +9,26 @@ class Answers extends Model
 {
     //
     protected $fillable = [
-        'question_id' , 
-        "quiz_attempt_id",
-        "option_id" , 
-        "time_spent" , 
-        "is_correct",
-        "status", 
+        'question_id',
+        'quiz_attempt_id',
+        'option_id',
+        'time_spent',
+        'is_correct',
+        'status',
     ];
-    public function quiz(): BelongsTo{
+
+    public function quiz(): BelongsTo
+    {
         return $this->belongsTo(Quiz::class);
     }
-    public function question() : BelongsTo{
+
+    public function question(): BelongsTo
+    {
         return $this->belongsTo(Questions::class);
     }
-    public function option() : BelongsTo{
+
+    public function option(): BelongsTo
+    {
         return $this->belongsTo(Option::class);
     }
 }

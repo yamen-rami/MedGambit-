@@ -1,13 +1,13 @@
 <?php
 
-use Livewire\Component;
 use App\Models\Option;
+use Livewire\Component;
+
 new class extends Component
 {
     //
-    public Option $selectedOption ;
+    public Option $selectedOption;
 };
 ?>
 
-<div>
-</div>
+<div></div>

@@ -1,10 +1,9 @@
 <?php
 
+use App\Models\User;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
-
-use App\Models\User;
 
 return new class extends Migration
 {
@@ -15,9 +14,9 @@ return new class extends Migration
     {
         Schema::create('games', function (Blueprint $table) {
             $table->id();
-            $table->foreignIdFor(User::class , "player_1")->constrained()->cascadeOnDelete();
-            $table->foreignIdFor(User::class , "player_2")->constrained()->cascadeOnDelete();
-            $table->string("status");
+            $table->foreignIdFor(User::class, 'player_1')->constrained()->cascadeOnDelete();
+            $table->foreignIdFor(User::class, 'player_2')->constrained()->cascadeOnDelete();
+            $table->string('status');
             $table->timestamps();
         });
     }

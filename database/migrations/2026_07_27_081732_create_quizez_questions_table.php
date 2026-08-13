@@ -1,10 +1,10 @@
 <?php
 
+use App\Models\Questions;
+use App\Models\Quiz;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
-
-use App\Models\{Questions, Quiz};
 
 return new class extends Migration
 {

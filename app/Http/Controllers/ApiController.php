@@ -2,29 +2,51 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\BranchOfMedicine;
+use App\Models\SkillsForQuestion;
+use App\Models\Specialty;
 use Illuminate\Http\Request;
-
-use App\Models\{BranchOfMedicine, Specialty};
 
 class ApiController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function branches(string $search)
+    public function branches(Request $request)
     {
-        $branches = BranchOfMedicine::query()->when($search, function ($q) use ($search) {
-            $q->where("name", "LIKE", "%$search%");
-        })->limit(20)->get();
-        return response()->json($branches) ;
+        $search = $request->input('search');
+        $branches = BranchOfMedicine::query()
+            ->when($search, function ($q) use ($search) {
+                $q->where('name', 'LIKE', "%{$search}%");
+            })
+            ->limit(20)
+            ->get();
+
+        return response()->json($branches);
         //
     }
-    public function s(string $search)
+
+    public function s(Request $request)
     {
-        $branches = Specialty::query()->when($search, function ($q) use ($search) {
-            $q->where("name", "LIKE", "%$search%");
+        $s = Specialty::query()->when($request->search, function ($q) use ($request) {
+            $q->where('name', 'LIKE', "%$request->search%");
         })->limit(20)->get();
-        return response()->json($branches) ;
+
+        return response()->json($s);
+    }
+
+    public function skills(Request $request)
+    {
+        $search = $request->input('search');
+        $skills = SkillsForQuestion::query()
+            ->when($search, function ($q) use ($search) {
+                $q->where('name', 'LIKE', "%{$search}%");
+            })
+            ->limit(20)
+            ->get();
+
+        return response()->json($skills);
+        //
     }
 
     /**

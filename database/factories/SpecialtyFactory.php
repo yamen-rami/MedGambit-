@@ -2,9 +2,8 @@
 
 namespace Database\Factories;
 
-use Illuminate\Database\Eloquent\Factories\Factory;
-
 use App\Models\Specialty;
+use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
  * @extends Factory<Specialty>
@@ -20,7 +19,7 @@ class SpecialtyFactory extends Factory
     {
         return [
             //
-            "name" => fake()->name("male"),
+            'name' => fake()->name('male'),
         ];
     }
 }

@@ -2,9 +2,8 @@
 
 namespace Database\Factories;
 
+use App\Models\Option;
 use Illuminate\Database\Eloquent\Factories\Factory;
-
-use App\Models\{Option, Questions};
 
 /**
  * @extends Factory<Option>
@@ -20,12 +19,12 @@ class OptionFactory extends Factory
     {
         return [
             //
-            "name" => fake()->randomElement(["A" , "B" , "C" , "D"]),
-            "content" => fake()->realText(100),
-            "explanation" => fake()->realText(40),
-            "image" => "https://placehold.co/600x400",
-            "correct_answer" => false,
-            "questions_id" => 1,
+            'name' => fake()->randomElement(['A', 'B', 'C', 'D']),
+            'content' => fake()->realText(100),
+            'explanation' => fake()->realText(40),
+            'image' => 'https://placehold.co/600x400',
+            'correct_answer' => false,
+            'questions_id' => 1,
         ];
     }
 }

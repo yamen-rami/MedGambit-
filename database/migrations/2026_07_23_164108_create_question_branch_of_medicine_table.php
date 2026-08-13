@@ -1,10 +1,10 @@
 <?php
 
+use App\Models\BranchOfMedicine;
+use App\Models\Questions;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
-
-use App\Models\{Questions, BranchOfMedicine};
 
 return new class extends Migration
 {
