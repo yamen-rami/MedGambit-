@@ -45,6 +45,24 @@ new class extends Component
         $this->attempt = QuizAttempt::where('user_id', auth()->id())->where('quiz_id', $this->quiz->id)->first();
     }
 
+    #[On('quit-quiz')]
+    public function quitQuiz()
+    {
+        $questionsCount = $this->quiz->questions->count();
+        $answers = $this->answers;
+
+        $quizService = app(QuizService::class);
+        $attempt = $quizService->updateAttempt(auth()->id(), $this->quiz->id, $answers);
+        $this->reset('current', 'answers', 'quiz_id');
+        session()->forget([
+            'current',
+            'answers',
+            'quiz_id',
+        ]);
+
+        return redirect()->route('quizResult', $this->quiz);
+    }
+
     public function hydrate()
     {
         $this->quiz->loadMissing('questions.options');
@@ -53,11 +71,8 @@ new class extends Component
     public function submit($optionId, $questionId)
     {
 
-        // Get Every THings
-        // $option = Option::with("question")->findOrFail($optionId);
-        // $question = Questions::with('options')->findOrFail($questionId);
-
         $this->answers[$questionId] = $optionId;
+
     }
 
     public function editCurrent($current)
@@ -83,8 +98,8 @@ new class extends Component
     #[Computed()]
     public function remainingSeconds()
     {
-        if (! $this->attempt->finished_at) {
-            return null;
+        if (! $this->attempt || ! $this->attempt->finished_at) {
+            return;
         }
 
         return max(
@@ -178,11 +193,11 @@ new class extends Component
                             @foreach ($question->options as $option)
                                 <div
                                     class="option
-                                                                                            {{
-                                                                                                isset($answers[$question->id]) && $answers[$question->id] == $option->id
-                                                                                                ? 'selected'
-                                                                                                : ''
-                                                                                            }}"
+                                                                                                                                                                                                            {{
+                                                                                                                                                                                                                isset($answers[$question->id]) && $answers[$question->id] == $option->id
+                                                                                                                                                                                                                ? 'selected'
+                                                                                                                                                                                                                : ''
+                                                                                                                                                                                                            }}"
                                     wire:click="submit({{ $option->id }}, {{ $question->id }})"
                                 >
                                     <span class="option-key">
@@ -221,35 +236,35 @@ new class extends Component
                                 <div
                                     class="timer"
                                     x-data="{
-                                                                                seconds: {{ $this->remainingSeconds ?? 0 }},
-                                                                                timer: null,
+                                                                                                                                                                    seconds: {{ $this->remainingSeconds ?? 0 }},
+                                                                                                                                                                    timer: null,
 
-                                                                                get minutes() {
-                                                                                    return Math.floor(this.seconds / 60)
-                                                                                },
+                                                                                                                                                                    get minutes() {
+                                                                                                                                                                        return Math.floor(this.seconds / 60)
+                                                                                                                                                                    },
 
-                                                                                get displaySeconds() {
-                                                                                    return this.seconds % 60
-                                                                                },
+                                                                                                                                                                    get displaySeconds() {
+                                                                                                                                                                        return this.seconds % 60
+                                                                                                                                                                    },
 
-                                                                                start() {
+                                                                                                                                                                    start() {
 
-                                                                                    this.timer = setInterval(() => {
+                                                                                                                                                                        this.timer = setInterval(() => {
 
-                                                                                        this.seconds--
+                                                                                                                                                                            this.seconds--
 
-                                                                                        if (this.seconds <= 0) {
+                                                                                                                                                                            if (this.seconds <= 0) {
 
-                                                                                            clearInterval(this.timer)
+                                                                                                                                                                                clearInterval(this.timer)
 
-                                                                                            $wire.finishQuiz()
+                                                                                                                                                                                $wire.finishQuiz()
 
-                                                                                        }
+                                                                                                                                                                            }
 
-                                                                                    }, 1000)
+                                                                                                                                                                        }, 1000)
 
-                                                                                }
-                                                                            }"
+                                                                                                                                                                    }
+                                                                                                                                                                }"
                                     x-init="start()"
                                 >
                                     <i class="fa-regular fa-clock"></i>
@@ -282,11 +297,11 @@ new class extends Component
                         {{-- SKIP --}}
                         {{-- <button type="button" class="btn btn-ghost btn-skip">
 
-              <i class="fa-solid fa-bolt"></i>
+                            <i class="fa-solid fa-bolt"></i>
 
-              Skip
+                            Skip
 
-            </button> --}}
+                        </button> --}}
 
                         {{-- NEXT / SUBMIT --}}
                         @if (! $loop->last)
@@ -401,14 +416,14 @@ new class extends Component
                             <button
                                 type="button"
                                 class="dot
-                                                    @if(isset($answers[$question->id]))
-                                                      correct
-                                                    @elseif($current === $loop->iteration)
-                                                      current
-                                                    @else
-                                                      pending
-                                                    @endif
-                                                "
+                                                                                @if(isset($answers[$question->id]))
+                                                                                      correct
+                                                                                @elseif($current === $loop->iteration)
+                                                                                      current
+                                                                                @else
+                                                                                      pending
+                                                                                @endif
+                                                                            "
                                 wire:click="updateCurrent({{ $loop->iteration }})"
                             >
                                 {{ $loop->iteration }}
@@ -421,7 +436,7 @@ new class extends Component
 
             {{-- ===================== PERFORMANCE ===================== --}}
             <div class="panel center-panel">
-                <div class="panel-title">Your Performance</div>
+                <div class="panel-title">Your Progress</div>
 
                 <div class="gauge-wrap">
                     <svg viewBox="0 0 140 80" width="150" height="88">
@@ -429,7 +444,7 @@ new class extends Component
                             d="M 13 74 A 54 54 0 0 1 127 74"
                             fill="none"
                             class="gauge-bg"
-                            stroke-width="12"
+                            stroke-width="3"
                             stroke-linecap="round"
                         />
 
@@ -438,54 +453,39 @@ new class extends Component
                             d="M 13 74 A 54 54 0 0 1 127 74"
                             fill="none"
                             class="gauge-arc"
-                            stroke-width="12"
+                            stroke-width="3"
                             stroke-linecap="round"
+                            stroke-dasharray="{{ count($answers) * (100 / count($quiz->questions)) }}"
+                            pathLength="100"
                         />
                     </svg>
 
-                    <div class="gauge-value">70%</div>
+                    <div class="gauge-value">{{ count($answers) * (100 / count($quiz->questions)) }}%</div>
 
-                    <div class="gauge-label">Accuracy</div>
-                </div>
-
-                <div class="perf-row">
-                    <div class="perf-item">
-                        <div class="perf-num perf-good">7</div>
-
-                        <div class="perf-label">Correct</div>
-                    </div>
-
-                    <div class="perf-item">
-                        <div class="perf-num perf-bad">3</div>
-
-                        <div class="perf-label">Incorrect</div>
-                    </div>
+                    <div class="gauge-label">Progress</div>
                 </div>
             </div>
-
-            {{-- ===================== TOPIC ===================== --}}
-            <div class="panel">
-                <div class="panel-title">Topic</div>
-
-                <div class="topic-row">
-                    <div class="topic-icon">
-                        <i class="fa-solid fa-heart-pulse"></i>
-                    </div>
-
-                    <div>
-                        <div class="topic-name">{{ $quiz->topic ?? 'Cardiology' }}</div>
-
-                        <div class="topic-sub">Myocardial Infarction</div>
-                    </div>
-                </div>
-            </div>
-        </aside>
     </div>
+
+    {{-- ===================== TOPIC ===================== --}}
+    <div class="panel">
+        <div class="panel-title">Topic</div>
+
+        <div class="topic-row">
+            <div class="topic-icon">
+                <i class="fa-solid fa-heart-pulse"></i>
+            </div>
+
+            <div>
+                <div class="topic-name">{{ $quiz->topic ?? 'Cardiology' }}</div>
+            </div>
+        </div>
+    </div>
+    </aside>
 
     {{-- ===================== FOOTER ===================== --}}
     <footer class="footer">
         <i class="fa-solid fa-shield-halved"></i>
-
         Every question is a battle. Every battle makes you better.
     </footer>
 </div>

@@ -24,9 +24,7 @@ class DatabaseSeeder extends Seeder
         SkillsForQuestion::factory(100)->create();
 
         // Option::factory(1000)->create();
-        // Questions::factory(10000)
-
-        //     ->create();
+        Questions::factory(10000)->create();
         // ->hasAttached(
         //     SkillsForQuestion::factory()->count(4),
         //     [],

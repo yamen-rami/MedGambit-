@@ -1,3 +1,4 @@
-<x-user-layout>
+<x-quizlayout>
     <x-slot:title>Start Game</x-slot:title>
-</x-user-layout>
+    <livewire:game :gameId="$gameId" />
+</x-quizlayout>

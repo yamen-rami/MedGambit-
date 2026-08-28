@@ -1,6 +1,5 @@
 <?php
 
-use App\Models\User;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -14,9 +13,13 @@ return new class extends Migration
     {
         Schema::create('games', function (Blueprint $table) {
             $table->id();
-            $table->foreignIdFor(User::class, 'player_1')->constrained()->cascadeOnDelete();
-            $table->foreignIdFor(User::class, 'player_2')->constrained()->cascadeOnDelete();
-            $table->string('status');
+            $table->unsignedBigInteger('max_players')->default(2);
+            $table->text('challenge_token')->uique()->nullable();
+            $table->enum('status', ['pending', 'playing', 'completed'])->index();
+            $table->unsignedBigInteger('duration')->nullable();
+
+            $table->timestamp('started_at')->nullable();
+            $table->timestamp('ended_at')->nullable();
             $table->timestamps();
         });
     }

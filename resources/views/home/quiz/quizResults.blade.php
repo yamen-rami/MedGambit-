@@ -1,103 +1,474 @@
 <x-user-layout>
     <x-slot:title>Quiz Result</x-slot:title>
-    <div class="d-grid">
-        <div class="card col-lg-8">
-            <div class="my-5 ps-5">
-                <h1 class="fs-5">Your Answered Questions</h1>
-                <p class="fs-4">Score : <span>{{ $attempt->score }}</span></p>
-                <p>
-                    Quiz type :
-                    <strong> {{ $quiz->type }} </strong>
-                </p>
-                @foreach ($answers as $answer)
-                    <p>{{ $answer->question->content }}</p>
-                    @foreach ($answer->question->options as $option)
-                        @php
-                            $correctId = $answer->question->correctAnswer->id;
-                            $selectedId = $answer->option_id;
-                        @endphp
-                        <div
-                            class="d-flex justify-content-between gap-2 align-items-center border
-                                                        @if($correctId === $selectedId)
-                                                          {{ $option->id === $correctId ? "border-success" : '' }}
-                                                        @else
-                                                          @if($option->id === $correctId)
-                                                            border-success
-                                                          @elseif($option->id === $selectedId)
-                                                            border-danger
-                                                          @endif
-                                                        @endif
+    @push('style')
+        <link rel="stylesheet" href="{{ asset("assets/css/quiz-result.css") }}" />
+    @endpush
 
-                                                            border-successd
-                                                        px-4 py-5 rounded  mx-5 my-5"
-                        >
-                            <div class="">
-                                <strong>{{ $option->name }} : </strong>{{ $option->content }}
-                                {{-- @dump($option) --}}
-                            </div>
-                            <div>
-                                <p
-                                    class="text-primary mb-0 cursor-pointer"
-                                    data-bs-toggle="modal"
-                                    data-bs-target="#exampleModal{{ $loop->iteration }}"
-                                    data-bs-whatever="@getbootstrap"
-                                >
-                                    See Explanation
-                                </p>
+    <div class="results-page" x-data="{all : true , correct : false , incorrect:false}">
+        <!-- Header -->
+        <header class="results-header">
+            <div>
+                <h1>{{ $quiz->name }}</h1>
+                <p>{{ $quiz->updated_at }}</p>
+            </div>
 
-                                <div
-                                    class="modal fade modal-lg"
-                                    id="exampleModal{{ $loop->iteration }}"
-                                    tabindex="-1"
-                                    aria-labelledby="exampleModalLabel"
-                                    aria-hidden="true"
-                                >
+            <div class="header-actions">
+                {{-- <button class="btn btn-primary">
+                    <i class="fa-solid fa-rotate-right"></i>
+                    Retake Quiz
+                </button> --}}
+            </div>
+        </header>
+
+        <!-- Stats -->
+        <section class="stats-grid">
+            <div class="score-card">
+                <span class="card-label">Final Score</span>
+
+                <strong
+                    class="score-value {{ ($quiz->questions->count() / 2) <= $attempt->score ? "text-success" : 'text-danger' }}">{{ $attempt->score }}
+                    <span class="text-white">
+                        / {{ $quiz->questions->count() }}</strong>
+                </span>
+                @if (($quiz->questions->count() / 2) <= $attempt->score)
+                    <span class="score-status">Excellent Work!</span>
+                @else
+                    <span class="score-status">You Have Failed</span>
+                    <span>hard Lock </span>
+
+                @endif
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon blue">
+                    <i class="fa-regular fa-clock"></i>
+                </div>
+
+                <div>
+                    <span>Time Taken</span>
+                    @php
+                        $result = Number::format($attempt->time_taken / 60, precision: 2);
+                    @endphp
+                    <strong>{{ $result }} Minutes </strong>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon green">
+                    <i class="fa-solid fa-circle-check"></i>
+                </div>
+
+                <div>
+                    <span>Correct Answers</span>
+                    <strong>{{ $correctAnswers->count() }} Questions</strong>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon red">
+                    <i class="fa-solid fa-circle-xmark"></i>
+                </div>
+
+                <div>
+                    <span>Incorrect</span>
+                    <strong>{{ $wrongAnswers->count() }} Questions</strong>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon purple">
+                    <i class="fa-solid fa-layer-group"></i>
+                </div>
+
+                <div>
+                    <span>Questions</span>
+                    <strong>{{ $quiz->questions->count() }} Questions </strong>
+                </div>
+            </div>
+        </section>
+
+        <!-- Questions Header -->
+        <div class="questions-heading">
+            <div>
+                <h2>Question Review</h2>
+                <span>Review your answers and explanations</span>
+            </div>
+
+            <div class="filter-buttons">
+                <button class="filter-btn active" @click="all = true , correct = false , incorret= false">All</button>
+                <button class="filter-btn correct"
+                    @click="all = false , correct = true , incorrect = false">Correct</button>
+                <button class="filter-btn incorrect"
+                    @click="all = false , correct = false , incorrect = true">Incorrect</button>
+            </div>
+        </div>
+
+        <!-- Question 1 -->
+        <div x-show="all">
+            @foreach ($answers as $answer)
+                <article
+                    class="question-card {{ $answer->question->correctAnswer->id == $answer->option_id ? 'correct-question' : 'incorrect-question' }}">
+                    <div class="question-top">
+                        <div class="question-number">{{ $loop->iteration }}</div>
+
+                        <div class="question-content">
+                            <p class="question-text">{{ $answer->question->content }}</p>
+                        </div>
+                        @if ($answer->question->correctAnswer->id == $answer->option_id)
+                            <span class="result-badge correct-badge">
+                                <i class="fa-solid fa-check"></i>
+                                Correct
+                            </span>
+                        @else
+                            <span class="result-badge incorrect-badge">
+                                <i class="fa-regular fa-circle-xmark"></i>
+                                Wrong
+                            </span>
+                        @endif
+                    </div>
+
+                    <div class="answers">
+                        @foreach ($answer->question->options as $option)
+                            @php
+                                $correct = $answer->question->correctAnswer->id;
+                            @endphp
+                            <div data-bs-toggle="modal" data-bs-target="#staticBackdrop{{ $option->id }}"
+                                class="answer selected  
+                                                                                                                                                                @if($correct == $option->id)
+                                                                                                                                                                    correct-answer
+                                                                                                                                                                @else
+                                                                                                                                                                    @if($answer->option_id == $option->id)
+                                                                                                                                                                        @if($answer->option_id == $correct)
+                                                                                                                                                                            correct-answer
+                                                                                                                                                                        @else
+                                                                                                                                                                            wrong-answer
+                                                                                                                                                                        @endif
+                                                                                                                                                                    @endif
+                                                                                                                                                                @endif
+                                                                                                                                                                                                                        ">
+                                <span class="answer-letter">
+                                    @if ($loop->iteration === 1)
+                                        A
+                                    @elseif ($loop->iteration === 2)
+                                        B
+                                    @elseif ($loop->iteration === 3)
+                                        C
+                                    @elseif ($loop->iteration === 4)
+                                        D
+                                    @else
+                                        E
+                                    @endif
+                                </span>
+
+                                <span class="answer-text"> {{ $option->content }} </span>
+                                @if($correct == $option->id)
+                                    <i class="fa-solid fa-check answer-icon"></i>
+                                @else
+                                    <i class="fa-regular fa-circle-xmark text-danger"></i>
+                                @endif
+
+                                <!-- Button trigger modal -->
+                                <!-- Large Modal -->
+                                <!--
+                                                                        Large Modal 
+                                                                      <div class="modal-dialog modal-xl">...</div>
+                                                                        Meduim Modal
+                                                                      <div class="modal-dialog modal-lg">...</div>
+                                                                        Small Modal
+                                                                      <div class="modal-dialog modal-sm">...</div>
+                                                                    -->
+
+
+                                <!-- Modal -->
+                                <div class="modal fade modal-lg" id="staticBackdrop{{ $option->id }}" data-bs-backdrop="static"
+                                    data-bs-keyboard="true" tabindex="-1" aria-labelledby="staticBackdropLabel"
+                                    aria-hidden="true">
                                     <div class="modal-dialog">
                                         <div class="modal-content">
                                             <div class="modal-header">
-                                                <h1 class="modal-title fs-5" id="exampleModalLabel">Explanation</h1>
-                                                <button
-                                                    type="button"
-                                                    class="btn-close"
-                                                    data-bs-dismiss="modal"
-                                                    aria-label="Close"
-                                                ></button>
+                                                <h1 class="modal-title fs-5" id="staticBackdropLabel">Option Explanation </h1>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                                    aria-label="Close"></button>
                                             </div>
                                             <div class="modal-body">
-                                                <p class="fw-bold text-white">{{ $option->explanation }}</p>
+                                                <h6>{{ $option->content }}</h6>
+                                                <div class="d-flex gap-1 align-items-center">
+                                                    <h5>Explanation : </h5>
+                                                    <p class="pb-0">{{ $option->explanation }}</p>
+                                                </div>
                                             </div>
                                             <div class="modal-footer">
-                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                                                    Close
-                                                </button>
+                                                <button type="button" class="btn btn-secondary"
+                                                    data-bs-dismiss="modal">Close</button>
+                                                <button type="button" class="btn btn-primary">Understood</button>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
+                        @endforeach
+                    </div>
+                </article>
+            @endforeach
+        </div>
+
+        <div x-show="correct">
+            @foreach ($correctAnswers as $answer)
+                <article
+                    class="question-card {{ $answer->question->correctAnswer->id == $answer->option_id ? 'correct-question' : 'incorrect-question' }}">
+                    <div class="question-top">
+                        <div class="question-number">{{ $loop->iteration }}</div>
+
+                        <div class="question-content">
+                            <p class="question-text">{{ $answer->question->content }}</p>
                         </div>
-                    @endforeach
+                        @if ($answer->question->correctAnswer->id == $answer->option_id)
+                            <span class="result-badge correct-badge">
+                                <i class="fa-solid fa-check"></i>
+                                Correct
+                            </span>
+                        @else
+                            <span class="result-badge incorrect-badge">
+                                <i class="fa-regular fa-circle-xmark"></i>
+                                Wrong
+                            </span>
+                        @endif
+                    </div>
+
+                    <div class="answers">
+                        @foreach ($answer->question->options as $option)
+                            @php
+                                $correct = $answer->question->correctAnswer->id;
+                            @endphp
+                            <div data-bs-toggle="modal" data-bs-target="#staticBackdrop{{ $option->id }}"
+                                class="answer selected  
+                                                                                                                                                                @if($correct == $option->id)
+                                                                                                                                                                    correct-answer
+                                                                                                                                                                @else
+                                                                                                                                                                    @if($answer->option_id == $option->id)
+                                                                                                                                                                        @if($answer->option_id == $correct)
+                                                                                                                                                                            correct-answer
+                                                                                                                                                                        @else
+                                                                                                                                                                            wrong-answer
+                                                                                                                                                                        @endif
+                                                                                                                                                                    @endif
+                                                                                                                                                                @endif
+                                                                                                                                                                                                                        ">
+                                <span class="answer-letter">
+                                    @if ($loop->iteration === 1)
+                                        A
+                                    @elseif ($loop->iteration === 2)
+                                        B
+                                    @elseif ($loop->iteration === 3)
+                                        C
+                                    @elseif ($loop->iteration === 4)
+                                        D
+                                    @else
+                                        E
+                                    @endif
+                                </span>
+
+                                <span class="answer-text"> {{ $option->content }} </span>
+                                @if($correct == $option->id)
+                                    <i class="fa-solid fa-check answer-icon"></i>
+                                @else
+                                    <i class="fa-regular fa-circle-xmark text-danger"></i>
+                                @endif
+
+                                <!-- Button trigger modal -->
+                                <!-- Large Modal -->
+                                <!--
+                                                                        Large Modal 
+                                                                      <div class="modal-dialog modal-xl">...</div>
+                                                                        Meduim Modal
+                                                                      <div class="modal-dialog modal-lg">...</div>
+                                                                        Small Modal
+                                                                      <div class="modal-dialog modal-sm">...</div>
+                                                                    -->
+
+
+                                <!-- Modal -->
+                                <div class="modal fade modal-lg" id="staticBackdrop{{ $option->id }}" data-bs-backdrop="static"
+                                    data-bs-keyboard="true" tabindex="-1" aria-labelledby="staticBackdropLabel"
+                                    aria-hidden="true">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h1 class="modal-title fs-5" id="staticBackdropLabel">Option Explanation </h1>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                                    aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <h6>{{ $option->content }}</h6>
+                                                <div class="d-flex gap-1 align-items-center">
+                                                    <h5>Explanation : </h5>
+                                                    <p class="pb-0">{{ $option->explanation }}</p>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary"
+                                                    data-bs-dismiss="modal">Close</button>
+                                                <button type="button" class="btn btn-primary">Understood</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </article>
+            @endforeach
+        </div>
+
+        <div x-show="incorrect">
+            @foreach ($wrongAnswers as $answer)
+                <article
+                    class="question-card {{ $answer->question->correctAnswer->id == $answer->option_id ? 'correct-question' : 'incorrect-question' }}">
+                    <div class="question-top">
+                        <div class="question-number">{{ $loop->iteration }}</div>
+
+                        <div class="question-content">
+                            <p class="question-text">{{ $answer->question->content }}</p>
+                        </div>
+                        @if ($answer->question->correctAnswer->id == $answer->option_id)
+                            <span class="result-badge correct-badge">
+                                <i class="fa-solid fa-check"></i>
+                                Correct
+                            </span>
+                        @else
+                            <span class="result-badge incorrect-badge">
+                                <i class="fa-regular fa-circle-xmark"></i>
+                                Wrong
+                            </span>
+                        @endif
+                    </div>
+
+                    <div class="answers">
+                        @foreach ($answer->question->options as $option)
+                            @php
+                                $correct = $answer->question->correctAnswer->id;
+                            @endphp
+                            <div data-bs-toggle="modal" data-bs-target="#staticBackdrop{{ $option->id }}"
+                                class="answer selected  
+                                                                                                                                                                @if($correct == $option->id)
+                                                                                                                                                                    correct-answer
+                                                                                                                                                                @else
+                                                                                                                                                                    @if($answer->option_id == $option->id)
+                                                                                                                                                                        @if($answer->option_id == $correct)
+                                                                                                                                                                            correct-answer
+                                                                                                                                                                        @else
+                                                                                                                                                                            wrong-answer
+                                                                                                                                                                        @endif
+                                                                                                                                                                    @endif
+                                                                                                                                                                @endif
+                                                                                                                                                                                                                        ">
+                                <span class="answer-letter">
+                                    @if ($loop->iteration === 1)
+                                        A
+                                    @elseif ($loop->iteration === 2)
+                                        B
+                                    @elseif ($loop->iteration === 3)
+                                        C
+                                    @elseif ($loop->iteration === 4)
+                                        D
+                                    @else
+                                        E
+                                    @endif
+                                </span>
+
+                                <span class="answer-text"> {{ $option->content }} </span>
+                                @if($correct == $option->id)
+                                    <i class="fa-solid fa-check answer-icon"></i>
+                                @else
+                                    <i class="fa-regular fa-circle-xmark text-danger"></i>
+                                @endif
+
+                                <!-- Button trigger modal -->
+                                <!-- Large Modal -->
+                                <!--
+                                                                        Large Modal 
+                                                                      <div class="modal-dialog modal-xl">...</div>
+                                                                        Meduim Modal
+                                                                      <div class="modal-dialog modal-lg">...</div>
+                                                                        Small Modal
+                                                                      <div class="modal-dialog modal-sm">...</div>
+                                                                    -->
+
+
+                                <!-- Modal -->
+                                <div class="modal fade modal-lg" id="staticBackdrop{{ $option->id }}" data-bs-backdrop="static"
+                                    data-bs-keyboard="true" tabindex="-1" aria-labelledby="staticBackdropLabel"
+                                    aria-hidden="true">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h1 class="modal-title fs-5" id="staticBackdropLabel">Option Explanation </h1>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                                    aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <h6>{{ $option->content }}</h6>
+                                                <div class="d-flex gap-1 align-items-center">
+                                                    <h5>Explanation : </h5>
+                                                    <p class="pb-0">{{ $option->explanation }}</p>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary"
+                                                    data-bs-dismiss="modal">Close</button>
+                                                <button type="button" class="btn btn-primary">Understood</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </article>
+            @endforeach
+        </div>
+        {{-- <div x-show="incorrect"> --}}
+
+            <!-- Question 3 -->
+            @if ($unanswered->count() != 0)
+                @foreach ($unanswered as $un)
+                    <article class="question-card unanswered-question">
+                        <div class="question-   ">
+                            <div class="question-number">{{ $loop->iteration }}</div>
+
+                            <div class="question-content">
+                                <p class="question-text">{{ $un->content }}</p>
+                            </div>
+                            <span class="result-badge unanswered-badge">
+                                <i class="fa-regular fa-circle"></i>
+                                Unanswered
+                            </span>
+                        </div>
+                        @foreach ($un->options as $option)
+                            <div class="answers my-3">
+                                <div class="answer disabled-answer">
+                                    <span class="answer-letter">
+                                        @if ($loop->iteration === 1)
+                                            A
+                                        @elseif ($loop->iteration === 2)
+                                            B
+                                        @elseif ($loop->iteration === 3)
+                                            C
+                                        @elseif ($loop->iteration === 4)
+                                            D
+                                        @else
+                                            E
+                                        @endif
+                                    </span>
+
+                                    <span class="answer-text"> {{ $option->content }} </span>
+                                </div>
+                            </div>
+                        @endforeach
+                    </article>
+
                 @endforeach
-            </div>
-        </div>
-    </div>
-    <div class="d-grid">
-        <div class="col-lg-8 card my-5 px-4">
-            <span class="fs-5 py-5">Un Answered Questions </span>
-        </div>
-    </div>
-</x-user-layout>
-{{-- <p class="text-white fs-4">
-  {{ $question->content }}
-</p>
-<p>
 
-  {{-- @foreach($question->options as $option)
-<div class="d-flex justify-content-start gap-4 pt-5   border {{  $question->correctAnswer->id === $option->id ? "
-  border-success" : 'border-primary' }} rounded px-3 align-items-center my-5 ">
-                    <p class=" {{ $question->correctAnswer->id === $option->id ? "text-success" : 'text-danger' }}">
-  <strong>{{ $option->name }} : </strong>{{ $option->content }}</p>
-</div>
-@endforeach --}}
-
-{{-- </p> --}}
+            @endif
+        </div>
+        <x-user-layout />

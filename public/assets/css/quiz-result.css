@@ -1,0 +1,657 @@
+/* ================================
+   Quiz Results
+================================ */
+*{
+  margin: 0;
+}
+.results-page {
+    min-height: 100vh;
+    padding: 40px 48px;
+    background: #0d102b;
+    color: #f4f5ff;
+    font-family:
+        Inter,
+        "Segoe UI",
+        Arial,
+        sans-serif;
+}
+
+
+/* ================================
+   Header
+================================ */
+
+.results-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 32px;
+}
+
+.results-header h1 {
+    margin: 0 0 8px;
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+}
+
+.results-header p {
+    margin: 0;
+    color: #858aa9;
+    font-size: 14px;
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+
+/* ================================
+   Buttons
+================================ */
+
+.btn {
+    border: 0;
+    border-radius: 8px;
+    height: 42px;
+    padding: 0 18px;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+
+    font-size: 14px;
+    font-weight: 600;
+
+    cursor: pointer;
+    transition: 0.2s ease;
+}
+
+.btn-outline {
+    color: #ff9d27;
+    background: #171936;
+    border: 1px solid #80501d;
+}
+
+.btn-outline:hover {
+    background: #211d3b;
+}
+
+.btn-primary {
+    color: #071e19;
+    background: #35d7a7;
+}
+
+.btn-primary:hover {
+    background: #45e0b1;
+}
+
+
+/* ================================
+   Stats
+================================ */
+
+.stats-grid {
+    display: grid;
+
+    grid-template-columns:
+        1.35fr
+        1fr
+        1fr;
+
+    gap: 14px;
+
+    margin-bottom: 38px;
+}
+
+.score-card,
+.stat-card {
+    background: #191c3b;
+    border: 1px solid #292d50;
+    border-radius: 10px;
+}
+
+
+/* ================================
+   Main Score
+================================ */
+
+.score-card {
+    grid-row: span 2;
+
+    min-height: 190px;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    position: relative;
+}
+
+.card-label {
+    position: absolute;
+    top: 18px;
+    left: 20px;
+
+    color: #878cab;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.score-value {
+    margin-top: 8px;
+
+    color: #35d7a7;
+    font-size: 48px;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.score-status {
+    margin-top: 12px;
+
+    color: #8d92af;
+    font-size: 13px;
+}
+
+
+/* ================================
+   Small Stat Cards
+================================ */
+
+.stat-card {
+    min-height: 82px;
+
+    display: flex;
+    align-items: center;
+
+    padding: 0 20px;
+    gap: 14px;
+}
+
+.stat-card > div:last-child {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.stat-card span {
+    color: #858aa9;
+    font-size: 12px;
+}
+
+.stat-card strong {
+    color: #f3f4ff;
+    font-size: 16px;
+    font-weight: 700;
+}
+
+
+/* ================================
+   Stat Icons
+================================ */
+
+.stat-icon {
+    width: 38px;
+    height: 38px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    flex-shrink: 0;
+
+    border-radius: 50%;
+
+    font-size: 15px;
+}
+
+.stat-icon.blue {
+    color: #7285ff;
+    background: rgba(114, 133, 255, 0.12);
+}
+
+.stat-icon.green {
+    color: #35d7a7;
+    background: rgba(53, 215, 167, 0.12);
+}
+
+.stat-icon.red {
+    color: #ff5c75;
+    background: rgba(255, 92, 117, 0.12);
+}
+
+.stat-icon.purple {
+    color: #9c8cff;
+    background: rgba(156, 140, 255, 0.12);
+}
+
+
+/* ================================
+   Questions Header
+================================ */
+
+.questions-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    margin-bottom: 18px;
+}
+
+.questions-heading h2 {
+    margin: 0;
+
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.questions-heading span {
+    display: block;
+
+    margin-top: 5px;
+
+    color: #777d9f;
+    font-size: 12px;
+}
+
+
+/* ================================
+   Filters
+================================ */
+
+.filter-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.filter-btn {
+    height: 34px;
+
+    padding: 0 14px;
+
+    border-radius: 6px;
+    border: 1px solid #303456;
+
+    color: #858aa9;
+    background: #171a36;
+
+    font-size: 11px;
+    font-weight: 700;
+
+    cursor: pointer;
+    transition: 0.2s ease;
+}
+
+.filter-btn:hover,
+.filter-btn.active {
+    color: #dce0ff;
+    border-color: #596083;
+    background: #1d2142;
+}
+
+.filter-btn.correct {
+    color: #35d7a7;
+    border-color: rgba(53, 215, 167, 0.4);
+}
+
+.filter-btn.incorrect {
+    color: #ff5c75;
+    border-color: rgba(255, 92, 117, 0.4);
+}
+
+
+/* ================================
+   Question Card
+================================ */
+
+.question-card {
+    margin-bottom: 14px;
+
+    padding: 20px;
+
+    background: #161936;
+
+    border: 1px solid #2b3054;
+    border-left-width: 3px;
+
+    border-radius: 8px;
+}
+
+.correct-question {
+    border-left-color: #35d7a7;
+}
+
+.incorrect-question {
+    border-left-color: #ff5c75;
+}
+
+.unanswered-question {
+    border-left-color: #667099;
+}
+
+
+/* ================================
+   Question Top
+================================ */
+
+.question-top {
+    display: grid;
+
+    grid-template-columns: 28px 1fr auto;
+
+    align-items: start;
+
+    gap: 12px;
+
+    margin-bottom: 16px;
+}
+
+.question-number {
+    color: #9ca1bd;
+
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.question-text {
+    margin: 0;
+
+    color: #e7e9f8;
+
+    font-size: 15px;
+    line-height: 1.6;
+}
+
+
+/* ================================
+   Result Badges
+================================ */
+
+.result-badge {
+    display: inline-flex;
+    align-items: center;
+
+    gap: 6px;
+
+    padding: 7px 11px;
+
+    border-radius: 14px;
+
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.correct-badge {
+    color: #35d7a7;
+    background: rgba(53, 215, 167, 0.09);
+    border: 1px solid rgba(53, 215, 167, 0.25);
+}
+
+.incorrect-badge {
+    color: #ff5c75;
+    background: rgba(255, 92, 117, 0.09);
+    border: 1px solid rgba(255, 92, 117, 0.25);
+}
+
+.unanswered-badge {
+    color: #858aa9;
+    background: rgba(133, 138, 169, 0.08);
+    border: 1px solid rgba(133, 138, 169, 0.2);
+}
+
+
+/* ================================
+   Answers
+================================ */
+
+.answers {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    padding-left: 40px;
+}
+
+.answer {
+    min-height: 48px;
+
+    display: flex;
+    align-items: center;
+
+    padding: 0 14px;
+
+    border: 1px solid #292d4c;
+    border-radius: 7px;
+
+    background: #12152f;
+
+    color: #878ca8;
+
+    font-size: 13px;
+
+    transition: 0.2s ease;
+}
+
+.answer-letter {
+    width: 28px;
+    height: 28px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    flex-shrink: 0;
+
+    margin-right: 11px;
+
+    border-radius: 50%;
+
+    color: #7e849f;
+    background: #1d2140;
+
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.answer-text {
+    flex: 1;
+
+    line-height: 1.45;
+}
+
+
+/* ================================
+   Correct Answer
+================================ */
+
+.correct-answer {
+    color: #d6fff2;
+
+    background: rgba(53, 215, 167, 0.07);
+
+    border-color: rgba(53, 215, 167, 0.65);
+}
+
+.correct-answer .answer-letter {
+    color: #35d7a7;
+    background: rgba(53, 215, 167, 0.12);
+}
+
+.answer-icon {
+    margin-left: auto;
+
+    font-size: 13px;
+}
+
+.correct-answer .answer-icon {
+    color: #35d7a7;
+}
+
+
+/* ================================
+   Wrong Answer
+================================ */
+
+.wrong-answer {
+    color: #ffdce1;
+
+    background: rgba(255, 92, 117, 0.06);
+
+    border-color: rgba(255, 92, 117, 0.55);
+}
+
+.wrong-answer .answer-letter {
+    color: #ff5c75;
+    background: rgba(255, 92, 117, 0.12);
+}
+
+.wrong-answer .answer-icon {
+    color: #ff5c75;
+}
+
+
+/* ================================
+   Disabled / Unanswered
+================================ */
+
+.disabled-answer {
+    opacity: 0.65;
+}
+
+
+/* ================================
+   Responsive
+================================ */
+
+@media (max-width: 900px) {
+
+    .results-page {
+        padding: 30px;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .score-card {
+        grid-column: span 2;
+        grid-row: auto;
+    }
+}
+
+
+@media (max-width: 750px) {
+
+    .results-page {
+        padding: 20px;
+    }
+
+    .results-header {
+        align-items: flex-start;
+        gap: 20px;
+    }
+
+    .results-header h1 {
+        font-size: 24px;
+    }
+
+    .header-actions {
+        flex-direction: column;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .score-card {
+        grid-column: span 2;
+        grid-row: auto;
+    }
+
+    .questions-heading {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 14px;
+    }
+
+    .question-top {
+        grid-template-columns: 28px 1fr;
+    }
+
+    .result-badge {
+        grid-column: 2;
+        width: fit-content;
+    }
+
+    .answers {
+        padding-left: 40px;
+    }
+}
+
+
+@media (max-width: 480px) {
+
+    .results-page {
+        padding: 16px;
+    }
+
+    .results-header h1 {
+        font-size: 21px;
+    }
+
+    .results-header p {
+        font-size: 12px;
+    }
+
+    .header-actions {
+        display: none;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .score-card {
+        grid-column: auto;
+    }
+
+    .score-value {
+        font-size: 42px;
+    }
+
+    .questions-heading h2 {
+        font-size: 18px;
+    }
+
+    .filter-buttons {
+        width: 100%;
+        flex-wrap: wrap;
+    }
+
+    .question-card {
+        padding: 15px;
+    }
+
+    .question-top {
+        grid-template-columns: 24px 1fr;
+    }
+
+    .question-text {
+        font-size: 14px;
+    }
+
+    .answers {
+        padding-left: 0;
+    }
+
+    .answer {
+        min-height: 46px;
+        font-size: 12px;
+    }
+}

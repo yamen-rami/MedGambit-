@@ -39,11 +39,7 @@
     --green-bg: #12301f;
 }
 
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-}
+
 
 body {
     font-family:
@@ -234,7 +230,8 @@ body {
 
 .player-name {
     font-weight: 700;
-
+    width:fit-content ; 
+    padding: 10px 0 ;
     font-size: 14.5px;
 }
 
@@ -1055,4 +1052,11 @@ body {
     background: rgba(141, 14, 3, 0.968);
 
     border-color: red;
+}
+.opponent-gauge-arc {
+    stroke: red;
+}
+
+.opponent-value {
+    color: red;
 }

@@ -1,15 +1,9 @@
 <?php
 
-use App\Http\Controllers\ApiController;
-use App\Http\Controllers\BranchOfMedicineController;
-use App\Http\Controllers\OptionsController;
-use App\Http\Controllers\QuestionsController;
-use App\Http\Controllers\QuizController;
-use App\Http\Controllers\SkillsForQuestionController;
-use App\Http\Controllers\SpecialtyController;
-use App\Http\Controllers\UserController;
-use App\Http\Middleware\admin;
 use Illuminate\Support\Facades\Route;
+
+use App\Http\Controllers\{ApiController, BranchOfMedicineController, GameController, OptionsController, QuestionsController, QuizController, SkillsForQuestionController, SpecialtyController, UserController};
+use App\Http\Middleware\admin;
 
 Route::view('/', 'home')->name('home');
 
@@ -38,6 +32,10 @@ Route::middleware('auth')->group(function () {
     Route::get('detecated/quiz/{quiz}', [QuizController::class, 'detecatedQuiz'])->name('start.detecated.quiz');
     Route::get('detecated/learning/{quiz}', [QuizController::class, 'learningQuiz'])->name('start.learning.quiz');
     Route::get('show/quiz/{quiz}', [QuizController::class, 'showQuiz'])->name('show.quiz');
+    // TODO Game Routes
+    Route::get("start/game" , [GameController::class , "startGame"])->name("start.game");
+    Route::get("game/started/{game}" , [GameController::class , "gameStarted"])->name("gameStarted");
+
     // Route::get("start/game/quiz" , [Game])
 });
 Route::get('user/profile/{user}', [UserController::class, 'profile'])->name('user.profile');
@@ -47,4 +45,5 @@ Route::get('get/speciality', [ApiController::class, 's'])
     ->name('getSpeciality');
 Route::get('get/skills', [ApiController::class, 'skills'])
     ->name('getSkills');
+    Route::get("game/results/{game}/player/{player}" , [GameController::class , "gameResults"])->name("game.results");
 require __DIR__.'/settings.php';

@@ -84,7 +84,7 @@ new class extends Component
             $this->length ? $this->length[0] : 'short',
             $this->questions->count(),
             $this->difficulty ? $this->difficulty[0] : 'hard',
-            $duration,
+            $duration == 0 ? null : $duration,
         );
 
         return redirect()->route('start.detecated.quiz', $quiz);
@@ -123,92 +123,115 @@ new class extends Component
 ?>
 
 <div>
-    <div class="col-lg-4">
-        <div class="col-lg-12 my-3">
-            <label for="select2Primary" class="form-label">Speciality</label>
-            <div class="select2-primary" wire:ignore>
-                <select id="specialities" class="select2 form-select specialities" multiple></select>
+    <div class="card quiz-config-card">
+        <div class="card-body">
+            <div class="quiz-config-header">
+                <h5 class="quiz-config-title">Configure Exam</h5>
+                <p class="quiz-config-subtitle">Set the parameters for your next question set.</p>
             </div>
-            @error('specialitiesList')
-                <p class="text-danger py-2">{{ $message }}</p>
-            @enderror
-        </div>
 
-        <div class="col-lg-12 my-3">
-            <label for="select2Primary" class="form-label">Branches For Medicine</label>
-            <div class="select2-primary" wire:ignore>
-                <select id="branches" class="select2 form-select branches" multiple></select>
+            <div class="row">
+                <div class="col-md-6 mb-4">
+                    <label for="specialities" class="form-label">Speciality</label>
+                    <div class="select2-primary" wire:ignore>
+                        <select id="specialities" class="select2 form-select specialities" multiple></select>
+                    </div>
+                    @error('specialitiesList')
+                        <p class="text-danger py-2">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <div class="col-md-6 mb-4">
+                    <label for="branches" class="form-label">Branches For Medicine</label>
+                    <div class="select2-primary" wire:ignore>
+                        <select id="branches" class="select2 form-select branches" multiple></select>
+                    </div>
+                    @error('branchesList')
+                        <p class="text-danger py-2">{{ $message }}</p>
+                    @enderror
+                </div>
             </div>
-            @error('branchesList')
-                <p class="text-danger py-2">{{ $message }}</p>
-            @enderror
-        </div>
-        <div class="col-lg-12 my-3">
-            <label for="select2Primary" class="form-label">Skills For Question</label>
-            <div class="select2-primary" wire:ignore>
-                <select id="skills" class="select2 form-select" multiple></select>
+
+            <div class="row">
+                <div class="col-md-12 mb-4">
+                    <label for="skills" class="form-label">Skills For Question</label>
+                    <div class="select2-primary" wire:ignore>
+                        <select id="skills" class="select2 form-select" multiple></select>
+                    </div>
+                    @error('skillsList')
+                        <p class="text-danger py-2">{{ $message }}</p>
+                    @enderror
+                </div>
             </div>
-            @error('skillsList')
-                <p class="text-danger py-2">{{ $message }}</p>
-            @enderror
-        </div>
-        <div class="col-lg-12 my-3">
-            <label for="select2Primary" class="form-label">Difficulty</label>
-            <div class="select2-primary" wire:ignore>
-                <select id="difficulty" class="select2 form-select" multiple>
-                    <option value="easy">Easy</option>
-                    <option value="medium">Medium</option>
-                    <option value="hard">Hard</option>
-                    <option value="nerd">Nerd</option>
-                </select>
+
+            <div class="row">
+                <div class="col-md-6 mb-4" wire:ignore>
+                    <label for="difficulty" class="form-label">Difficulty</label>
+                    <div class="select2-primary">
+                        <select id="difficulty" class="select2 form-select" multiple>
+                            <option value="easy">Easy</option>
+                            <option value="medium">Medium</option>
+                            <option value="hard">Hard</option>
+                            <option value="nerd">Nerd</option>
+                        </select>
+                    </div>
+                    @error('difficulty')
+                        <p class="text-danger py-2">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <div class="col-md-6 mb-4" wire:ignore>
+                    <label for="length" class="form-label">Length</label>
+                    <div class="select2-primary">
+                        <select id="length" class="select2 form-select" multiple>
+                            <option value="short">Short</option>
+                            <option value="medium">Medium</option>
+                            <option value="long">Long</option>
+                        </select>
+                    </div>
+                    @error('length')
+                        <p class="text-danger py-2">{{ $message }}</p>
+                    @enderror
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-12 mb-4" wire:ignore>
+                    <label for="duration" class="form-label">Quiz Timer</label>
+                    <div class="select2-primary">
+                        <select id="duration" wire:model.live="duration" class="select2 form-select">
+                            <option value="">No duration</option>
+                            <option value="{{ 1 * 60 }}">5 Minutes</option>
+                            <option value="{{ 10 * 60 }}">10 Minutes</option>
+                            <option value="{{ 15 * 60 }}">15 Minutes</option>
+                            <option value="{{ 20 * 60 }}">20 Minutes</option>
+                            <option value="{{ 30 * 60 }}">30 Minutes</option>
+                            <option value="{{ 60 * 60 }}">60 Minutes</option>
+                            <option value="{{ 90 * 60 }}">90 Minutes</option>
+                            <option value="{{ 120 * 60 }}">120 Minutes</option>
+                        </select>
+                    </div>
+                    @error('duration')
+                        <p class="text-danger py-2">{{ $message }}</p>
+                    @enderror
+                </div>
+            </div>
+
+            <div class="quiz-config-footer">
+                <p class="quiz-question-found">
+                    Question Found {{ !empty($this->specialitiesList) || !empty($this->branchesList) || !empty($this->skillsList) || !empty($this->difficulty) || !empty($this->length) ? $this->questions->count() : 0 }}
+                </p>
+                @error('count')
+                    <p class="text-danger my-3">{{ $message }}</p>
+                @enderror
+
+                <div class="quiz-config-actions">
+                    <button class="btn btn-outline-warning me-4" wire:click="learningQuiz">Start Learning Exam</button>
+                    <button class="btn btn-success" wire:click="submit">Start Exam</button>
+                </div>
             </div>
         </div>
-        @error('difficulty')
-            <p class="text-danger py-2">{{ $message }}</p>
-        @enderror
-        <div class="col-lg-12 my-3">
-            <label for="select2Primary" class="form-label">Length</label>
-            <div class="select2-primary" wire:ignore>
-                <select id="length" class="select2 form-select" multiple>
-                    <option value="short">Short</option>
-                    <option value="medium">Medium</option>
-                    <option value="long">Long</option>
-                </select>
-            </div>
-        </div>
-        @error('length')
-            <p class="text-danger py-2">{{ $message }}</p>
-        @enderror
-        <div class="col-lg-12 my-3">
-            <label for="select2Primary" class="form-label">Quiz Timer </label>
-            <div class="select2-primary">
-                <select id="duration" wire:model.live="duration" class="select2 form-select">
-                    <option value="">No duration</option>
-                    <option value="{{ 1 * 60 }}">5 Minutes</option>
-                    <option value="{{ 10 * 60 }}">10 Minutes</option>
-                    <option value="{{ 15 * 60 }}">15 Minutes</option>
-                    <option value="{{ 20 * 60 }}">20 Minutes</option>
-                    <option value="{{ 30 * 60 }}">30 Minutes</option>
-                    <option value="{{ 60 * 60 }}">60 Minutes</option>
-                    <option value="{{ 90 * 60 }}">90 Minutes</option>
-                    <option value="{{ 120 * 60 }}">120 Minutes</option>
-                </select>
-            </div>
-        </div>
-        @error('duration')
-            <p class="text-danger py-2">{{ $message }}</p>
-        @enderror
     </div>
-
-    <p>
-        Question Found {{ !empty($this->specialitiesList) || !empty($this->branchesList) || !empty($this->skillsList) || !empty($this->difficulty) || !empty($this->length) ? $this->questions->count() : 0 }}
-    </p>
-    @error('count')
-        <p class="text-danger my-3">{{ $message }}</p>
-    @enderror
-
-    <button class="btn btn-outline-warning me-4" wire:click="learningQuiz">Start Learning Exam</button>
-    <button class="btn btn-success" wire:click="submit">Start Exam</button>
 </div>
 
 @script
@@ -315,5 +338,3 @@ new class extends Component
             });
     </script>
 @endscript
-
-</div>

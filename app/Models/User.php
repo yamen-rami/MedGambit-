@@ -3,19 +3,16 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Database\Factories\UserFactory;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
-use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Attributes\{Fillable, Hidden};
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\{BelongsToMany, HasMany};
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Support\Carbon;
-use Illuminate\Support\Str;
+use Illuminate\Support\{Carbon, Str};
 use Laravel\Fortify\Contracts\PasskeyUser;
-use Laravel\Fortify\PasskeyAuthenticatable;
-use Laravel\Fortify\TwoFactorAuthenticatable;
+use Laravel\Fortify\{PasskeyAuthenticatable, TwoFactorAuthenticatable};
+
+use Database\Factories\UserFactory;
 
 /**
  * @property int $id
@@ -70,5 +67,21 @@ class User extends Authenticatable implements PasskeyUser
     public function playedQuestions(): BelongsToMany
     {
         return $this->belongsToMany(Questions::class, 'user_played_questions');
+    }
+
+    public function games(): HasMany
+    {
+        return $this->hasMany(Game::class);
+    }
+
+    public function gameAnswers(): HasMany
+    {
+        return $this->hasMany(GameAnswers::class);
+    }
+    public function players(){
+        return $this->hasMany(Players::class);
+    }
+    public function gameAttempts(){
+        return $this->hasMany(GameAttempt::class);
     }
 }

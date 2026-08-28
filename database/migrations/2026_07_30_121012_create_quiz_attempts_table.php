@@ -18,8 +18,8 @@ return new class extends Migration
             // Start
             $table->foreignIdFor(Quiz::class)->constrained()->cascadeOnDelete();
             $table->foreignIdFor(User::class)->constrained()->cascadeOnDelete();
-            $table->time('started_at')->nullable();
-            $table->time('finished_at')->nullable();
+            $table->timestamp('started_at')->nullable();
+            $table->timestamp('finished_at')->nullable();
             $table->integer('score');
             $table->unsignedInteger('time_taken')->nullable();
             $table->string('status');

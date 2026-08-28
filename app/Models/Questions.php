@@ -2,12 +2,11 @@
 
 namespace App\Models;
 
-use Database\Factories\QuestionsFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\{BelongsToMany, HasMany, HasOne};
+
+use Database\Factories\QuestionsFactory;
 
 class Questions extends Model
 {
@@ -29,7 +28,9 @@ class Questions extends Model
         'elo_incorrect',
         'reference',
     ];
-
+    public function games()  {
+        return $this->belongsToMany(Game::class , "game_questions");
+    }
     public function options(): HasMany
     {
         return $this->hasMany(Option::class);
@@ -64,6 +65,10 @@ class Questions extends Model
     public function answers(): HasMany
     {
         return $this->hasMany(Answers::class);
+    }
+    public function gameAnswers(): HasMany
+    {
+        return $this->hasMany(GameAnswers::class);
     }
 
     public function user(): BelongsToMany

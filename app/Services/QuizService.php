@@ -14,7 +14,7 @@ class QuizService
 {
     public function randomQuiz(int $count = 20, $difficulty = 'medium', $length = 'short')
     {
-        return DB::transaction(function () use ($count) {
+        return DB::transaction(function () use ($count, $difficulty) {
             $quiz = Quiz::create([
                 'name' => 'random',
                 'topic' => 'Random Topic',
@@ -138,7 +138,7 @@ class QuizService
         ];
     }
 
-    public function detectedQuiz(Collection $questions, $length, $count, $difficulty, $duration)
+    public function detectedQuiz(Collection $questions, $length, $count, $difficulty, ?int $duration)
     {
         // Start A Quiz
         // give the quiz type detected
@@ -156,7 +156,7 @@ class QuizService
         $quiz_attempt = $quiz->attempts()->create([
             'user_id' => auth()->id(),
             'started_at' => now(),
-            'finished_at' => now()->addSeconds($duration) ?? null,
+            'finished_at' => $duration ? now()->addSeconds($duration) : null,
             'time_taken' => 0,
             'score' => 0,
             'status' => 'pending',
