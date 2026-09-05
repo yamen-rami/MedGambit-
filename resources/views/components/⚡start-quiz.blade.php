@@ -12,15 +12,15 @@ new class extends Component {
     public $quiz;
 
     public $current = 1;
-    public $currentQuestion  ; 
+    public $currentQuestion;
     public array $answers = [];
 
     public $attempt;
 
     public function mount($quiz)
     {
-        $this->quiz = $quiz->loadMissing('questions.options', 'questions.playedCount');
-      
+        $this->quiz = $quiz->loadMissing('questions');
+
         $this->attempt = QuizAttempt::with('answers')
             ->where('user_id', auth()->id())
             ->where('quiz_id', $this->quiz->id)
@@ -30,10 +30,10 @@ new class extends Component {
         }
         $this->current = $this->attempt->current;
         $this->answers = $this->attempt->answers->pluck('option_id', 'question_id')->toArray();
+        $this->loadQuestion();
     }
 
     #[On('quit-quiz')]
-    
     public function quitQuiz()
     {
         $answers = $this->answers;
@@ -41,18 +41,22 @@ new class extends Component {
         $attempt = $quizService->updateAttempt(auth()->id(), $this->quiz->id, $answers);
         return redirect()->route('quizResult', $this->quiz);
     }
-    public function loadQuestion(){
-        $questionId = $this->quiz->questions->get($this->current -1 )->id ;
-        $this->currentQuestion = Questions::with("options" , "correctAnswers" , "playedCount")->findOrFail($questionId);
+    public function loadQuestion()
+    {
+        $questionId = $this->quiz->questions->get($this->current - 1)?->id;
+        if(!$questionId){
+            return ;
+        }
+        $this->currentQuestion = Questions::with('options', 'correctAnswer', 'playedCount')->findOrFail($questionId);
     }
     public function hydrate()
     {
-        $this->quiz->loadMissing('questions.options', 'questions.playedCount');
+        $this->quiz->loadMissing('questions');
     }
 
     public function submit($optionId, $questionId)
     {
-        $question = $this->quiz->questions->find($questionId);
+        $question= $this->currentQuestion ; 
         if (!$question) {
             abort(403);
         }
@@ -62,7 +66,7 @@ new class extends Component {
         if (!$this->attempt) {
             return;
         }
-        $question->loadMissing("correctAnswer");
+        $question->loadMissing('correctAnswer');
         $isCorrect = 0;
         $question->correctAnswer?->id === (int) $optionId ? ($isCorrect = 1) : $isCorrect;
         $this->attempt->answers()->updateOrCreate(
@@ -90,9 +94,10 @@ new class extends Component {
         if ($current < 1 || $max < $current) {
             return;
         }
-        $this->current = (int) $current;
 
+        $this->current = (int) $current;
         $this->attempt->current = (int) $current;
+        $this->loadQuestion();
         $this->attempt->save();
     }
 
@@ -152,7 +157,6 @@ new class extends Component {
 
         $attempt = $quizService->updateAttempt(auth()->id(), $this->quiz->id, $answers);
 
-
         return redirect()->route('quizResult', $this->quiz);
     }
 };
@@ -163,19 +167,17 @@ new class extends Component {
         {{-- ===================== CENTER ===================== --}}
         <section class="battle-col">
             {{-- ===================== VS CARD ===================== --}}
-          
+            @php
+            $question = $this->currentQuestion ; 
+            @endphp
             {{-- ===================== QUESTIONS ===================== --}}
-            @foreach ($quiz->questions as $question)
-                @if ($loop->iteration === $current)
                     <div class="question-card">
                         {{-- QUESTION HEADER --}}
                         <div class="question-head">
                             <span class="question-index">
-                                Question {{ $this->current}} / {{ $quiz->questions->count() }}
+                                Question {{ $this->current }} / {{ $quiz->questions->count() }}
                                 <span class="question-index">Played Count
-
                                     {{ $question->playedCount->count ?? 0 }}</span>
-
                             </span>
 
                             <div>
@@ -271,17 +273,14 @@ new class extends Component {
 
                     {{-- ===================== ACTIONS ===================== --}}
                     <div class="actions-row">
-                        <button type="button" class="btn btn-ghost"
-                            wire:click="previous" @disabled($loop->first)>
+                        <button type="button" class="btn btn-ghost" wire:click="previous" @disabled($this->current < 1 )>
                             <i class="fa-solid fa-chevron-left"></i>
 
                             Previous
                         </button>
-                        @if (!$loop->last)
-                            <button type="button" class="btn btn-primary"
-                                wire:click="next">
+                        @if ($this->current !== $this->quiz->questions->count())
+                            <button type="button" class="btn btn-primary" wire:click="next">
                                 Next
-
                                 <i class="fa-solid fa-chevron-right"></i>
                             </button>
                         @else
@@ -292,8 +291,6 @@ new class extends Component {
                             </button>
                         @endif
                     </div>
-                @endif
-            @endforeach
 
             {{-- VALIDATION ERROR --}}
             @error('answers')
