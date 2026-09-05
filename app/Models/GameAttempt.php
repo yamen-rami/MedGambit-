@@ -22,10 +22,15 @@ class GameAttempt extends Model
         return $this->belongsTo(Game::class);
     }
     public function user(){
-        return $this->belongsTo(User::class , "player_1");
+        return $this->belongsTo(User::class);
     } 
+    public function winner(){
+        return $this->where("is_winner" , true)->first();
+    }
     public function answers(){
         return $this->hasMany(GameAnswers::class);
     }
+    // The relation itself is wrong
+    // cause it users 
     
 }

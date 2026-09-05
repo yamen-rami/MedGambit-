@@ -2,13 +2,11 @@
 
 namespace App\Services;
 
-use App\Models\Answers;
-use App\Models\Questions;
-use App\Models\Quiz;
-use App\Models\QuizAttempt;
-use Exception;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
+use Exception;
+
+use App\Models\{Answers, Questions, Quiz, QuizAttempt};
 
 class QuizService
 {
@@ -77,19 +75,22 @@ class QuizService
         $now = now();
 
         $score = 0;
-        // 0 ++ $score l
-        $wrongAnswers = 0;
-        $answersData = [];
+        $wrongAnswers = 0;  
         $user = auth()->user();
         $rank = $user->rank;
         $playedQuestionIds = $user->playedQuestions->pluck('id');
-
-        $questions = Questions::with('correctAnswer')->whereIn('id', array_keys($answers))->get()->keyBy('id');
-
+        $questions = Questions::with('correctAnswer', "playedCount")->whereIn('id', array_keys($answers))->get()->keyBy('id');
+        $questions->each(function ($question) {
+            $question->playedCount()->firstOrCreate(
+                [],
+                [
+                    "count"=> 0
+                ]
+            )->increment("count", 1);
+        });
         foreach ($answers as $questionId => $optionId) {
 
             $question = $questions[$questionId];
-
             $is_correct = $question->correctAnswer?->id == $optionId;
 
             if ($is_correct) {
@@ -103,25 +104,17 @@ class QuizService
                 }
                 $wrongAnswers++;
             }
-            $answersData[] = [
-                'quiz_attempt_id' => $quizAttempt->id,
-                'question_id' => $questionId,
-                'option_id' => $optionId,
-                'time_spent' => $now,
-                'is_correct' => $is_correct,
-                'status' => 'answered',
-                'created_at' => $now,
-                'updated_at' => $now,
-            ];
+            
         }
-        DB::transaction(function () use ($answersData, $score, $quizAttempt, $now, $quizId, $rank, $user) {
-            Answers::insert($answersData);
+        DB::transaction(function () use ( $score, $quizAttempt, $now, $quizId, $rank, $user) {
             $quizAttempt->update([
                 'user_id' => $user->id,
                 'finished_at' => $now,
-                'time_taken' => $quizAttempt->started_at->diffInSeconds($now),
+                'time_taken' => $quizAttempt->started_at?->diffInSeconds($now),
                 'score' => $score,
                 'status' => 'completed',
+                "current_rank" => $user->rank ,
+                "new_rank" => $rank ,
             ]);
             $quiz = Quiz::with('questions')->where('id', $quizId)->first();
             $questionsId = $quiz->questions->pluck('id');
@@ -138,7 +131,7 @@ class QuizService
         ];
     }
 
-    public function detectedQuiz(Collection $questions, $length, $count, $difficulty, ?int $duration)
+    public function detectedQuiz(Collection $questions, $length = null, $count , $difficulty = null, ?int $duration)
     {
         // Start A Quiz
         // give the quiz type detected
@@ -189,7 +182,6 @@ class QuizService
             'score' => 0,
             'status' => 'pending',
         ]);
-        // And That is the hole case
         $quiz->questions()->attachOrFail($questions);
 
         return $quiz;

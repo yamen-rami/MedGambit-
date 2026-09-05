@@ -2,13 +2,10 @@
 
 namespace Database\Seeders;
 
-use App\Models\BranchOfMedicine;
-use App\Models\Option;
-use App\Models\Questions;
-use App\Models\SkillsForQuestion;
-use App\Models\Specialty;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+
+use App\Models\{BranchOfMedicine, Option, Questions, SkillsForQuestion, Specialty};
 
 class DatabaseSeeder extends Seeder
 {
@@ -24,7 +21,7 @@ class DatabaseSeeder extends Seeder
         SkillsForQuestion::factory(100)->create();
 
         // Option::factory(1000)->create();
-        Questions::factory(10000)->create();
+        Questions::factory(1000)->create();
         // ->hasAttached(
         //     SkillsForQuestion::factory()->count(4),
         //     [],

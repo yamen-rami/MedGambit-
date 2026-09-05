@@ -1,15 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{{ $title ?? "Display Quiz " }}</title>
+    <title>{{ $title ?? 'Display Quiz ' }}</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" />
 
-    @vite(['resources/css/app.css' , "resources/js/app.js"])
-    <link rel="stylesheet" href="{{ asset("assets/css/quiztheme.css") }}" />
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <link rel="stylesheet" href="{{ asset('assets/css/quiztheme.css') }}" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" />
-    @stack("style")
+    @stack('style')
     <script>
         (() => {
             const theme = localStorage.getItem('quiz-theme') || 'light';
@@ -35,14 +36,15 @@
                         <i class="fa-solid fa-moon"></i>
                     </button>
 
-                    <button type="button" class="surrender-btn" data-bs-toggle="modal" data-bs-target="#staticBackdrop">
+                    <button type="button" class="surrender-btn" data-bs-toggle="modal"
+                        data-bs-target="#staticBackdrop">
                         <i class="fa-solid fa-flag"></i>
                         Exit Quiz
                     </button>
                     <!-- Button trigger modal -->
                     <!-- Large Modal -->
                     <!--
-                        Large Modal 
+                        Large Modal
                       <div class="modal-dialog modal-xl">...</div>
                         Meduim Modal
                       <div class="modal-dialog modal-lg">...</div>
@@ -51,27 +53,16 @@
                     -->
 
                     <!-- Modal -->
-                    <div
-                        class="modal fade"
-                        id="staticBackdrop"
-                        data-bs-backdrop="static"
-                        data-bs-keyboard="false"
-                        tabindex="-1"
-                        aria-labelledby="staticBackdropLabel"
-                        aria-hidden="true"
-                    >
+                    <div class="modal fade" id="staticBackdrop" data-bs-backdrop="static" data-bs-keyboard="false"
+                        tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
                         <div class="modal-dialog">
                             <div class="modal-content question-card">
                                 <div class="modal-header">
                                     <h1 class="modal-title fs-5 gauge-label" id="staticBackdropLabel">
                                         Are You Sure To Quit Quiz
                                     </h1>
-                                    <button
-                                        type="button"
-                                        class="btn-close gauge-label text-white"
-                                        data-bs-dismiss="modal"
-                                        aria-label="Close"
-                                    ></button>
+                                    <button type="button" class="btn-close gauge-label text-white"
+                                        data-bs-dismiss="modal" aria-label="Close"></button>
                                 </div>
                                 <div class="modal-body">
                                     <h1 class="gauge-label fs-6">
@@ -96,14 +87,18 @@
             {{ $slot }}
         </main>
     </div>
+    @stack('scripts')
+
+
+
     <script>
         let quitQuiz = document.querySelector('#quitQuiz');
         quitQuiz.addEventListener('click', (event) => {
             window.dispatchEvent(new CustomEvent('quit-quiz'));
         });
     </script>
-    
-    @stack("scripts")
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.min.js"></script>
 </body>
+
 </html>

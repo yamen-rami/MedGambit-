@@ -12,7 +12,6 @@ class Answers extends Model
         'question_id',
         'quiz_attempt_id',
         'option_id',
-        'time_spent',
         'is_correct',
         'status',
     ];

@@ -1,6 +1,6 @@
 <x-app>
     <x-slot:title>Edit Question</x-slot:title>
-    <form action="{{ route("questions.update", $question->id) }}" method="post" enctype="multipart/form-data">
+    <form action="{{ route('questions.update', $question->id) }}" method="post" enctype="multipart/form-data">
         @csrf
         @method('PATCH')
         <div class="col-lg-12">
@@ -13,11 +13,8 @@
                             </x-forms.textarea>
                             <x-forms.textarea value="{{ $question->high_yield }}" label="High Yield" name="high_yield">
                             </x-forms.textarea>
-                            <x-forms.textarea
-                                value="{{ $question->main_explanation }}"
-                                label="Main Expalantion"
-                                name="main_explanation"
-                            >
+                            <x-forms.textarea value="{{ $question->main_explanation }}" label="Main Expalantion"
+                                name="main_explanation">
                             </x-forms.textarea>
                             <x-forms.textarea value="{{ $question->topic }}" label="Topic" name="topic">
                             </x-forms.textarea>
@@ -29,10 +26,7 @@
                                     <option value="easy" @selected(old('difficulty', $question->difficulty) === 'easy')>
                                         Easy
                                     </option>
-                                    <option
-                                        value="meduim"
-                                        @selected(old('difficulty', $question->difficulty) === 'meduim')
-                                    >
+                                    <option value="meduim" @selected(old('difficulty', $question->difficulty) === 'meduim')>
                                         Meduim
                                     </option>
                                     <option value="hard" @selected(old('difficulty', $question->difficulty) === 'hard')>
@@ -46,26 +40,7 @@
                                     <p class="text-danger py-1">{{ $message }}</p>
                                 @enderror
                             </div>
-                            <div class="mt-4 mb-4">
-                                <label for="exampleFormControlInput1" class="form-label">Refernce </label>
-                                <select class="form-select" name="reference">
-                                    <option value="UW" @selected(old('reference', $question->reference) === 'UW')>
-                                        UW
-                                    </option>
-                                    <option value="MRCP" @selected(old('reference', $question->reference) === 'MRCP')>
-                                        MRCP
-                                    </option>
-                                    <option
-                                        value="MCC Qe"
-                                        @selected(old('reference', $question->reference) === 'MCC Qe')
-                                    >
-                                        MCC Qe
-                                    </option>
-                                </select>
-                                @error('refernce')
-                                    <p class="text-danger py-1">{{ $message }}</p>
-                                @enderror
-                            </div>
+                           
 
                             {{-- Length --}}
                             <div class="mt-4 mb-4">
@@ -108,16 +83,10 @@
                                     <option value="5" @selected(old('elo_incorrect', $question->elo_incorrect) == '5')>
                                         5
                                     </option>
-                                    <option
-                                        value="10"
-                                        @selected(old('elo_incorrect', $question->elo_incorrect) == '10')
-                                    >
+                                    <option value="10" @selected(old('elo_incorrect', $question->elo_incorrect) == '10')>
                                         10
                                     </option>
-                                    <option
-                                        value="15"
-                                        @selected(old('elo_incorrect', $question->elo_incorrect) == '15')
-                                    >
+                                    <option value="15" @selected(old('elo_incorrect', $question->elo_incorrect) == '15')>
                                         15
                                     </option>
                                 </select>
@@ -128,12 +97,8 @@
                             <div class="col-lg-12 my-3">
                                 <label for="select2Primary" class="form-label">Speciality</label>
                                 <div class="select2-primary">
-                                    <select
-                                        id="specialities"
-                                        name="speciality[]"
-                                        class="select2 form-select speciality"
-                                        multiple
-                                    >
+                                    <select id="specialities" name="speciality[]" class="select2 form-select speciality"
+                                        multiple>
                                         @foreach ($oldSpecialities as $s)
                                             <option value="{{ $s->id }}" selected>
                                                 {{ Str::limit($s->name, 20) }}
@@ -145,10 +110,24 @@
                                     <p class="text-danger py-2">{{ $message }}</p>
                                 @enderror
                             </div>
+                             <div class="mt-4 mb-4">
+                                <label for="exampleFormControlInput1" class="form-label">Reference </label>
+                                <select id="references" class="form-select select2 " name="reference" >
+                                    @if($oldReference)
+                                    <option value="{{ $oldReference?->id }}">{{ $oldReference?->name }}</option>
+                                    @else
+                                    <option value=""></option>
+                                    @endif
+                                </select>
+                                @error('reference')
+                                    <p class="text-danger py-1">{{ $message }}</p>
+                                @enderror
+                            </div>
                             <div class="col-lg-12 my-3">
                                 <label for="select2Primary" class="form-label">Branches For Medicine</label>
                                 <div class="select2-primary">
-                                    <select id="branches" name="branches[]" class="select2 form-select branch" multiple>
+                                    <select id="branches" name="branches[]" class="select2 form-select branch"
+                                        multiple>
                                         @foreach ($oldBranches as $branch)
                                             <option value="{{ $branch->id }}" selected>
                                                 {{ Str::limit($branch->name, 20) }}
@@ -176,14 +155,8 @@
                                 @enderror
                             </div>
                             <div>
-                                <img
-                                    id="preview"
-                                    class="rounded-5"
-                                    width="100%"
-                                    height="300px"
-                                    src="{{ asset($question->image) }}"
-                                    alt="No Image Found"
-                                />
+                                <img id="preview" class="rounded-5" width="100%" height="300px"
+                                    src="{{ asset($question->image) }}" alt="No Image Found" />
                             </div>
                             <div class="mt-4 mb-4">
                                 <label for="exampleFormControlInput1" class="form-label">Question Image </label>
@@ -204,7 +177,7 @@
 
     @push('scripts')
         <script>
-            $(window).on('load', function () {
+            $(window).on('load', function() {
                 if ($('#branches').hasClass('select2-hidden-accessible')) {
                     $('#branches').select2('destroy');
                 }
@@ -214,10 +187,12 @@
                         url: "{{ route('getBranches') }}",
                         type: 'GET',
                         delay: 250,
-                        data: function (params) {
-                            return { search: params.term };
+                        data: function(params) {
+                            return {
+                                search: params.term
+                            };
                         },
-                        processResults: function (data) {
+                        processResults: function(data) {
                             return {
                                 results: data.map((branch) => ({
                                     id: branch.id,
@@ -237,10 +212,12 @@
                         url: "{{ route('getSpeciality') }}",
                         type: 'GET',
                         delay: 250,
-                        data: function (params) {
-                            return { search: params.term };
+                        data: function(params) {
+                            return {
+                                search: params.term
+                            };
                         },
-                        processResults: function (data) {
+                        processResults: function(data) {
                             return {
                                 results: data.map((s) => ({
                                     id: s.id,
@@ -250,6 +227,28 @@
                         },
                     },
                 });
+                $('#references').select2({
+                placeholder: 'Search for Reference',
+                allowClear: true,
+                ajax: {
+                    url: "{{ route('getReferences') }}",
+                    type: 'GET',
+                    delay: 250,
+                    data: function(params) {
+                        return {
+                            search: params.term
+                        };
+                    },
+                    processResults: function(data) {
+                        return {
+                            results: data.map((ref) => ({
+                                id: ref.id,
+                                text: ref.name
+                            }))
+                        };
+                    }
+                }
+            });
                 if ($('#skills').hasClass('select2-hidden-accessible')) {
                     $('#skills').select2('destroy');
                 }
@@ -259,10 +258,12 @@
                         url: "{{ route('getSkills') }}",
                         type: 'GET',
                         delay: 250,
-                        data: function (params) {
-                            return { search: params.term };
+                        data: function(params) {
+                            return {
+                                search: params.term
+                            };
                         },
-                        processResults: function (data) {
+                        processResults: function(data) {
                             return {
                                 results: data.map((skill) => ({
                                     id: skill.id,
@@ -273,6 +274,8 @@
                     },
                 });
             });
+           
+            
             const input = document.querySelector('input[name="image"]');
             const preview = document.getElementById('preview');
 

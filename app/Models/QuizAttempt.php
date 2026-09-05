@@ -3,8 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\{BelongsTo, HasMany};
 
 class QuizAttempt extends Model
 {
@@ -14,9 +13,11 @@ class QuizAttempt extends Model
         'user_id',
         'started_at',
         'finished_at',
-        'time_taken',
         'score',
         'status',
+        "current", 
+        "current_rank" , 
+        "new_rank",
     ];
 
     protected $casts = [

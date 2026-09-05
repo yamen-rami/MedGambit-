@@ -1,7 +1,7 @@
 <?php
 
 use App\Models\Questions;
-use App\Services\QuizService;
+use App\Services\GameService;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
@@ -9,14 +9,14 @@ use Livewire\Component;
 
 new class extends Component {
     public array $branchesList = [];
-    public array $references = [];
+
     public array $specialitiesList = [];
 
     public array $skillsList = [];
 
-    public string $difficulty = '';
+    public array $difficulty = [];
 
-    public string $length = '';
+    public array $length = [];
 
     public $duration;
 
@@ -29,91 +29,19 @@ new class extends Component {
     #[Computed]
     public function questions()
     {
-        if (empty($this->difficulty) && empty($this->length) && empty($this->branchesList) && empty($this->skillsList) && empty($this->specialitiesList) && empty($this->references)) {
+        if (empty($this->difficulty) && empty($this->length) && empty($this->branchesList) && empty($this->skillsList) && empty($this->specialitiesList)) {
             return null;
         }
-        $user = auth()->user();
-        $userPlayedQuestion = $user->playedQuestions->pluck('id');
-        $query = Questions::query()
-            ->when($userPlayedQuestion->isNotEmpty(), fn($q) => $q->whereNotIn('id', $userPlayedQuestion))
 
-            ->when($this->difficulty, fn($query) => $query->where('difficulty', $this->difficulty))
-            ->when($this->length, fn($query) => $query->where('length', $this->length))
-            ->when($this->branchesList, function ($query) {
-                $query->whereHas('branches', function ($query) {
-                    $query->whereIn('branch_of_medicines.id', $this->branchesList);
-                });
-            })
-            ->when($this->references, function ($query) {
-                $query->whereIn('reference_id', $this->references);
-            })
-            ->when($this->skillsList, function ($query) {
-                $query->whereHas('skills', function ($query) {
-                    $query->whereIn('skills_for_questions.id', $this->skillsList);
-                });
-            })
-            ->when($this->specialitiesList, function ($query) {
-                $query->whereHas('specialties', function ($query) {
-                    $query->whereIn('specialties.id', $this->specialitiesList);
-                });
-            });
+        $questions = Questions::query()->when($this->difficulty, fn($query) => $query->whereIn('difficulty', $this->difficulty))->when($this->length, fn($query) => $query->whereIn('length', $this->length))->when($this->branchesList, fn($query) => $query->whereHas('branches', fn($query) => $query->whereIn('branch_of_medicines.id', $this->branchesList)))->when($this->skillsList, fn($query) => $query->whereHas('skills', fn($query) => $query->whereIn('skills_for_questions.id', $this->skillsList)))->when($this->specialitiesList, fn($query) => $query->whereHas('specialties', fn($query) => $query->whereIn('specialties.id', $this->specialitiesList)))->limit(20)->get();
 
-        $questions = $query->limit(20)->get();
-        if ($questions->count() < 20) {
-            $remaining = 20 - $questions->count();
-
-            $fallback = Questions::query()
-                ->when($this->difficulty, fn($query) => $query->where('difficulty', $this->difficulty))
-                ->when($this->length, fn($query) => $query->where('length', $this->length))
-                ->whereIn('id', $userPlayedQuestion)
-                ->whereNotIn('id', $questions->pluck('id'))
-                ->limit($remaining)
-                ->get();
-            $questions = $questions->merge($fallback);
-        }
-        return $questions;
+        return $questions->isEmpty() ? null : $questions;
     }
 
-    public function submit()
-    {
-        // Of the Current User
-        if (!$this->questions) {
-            throw ValidationException::withMessages([
-                'count' => 'The Count Should Be At Least 3 Questions',
-            ]);
-        }
-        if ($this->questions?->count() < 2) {
-            throw ValidationException::withMessages([
-                'count' => 'The Count Should Be At Least 3 Questions',
-            ]);
-        }
-        $validate = $this->validate([
-            'difficulty' => ['nullable', 'string'],
-            'length' => ['nullable', 'string'],
-            'branchesList' => ['nullable', 'array'],
-            'branchesList.*' => ['exists:branch_of_medicines,id'],
-            'skillsList' => ['nullable', 'array'],
-            'skillsList.*' => ['exists:skills_for_questions,id'],
-            'specialitiesList' => ['nullable', 'array'],
-            'specialitiesList.*' => ['exists:specialties,id'],
-            'references' => ['nullable', 'array'],
-            'references.*' => ['exists:references,id'],
-        ]);
-        // dd($validate);
-        $duration = (int) $this->duration;
-        $quizService = app(QuizService::class);
-        $quiz = $quizService->detectedQuiz(questions: $this->questions, length: $this->length ? $this->length : 'medium', difficulty: $this->difficulty ? $this->difficulty : 'medium', duration: $this->duration, count: $this->questions->count());
+  
 
-        return redirect()->route('start.detecated.quiz', $quiz);
-    }
-
-    public function learningQuiz()
+    public function friendGame()
     {
-        if (!$this->questions) {
-            throw ValidationException::withMessages([
-                'count' => 'The Count Should Be At Least 3 Questions',
-            ]);
-        }
         if ($this->questions?->count() < 2) {
             throw ValidationException::withMessages([
                 'count' => 'The Count Should Be At Least 3 Questions',
@@ -131,10 +59,17 @@ new class extends Component {
             'specialitiesList' => ['nullable', 'array'],
             'specialitiesList.*' => ['exists:specialties,id'],
         ]);
-        $quizService = app(QuizService::class);
-        $quiz = $quizService->learningQuiz($this->questions, $this->length ? $this->length[0] : 'short', $this->questions->count(), $this->difficulty ? $this->difficulty[0] : 'hard');
+        $gameService = app(GameService::class);
+        $game = $gameService->friendGame(
+            difficulty: $this->difficulty,
+            length:$this->length ,
+            duration : $this->duration  ,
+            sp : $this->specialitiesList,
+            branches : $this->branchesList , 
+            skills : $this->skillsList , 
+        );
+        return redirect()->route('friend.game.started', $game->challenge_token);
 
-        return redirect()->route('start.learning.quiz', $quiz);
     }
 };
 ?>
@@ -143,14 +78,13 @@ new class extends Component {
     <div class="card quiz-config-card">
         <div class="card-body">
             <div class="quiz-config-header">
-                <h5 class="quiz-config-title">Configure Exam</h5>
-                <p class="quiz-config-subtitle">Set the parameters for your next question set.</p>
+                <h5 class="quiz-config-title">Configure Game</h5>
+                <p class="quiz-config-subtitle">Set the parameters for your next game set.</p>
+
             </div>
 
             <div class="row">
-
-
-                <div class="col-md-6 ">
+                <div class="col-md-6 mb-4">
                     <label for="branches" class="form-label">Branches For Medicine</label>
                     <div class="select2-primary" wire:ignore>
                         <select id="branches" class="select2 form-select branches" multiple></select>
@@ -168,24 +102,27 @@ new class extends Component {
                         <p class="text-danger py-2">{{ $message }}</p>
                     @enderror
                 </div>
+
+
             </div>
+
             <div class="row">
-                <div class="col-md-6">
-                    <label for="skills" class="form-label">Ideas From </label>
+                <div class="col-md-12 mb-4">
+                    <label for="skills" class="form-label">Skills For Question</label>
                     <div class="select2-primary" wire:ignore>
-                        <select id="references" class="form-select select2" name="references" multiple>
-                            <option value=""></option>
-                        </select>
+                        <select id="skills" class="select2 form-select" multiple></select>
                     </div>
-                    @error('references')
+                    @error('skillsList')
                         <p class="text-danger py-2">{{ $message }}</p>
                     @enderror
                 </div>
+            </div>
+
+            <div class="row">
                 <div class="col-md-6 mb-4" wire:ignore>
                     <label for="difficulty" class="form-label">Difficulty</label>
                     <div class="select2-primary">
-                        <select id="difficulty" class="select2 form-select">
-                            <option value="">Select Difficulty</option>
+                        <select id="difficulty" class="select2 form-select" multiple>
                             <option value="easy">Easy</option>
                             <option value="medium">Medium</option>
                             <option value="hard">Hard</option>
@@ -196,25 +133,11 @@ new class extends Component {
                         <p class="text-danger py-2">{{ $message }}</p>
                     @enderror
                 </div>
-            </div>
-
-            <div class="row">
-                <div class="col-md-6 mb-4">
-                    <label for="skills" class="form-label">Skills For Question</label>
-                    <div class="select2-primary" wire:ignore>
-                        <select id="skills" class="select2 form-select" multiple></select>
-                    </div>
-                    @error('skillsList')
-                        <p class="text-danger py-2">{{ $message }}</p>
-                    @enderror
-                </div>
-
 
                 <div class="col-md-6 mb-4" wire:ignore>
                     <label for="length" class="form-label">Length</label>
                     <div class="select2-primary">
-                        <select id="length" class="select2 form-select">
-                            <option value="">Select Length</option>
+                        <select id="length" class="select2 form-select" multiple>
                             <option value="short">Short</option>
                             <option value="medium">Medium</option>
                             <option value="long">Long</option>
@@ -251,15 +174,15 @@ new class extends Component {
             <div class="quiz-config-footer">
                 <p class="quiz-question-found">
                     Question Found
-                    {{ $this->questions?->count() != 0 ? $this->questions?->count() : 0 }}
+                    {{ $this->questions?->count()== null  ?  0 : $this->questions?->count()  }}
                 </p>
                 @error('count')
                     <p class="text-danger my-3">{{ $message }}</p>
                 @enderror
 
                 <div class="quiz-config-actions">
-                    <button class="btn btn-outline-warning me-4" wire:click="learningQuiz">Start Learning Exam</button>
-                    <button class="btn btn-success" wire:click="submit">Start Exam</button>
+                    <button class="btn btn-outline-info   me-4" wire:click="friendGame">Friend Game </button>
+                    {{-- <button class="btn btn-success" wire:click="submit">Start </button> --}}
                 </div>
             </div>
         </div>
@@ -272,29 +195,7 @@ new class extends Component {
             if ($('#branches').hasClass('select2-hidden-accessible')) {
                 $('#branches').select2('destroy');
             }
-            $('#references').select2({
-                placeholder: 'Search for References ',
-                ajax: {
-                    url: "{{ route('getReferences') }}",
-                    type: 'GET',
-                    delay: 250,
-                    data: function(params) {
-                        return {
-                            search: params.term
-                        };
-                    },
-                    processResults: function(data) {
-                        return {
-                            results: data.map((ref) => ({
-                                id: ref.id,
-                                text: ref.name,
-                            })),
-                        };
-                    },
-                },
-            }).on("change", function() {
-                $wire.set("references", $(this).val())
-            });
+
             $('#branches')
                 .select2({
                     placeholder: 'Search for Branches ', // Your placeholder text
@@ -381,11 +282,8 @@ new class extends Component {
                     $wire.set('skillsList', $(this).val());
                 });
         });
-
         $('#difficulty')
-            .select2({
-                placeholder: "Select Difficulty",
-            })
+            .select2()
             .on('change', function() {
                 $wire.set('difficulty', $(this).val());
             });

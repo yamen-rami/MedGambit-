@@ -2,10 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\BranchOfMedicine;
-use App\Models\SkillsForQuestion;
-use App\Models\Specialty;
 use Illuminate\Http\Request;
+
+use App\Models\{BranchOfMedicine, Reference, SkillsForQuestion, Specialty};
 
 class ApiController extends Controller
 {
@@ -47,6 +46,18 @@ class ApiController extends Controller
 
         return response()->json($skills);
         //
+    }
+     public function references(Request $request)
+    {
+        $search = $request->input('search');
+        $references = Reference::query()
+            ->when($search, function ($q) use ($search) {
+                $q->where('name', 'LIKE', "%{$search}%");
+            })
+            ->limit(20)
+            ->get();
+
+        return response()->json($references);
     }
 
     /**

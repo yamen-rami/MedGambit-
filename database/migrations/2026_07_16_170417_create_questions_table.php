@@ -4,6 +4,9 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
+use App\Http\Controllers\ReferenceController;
+use App\Models\Reference;
+
 return new class extends Migration
 {
     /**
@@ -18,14 +21,12 @@ return new class extends Migration
             $table->text('topic');
             $table->text('main_explanation');
             $table->text('high_yield');
-            $table->time('start_time')->nullable();
-            $table->string('end_time')->nullable();
             $table->boolean('solved')->default(false);
             $table->enum('difficulty', ['easy', 'medium', 'hard', 'nerd'])->index();
             $table->enum('length', ['short', 'medium', 'long']);
             $table->enum('elo_correct', [4, 8, 12]);
             $table->enum('elo_incorrect', [5, 10, 15]);
-            $table->enum('reference', ['UW', 'MRCP', 'MCC Qe']);
+            $table->foreignId("reference_id")->constrained()->cascadeOnDelete();        
             $table->fullText(['content', 'topic']);
             $table->timestamps();
         });

@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\{BelongsToMany, HasMany, HasOne};
+use Illuminate\Database\Eloquent\Relations\{BelongsTo, BelongsToMany, HasMany, HasOne};
 
 use Database\Factories\QuestionsFactory;
 
@@ -19,18 +19,21 @@ class Questions extends Model
         'topic',
         'main_explanation',
         'high_yield',
-        'start_time',
-        'end_time',
-        'solved',
         'difficulty',
         'length',
         'elo_correct',
         'elo_incorrect',
-        'reference',
+        'reference_id',
     ];
-    public function games()  {
-        return $this->belongsToMany(Game::class , "game_questions");
+    public function playedCount() : HasOne{
+        return $this->hasOne(QuestionPlayedTime::class , 'question_id');
     }
+
+    public function games()
+    {
+        return $this->belongsToMany(Game::class, 'game_questions');
+    }
+
     public function options(): HasMany
     {
         return $this->hasMany(Option::class);
@@ -66,6 +69,7 @@ class Questions extends Model
     {
         return $this->hasMany(Answers::class);
     }
+
     public function gameAnswers(): HasMany
     {
         return $this->hasMany(GameAnswers::class);
@@ -74,5 +78,10 @@ class Questions extends Model
     public function user(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'user_played_questions');
+    }
+
+    public function reference(): BelongsTo
+    {
+        return $this->belongsTo(Reference::class);
     }
 }

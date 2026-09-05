@@ -11,4 +11,7 @@ protected $fillable = ["player_id" , "question_id" , "game_attempt_id" , "option
     public function gameAttempt(){
         return $this->belongsTo(GameAttempt::class);
     }
+    public function question(){
+        return $this->belongsTo(Questions::class , "question_id");
+    }
 }

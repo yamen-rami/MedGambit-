@@ -13,8 +13,12 @@ class Game extends Model
     /** @use HasFactory<GameFactory> */
     use HasFactory;
 
-    protected $fillable = ['max_players', 'status', "challenge_token" , 'started_at', 'ended_at'];
+    protected $fillable = ['max_players', 'status', "challenge_token" , 'started_at', 'ended_at' , "length" , "difficulty"];
     // TODO Duration 
+    protected $casts = [
+        "difficulty" => "array",
+        "length" => "array",
+    ];
 
     public function questions()
     {
@@ -37,17 +41,17 @@ class Game extends Model
 
     public function specialties(): BelongsToMany
     {
-        return $this->belongsToMany(Specialty::class, 'question_speciality');
+        return $this->belongsToMany(Specialty::class, 'games_specialities');
     }
 
     public function branches(): BelongsToMany
     {
-        return $this->belongsToMany(BranchOfMedicine::class, 'question_BranchOfMedicine');
-    }
+        return $this->belongsToMany(BranchOfMedicine::class, 'games_branches');
+}
 
     public function skills(): BelongsToMany
     {
-        return $this->belongsToMany(SkillsForQuestion::class, 'question_skills');
+        return $this->belongsToMany(SkillsForQuestion::class, 'games_skills');
     }
 
     public function scopePlayersCount(Builder $query): Builder

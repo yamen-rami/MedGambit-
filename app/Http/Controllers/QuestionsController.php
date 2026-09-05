@@ -2,16 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\BranchOfMedicine;
-use App\Models\Questions;
-use App\Models\SkillsForQuestion;
-use App\Models\Specialty;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Validation\Rule;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\{DB, Storage};
+use Illuminate\Validation\{Rule, ValidationException};
+
+use App\Models\{BranchOfMedicine, Questions, Reference, SkillsForQuestion, Specialty};
 
 class QuestionsController extends Controller
 {
@@ -28,7 +24,7 @@ class QuestionsController extends Controller
         */
         $sort = $request->sort ?? 'desc';
 
-        $query = Questions::query();
+        $query = Questions::query()->with("reference");
 
         if ($request->filled('search')) {
             $query->whereFullText(['content', 'topic'], $request->search);
@@ -58,9 +54,10 @@ class QuestionsController extends Controller
         $oldSpecialities = Specialty::whereIn('id', old('speciality', []))->get();
         $oldBranches = BranchOfMedicine::whereIn('id', old('branches', []))->get();
         $oldSkills = SkillsForQuestion::whereIn('id', old('skills', []))->get();
-
-        // Getting the old select2 after failure
-        return view('questions.create', compact('oldSpecialities', 'oldBranches', 'oldSkills'));
+        // dd(old("skills"));
+        $oldReferenece = Reference::whereIn('id', old('references', []))->get();
+        // Getting value s
+        return view('questions.create', compact('oldSpecialities', 'oldBranches', 'oldSkills' , "oldReferenece"));
     }
 
     public function edit(int $id)
@@ -69,12 +66,14 @@ class QuestionsController extends Controller
         $oldSpecialityIds = old('speciality', $question->specialties->pluck('id')->toArray());
         $oldBranchesIds = old('branches', $question->branches->pluck('id')->toArray());
         $oldSkillsIds = old('skills', $question->skills->pluck('id')->toArray());
+
+        $oldReferenceId = old("reference", $question->reference->id);        
         $oldSpecialities = Specialty::whereIn('id', $oldSpecialityIds)->get();
         $oldBranches = BranchOfMedicine::whereIn('id', $oldBranchesIds)->get();
         $oldSkills = SkillsForQuestion::whereIn('id', $oldSkillsIds)->get();
-        // dd($oldSpecialities , $oldSkills);
+        $oldReference = Reference::findOrFail($oldReferenceId);
 
-        return view('questions.edit', compact('question', 'oldSpecialities', 'oldBranches', 'oldSkills'));
+        return view('questions.edit', compact('question', 'oldSpecialities', 'oldBranches', 'oldSkills', 'oldReference'));
     }
 
     public function store(Request $request)
@@ -90,7 +89,8 @@ class QuestionsController extends Controller
             'skills.*' => ['required', 'exists:skills_for_questions,id'],
             'topic' => ['required', 'string'],
             'main_explanation' => ['required', 'string'],
-            'reference' => ['required', Rule::in(['MCC Qe', 'MRCP', 'UW'])],
+            'reference' => ['required', 'exists:references,id'],
+
             'high_yield' => ['required', 'string'],
             'difficulty' => ['required', Rule::in(['easy', 'medium', 'hard', 'nerd'])],
             'length' => ['required', Rule::in(['short', 'medium', 'long'])],
@@ -123,34 +123,26 @@ class QuestionsController extends Controller
                 'correct_answer' => 'Exactly 1 option must be the correct answer',
             ]);
         }
-        DB::transaction(function () use ($questionData) {
-            if ($questionData['image']) {
-                $questionData['image'] = $questionData['image']->store('questions', 'public');
+        DB::transaction(function () use ($questionData, $request) {
+            $path = '';
+            if ($request->file("image")) {
+                $path  = $request->file("image")->store('questions', 'public');
             }
             $question = Questions::create([
                 'content' => $questionData['content'],
                 'topic' => $questionData['topic'],
                 'main_explanation' => $questionData['main_explanation'],
-                'reference' => $questionData['reference'],
                 'difficulty' => $questionData['difficulty'],
                 'high_yield' => $questionData['high_yield'],
                 'length' => $questionData['length'],
                 'elo_correct' => $questionData['elo_correct'],
                 'elo_incorrect' => $questionData['elo_incorrect'],
-                'image' => $questionData['image'],
+                'image' => $path,
+                "reference_id" => $questionData["reference"],
             ]);
             $question->specialties()->attach($questionData['speciality']);
             $question->skills()->attach($questionData['skills']);
             $question->branches()->attach($questionData['branches']);
-            // foreach ($questionData["speciality"] as $speciality) {
-            //     $question->specialties()->attach($speciality);
-            // }
-            // foreach ($questionData["skills"] as $skill) {
-            //     $question->skills()->attach($skill);
-            // }
-            // foreach ($questionData["branches"] as $branch) {
-            //     $question->branches()->attach($branch);
-            // }
             foreach ($questionData['options'] as $option) {
                 if (in_array('image', $option, true)) {
                     $option['image'] = $option['image']->store('questions', 'public');
@@ -182,7 +174,7 @@ class QuestionsController extends Controller
                 'topic' => ['nullable', 'string'],
                 'difficulty' => ['nullable', Rule::in(['easy', 'medium', 'hard', 'nerd'])],
                 'length' => ['nullable', Rule::in(['short', 'medium', 'long'])],
-                'reference' => ['nullable', Rule::in(['MRCP', 'UW', 'MCC Qe'])],
+                'reference' => ['nullable', 'exists:references,id'],
                 'elo_correct' => ['nullable', Rule::in(['4', '8', '12'])],
                 'elo_incorrect' => ['nullable', Rule::in(['5', '10', '15'])],
                 'image' => ['nullable'],

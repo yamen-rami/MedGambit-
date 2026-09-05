@@ -27,7 +27,7 @@ use Database\Factories\UserFactory;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['name', 'email', 'password', 'image', 'year', 'graduated', 'rank', 'role'])]
+#[Fillable(['name', 'email', 'password', 'image', 'year', 'graduated', 'rank', 'role' ,"country" , "game_rank", "know_about_us" ,"gender"])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements PasskeyUser
 {

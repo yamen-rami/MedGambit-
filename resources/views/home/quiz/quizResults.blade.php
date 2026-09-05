@@ -1,10 +1,10 @@
 <x-user-layout>
     <x-slot:title>Quiz Result</x-slot:title>
     @push('style')
-        <link rel="stylesheet" href="{{ asset("assets/css/quiz-result.css") }}" />
+        <link rel="stylesheet" href="{{ asset('assets/css/quiz-result.css') }}" />
     @endpush
 
-    <div class="results-page" x-data="{all : true , correct : false , incorrect:false}">
+    <div class="results-page" x-data="{ all: true, correct: false, incorrect: false }">
         <!-- Header -->
         <header class="results-header">
             <div>
@@ -13,10 +13,10 @@
             </div>
 
             <div class="header-actions">
-                {{-- <button class="btn btn-primary">
-                    <i class="fa-solid fa-rotate-right"></i>
-                    Retake Quiz
-                </button> --}}
+                <button class="">
+                    <span class="align-end">({{ $attempt->new_rank - $attempt->current_rank }})</span>
+                    <p>{{ $attempt->current_rank }}</p>
+                </button>
             </div>
         </header>
 
@@ -24,13 +24,12 @@
         <section class="stats-grid">
             <div class="score-card">
                 <span class="card-label">Final Score</span>
-
                 <strong
-                    class="score-value {{ ($quiz->questions->count() / 2) <= $attempt->score ? "text-success" : 'text-danger' }}">{{ $attempt->score }}
+                    class="score-value {{ $quiz->questions->count() / 2 <= $attempt->score ? 'text-success' : 'text-danger' }}">{{ $attempt->score }}
                     <span class="text-white">
                         / {{ $quiz->questions->count() }}</strong>
                 </span>
-                @if (($quiz->questions->count() / 2) <= $attempt->score)
+                @if ($quiz->questions->count() / 2 <= $attempt->score)
                     <span class="score-status">Excellent Work!</span>
                 @else
                     <span class="score-status">You Have Failed</span>
@@ -39,19 +38,7 @@
                 @endif
             </div>
 
-            <div class="stat-card">
-                <div class="stat-icon blue">
-                    <i class="fa-regular fa-clock"></i>
-                </div>
 
-                <div>
-                    <span>Time Taken</span>
-                    @php
-                        $result = Number::format($attempt->time_taken / 60, precision: 2);
-                    @endphp
-                    <strong>{{ $result }} Minutes </strong>
-                </div>
-            </div>
 
             <div class="stat-card">
                 <div class="stat-icon green">
@@ -83,6 +70,19 @@
                 <div>
                     <span>Questions</span>
                     <strong>{{ $quiz->questions->count() }} Questions </strong>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon blue">
+                    <i class="fa-regular fa-clock"></i>
+                </div>
+
+                <div>
+                    <span>Time Taken</span>
+                    @php
+                        $result = Number::format($attempt->time_taken / 60, precision: 2);
+                    @endphp
+                    <strong>{{ $result }} Minutes </strong>
                 </div>
             </div>
         </section>
@@ -134,15 +134,13 @@
                             @endphp
                             <div data-bs-toggle="modal" data-bs-target="#staticBackdrop{{ $option->id }}"
                                 class="answer selected  
-                                                                                                                                                                @if($correct == $option->id)
-                                                                                                                                                                    correct-answer
+                                                                                                                                                                @if ($correct == $option->id) correct-answer
                                                                                                                                                                 @else
-                                                                                                                                                                    @if($answer->option_id == $option->id)
-                                                                                                                                                                        @if($answer->option_id == $correct)
+                                                                                                                                                                    @if ($answer->option_id == $option->id)
+                                                                                                                                                                        @if ($answer->option_id == $correct)
                                                                                                                                                                             correct-answer
                                                                                                                                                                         @else
-                                                                                                                                                                            wrong-answer
-                                                                                                                                                                        @endif
+                                                                                                                                                                            wrong-answer @endif
                                                                                                                                                                     @endif
                                                                                                                                                                 @endif
                                                                                                                                                                                                                         ">
@@ -161,7 +159,7 @@
                                 </span>
 
                                 <span class="answer-text"> {{ $option->content }} </span>
-                                @if($correct == $option->id)
+                                @if ($correct == $option->id)
                                     <i class="fa-solid fa-check answer-icon"></i>
                                 @else
                                     <i class="fa-regular fa-circle-xmark text-danger"></i>
@@ -170,7 +168,7 @@
                                 <!-- Button trigger modal -->
                                 <!-- Large Modal -->
                                 <!--
-                                                                        Large Modal 
+                                                                        Large Modal
                                                                       <div class="modal-dialog modal-xl">...</div>
                                                                         Meduim Modal
                                                                       <div class="modal-dialog modal-lg">...</div>
@@ -180,13 +178,14 @@
 
 
                                 <!-- Modal -->
-                                <div class="modal fade modal-lg" id="staticBackdrop{{ $option->id }}" data-bs-backdrop="static"
-                                    data-bs-keyboard="true" tabindex="-1" aria-labelledby="staticBackdropLabel"
-                                    aria-hidden="true">
+                                <div class="modal fade modal-lg" id="staticBackdrop{{ $option->id }}"
+                                    data-bs-backdrop="static" data-bs-keyboard="true" tabindex="-1"
+                                    aria-labelledby="staticBackdropLabel" aria-hidden="true">
                                     <div class="modal-dialog">
                                         <div class="modal-content">
                                             <div class="modal-header">
-                                                <h1 class="modal-title fs-5" id="staticBackdropLabel">Option Explanation </h1>
+                                                <h1 class="modal-title fs-5" id="staticBackdropLabel">Option Explanation
+                                                </h1>
                                                 <button type="button" class="btn-close" data-bs-dismiss="modal"
                                                     aria-label="Close"></button>
                                             </div>
@@ -242,15 +241,13 @@
                             @endphp
                             <div data-bs-toggle="modal" data-bs-target="#staticBackdrop{{ $option->id }}"
                                 class="answer selected  
-                                                                                                                                                                @if($correct == $option->id)
-                                                                                                                                                                    correct-answer
+                                                                                                                                                                @if ($correct == $option->id) correct-answer
                                                                                                                                                                 @else
-                                                                                                                                                                    @if($answer->option_id == $option->id)
-                                                                                                                                                                        @if($answer->option_id == $correct)
+                                                                                                                                                                    @if ($answer->option_id == $option->id)
+                                                                                                                                                                        @if ($answer->option_id == $correct)
                                                                                                                                                                             correct-answer
                                                                                                                                                                         @else
-                                                                                                                                                                            wrong-answer
-                                                                                                                                                                        @endif
+                                                                                                                                                                            wrong-answer @endif
                                                                                                                                                                     @endif
                                                                                                                                                                 @endif
                                                                                                                                                                                                                         ">
@@ -269,7 +266,7 @@
                                 </span>
 
                                 <span class="answer-text"> {{ $option->content }} </span>
-                                @if($correct == $option->id)
+                                @if ($correct == $option->id)
                                     <i class="fa-solid fa-check answer-icon"></i>
                                 @else
                                     <i class="fa-regular fa-circle-xmark text-danger"></i>
@@ -278,7 +275,7 @@
                                 <!-- Button trigger modal -->
                                 <!-- Large Modal -->
                                 <!--
-                                                                        Large Modal 
+                                                                        Large Modal
                                                                       <div class="modal-dialog modal-xl">...</div>
                                                                         Meduim Modal
                                                                       <div class="modal-dialog modal-lg">...</div>
@@ -288,13 +285,14 @@
 
 
                                 <!-- Modal -->
-                                <div class="modal fade modal-lg" id="staticBackdrop{{ $option->id }}" data-bs-backdrop="static"
-                                    data-bs-keyboard="true" tabindex="-1" aria-labelledby="staticBackdropLabel"
-                                    aria-hidden="true">
+                                <div class="modal fade modal-lg" id="staticBackdrop{{ $option->id }}"
+                                    data-bs-backdrop="static" data-bs-keyboard="true" tabindex="-1"
+                                    aria-labelledby="staticBackdropLabel" aria-hidden="true">
                                     <div class="modal-dialog">
                                         <div class="modal-content">
                                             <div class="modal-header">
-                                                <h1 class="modal-title fs-5" id="staticBackdropLabel">Option Explanation </h1>
+                                                <h1 class="modal-title fs-5" id="staticBackdropLabel">Option
+                                                    Explanation </h1>
                                                 <button type="button" class="btn-close" data-bs-dismiss="modal"
                                                     aria-label="Close"></button>
                                             </div>
@@ -350,15 +348,13 @@
                             @endphp
                             <div data-bs-toggle="modal" data-bs-target="#staticBackdrop{{ $option->id }}"
                                 class="answer selected  
-                                                                                                                                                                @if($correct == $option->id)
-                                                                                                                                                                    correct-answer
+                                                                                                                                                                @if ($correct == $option->id) correct-answer
                                                                                                                                                                 @else
-                                                                                                                                                                    @if($answer->option_id == $option->id)
-                                                                                                                                                                        @if($answer->option_id == $correct)
+                                                                                                                                                                    @if ($answer->option_id == $option->id)
+                                                                                                                                                                        @if ($answer->option_id == $correct)
                                                                                                                                                                             correct-answer
                                                                                                                                                                         @else
-                                                                                                                                                                            wrong-answer
-                                                                                                                                                                        @endif
+                                                                                                                                                                            wrong-answer @endif
                                                                                                                                                                     @endif
                                                                                                                                                                 @endif
                                                                                                                                                                                                                         ">
@@ -377,7 +373,7 @@
                                 </span>
 
                                 <span class="answer-text"> {{ $option->content }} </span>
-                                @if($correct == $option->id)
+                                @if ($correct == $option->id)
                                     <i class="fa-solid fa-check answer-icon"></i>
                                 @else
                                     <i class="fa-regular fa-circle-xmark text-danger"></i>
@@ -386,7 +382,7 @@
                                 <!-- Button trigger modal -->
                                 <!-- Large Modal -->
                                 <!--
-                                                                        Large Modal 
+                                                                        Large Modal
                                                                       <div class="modal-dialog modal-xl">...</div>
                                                                         Meduim Modal
                                                                       <div class="modal-dialog modal-lg">...</div>
@@ -396,13 +392,14 @@
 
 
                                 <!-- Modal -->
-                                <div class="modal fade modal-lg" id="staticBackdrop{{ $option->id }}" data-bs-backdrop="static"
-                                    data-bs-keyboard="true" tabindex="-1" aria-labelledby="staticBackdropLabel"
-                                    aria-hidden="true">
+                                <div class="modal fade modal-lg" id="staticBackdrop{{ $option->id }}"
+                                    data-bs-backdrop="static" data-bs-keyboard="true" tabindex="-1"
+                                    aria-labelledby="staticBackdropLabel" aria-hidden="true">
                                     <div class="modal-dialog">
                                         <div class="modal-content">
                                             <div class="modal-header">
-                                                <h1 class="modal-title fs-5" id="staticBackdropLabel">Option Explanation </h1>
+                                                <h1 class="modal-title fs-5" id="staticBackdropLabel">Option
+                                                    Explanation </h1>
                                                 <button type="button" class="btn-close" data-bs-dismiss="modal"
                                                     aria-label="Close"></button>
                                             </div>
@@ -429,46 +426,44 @@
         </div>
         {{-- <div x-show="incorrect"> --}}
 
-            <!-- Question 3 -->
-            @if ($unanswered->count() != 0)
-                @foreach ($unanswered as $un)
-                    <article class="question-card unanswered-question">
-                        <div class="question-   ">
-                            <div class="question-number">{{ $loop->iteration }}</div>
+        <!-- Question 3 -->
+        @if ($unanswered->count() != 0)
+            @foreach ($unanswered as $un)
+                <article class="question-card unanswered-question">
+                    <div class="question-   ">
+                        <div class="question-number">{{ $loop->iteration }}</div>
 
-                            <div class="question-content">
-                                <p class="question-text">{{ $un->content }}</p>
-                            </div>
-                            <span class="result-badge unanswered-badge">
-                                <i class="fa-regular fa-circle"></i>
-                                Unanswered
-                            </span>
+                        <div class="question-content">
+                            <p class="question-text">{{ $un->content }}</p>
                         </div>
-                        @foreach ($un->options as $option)
-                            <div class="answers my-3">
-                                <div class="answer disabled-answer">
-                                    <span class="answer-letter">
-                                        @if ($loop->iteration === 1)
-                                            A
-                                        @elseif ($loop->iteration === 2)
-                                            B
-                                        @elseif ($loop->iteration === 3)
-                                            C
-                                        @elseif ($loop->iteration === 4)
-                                            D
-                                        @else
-                                            E
-                                        @endif
-                                    </span>
+                        <span class="result-badge unanswered-badge">
+                            <i class="fa-regular fa-circle"></i>
+                            Unanswered
+                        </span>
+                    </div>
+                    @foreach ($un->options as $option)
+                        <div class="answers my-3">
+                            <div class="answer disabled-answer">
+                                <span class="answer-letter">
+                                    @if ($loop->iteration === 1)
+                                        A
+                                    @elseif ($loop->iteration === 2)
+                                        B
+                                    @elseif ($loop->iteration === 3)
+                                        C
+                                    @elseif ($loop->iteration === 4)
+                                        D
+                                    @else
+                                        E
+                                    @endif
+                                </span>
 
-                                    <span class="answer-text"> {{ $option->content }} </span>
-                                </div>
+                                <span class="answer-text"> {{ $option->content }} </span>
                             </div>
-                        @endforeach
-                    </article>
-
-                @endforeach
-
-            @endif
-        </div>
-        <x-user-layout />
+                        </div>
+                    @endforeach
+                </article>
+            @endforeach
+        @endif
+    </div>
+</x-user-layout >

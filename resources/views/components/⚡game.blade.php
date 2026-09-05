@@ -36,6 +36,7 @@ new class extends Component {
         if (!$this->currentPlayer) {
             abort(403, 'You are not a player in this game.');
         }
+
         if ($this->currentPlayer) {
             $this->current = $this->currentPlayer->current_question;
         }
@@ -43,7 +44,9 @@ new class extends Component {
         if (!$this->attempt) {
             return;
         }
-
+        if ($this->attempt->status == 'finished') {
+            $this->finished = true;
+        }
         $this->loading = $this->game->status !== 'playing';
 
         if (!$this->loading) {
@@ -70,7 +73,11 @@ new class extends Component {
     {
         $this->game->loadMissing('questions.options');
     }
-
+    #[Computed]
+    public function currentInCorrectElo()
+    {
+        return $this->quiz->questions[$this->current - 1]->elo_incorrect;
+    }
     public function submit($optionId, $questionId)
     {
         if (!$this->attempt) {
@@ -200,7 +207,35 @@ new class extends Component {
     }
     public function finishGame()
     {
-        return;
+        if (!$this->game) {
+            return;
+        }
+        if (!$this->attempt) {
+            return;
+        }
+        if ($this->game->status !== 'playing') {
+            return;
+        }
+        if ($this->currentPlayer->status === 'finished') {
+            return;
+        }
+        $player = $this->game->players->where('user_id', auth()->id())->first();
+        if (!$player) {
+            return;
+        }
+        $this->loading = false;
+
+        $player->update([
+            'status' => 'finished',
+        ]);
+        $this->finished = true;
+        $service = app(GameService::class);
+
+        $service->editAttempt($this->attempt, $this->game);
+
+        if ($this->game->finishedPlayers() === 2) {
+            GameFinished::dispatch($this->game->id);
+        }
     }
     public function submitAttempt()
     {
@@ -208,7 +243,7 @@ new class extends Component {
         if (!$game) {
             return;
         }
-        $length = $game->questions->count() ;   
+        $length = $game->questions->count();
         $answersCount = $this->attempt
             ->answers()
             ->where('player_id', auth()->id())
@@ -233,11 +268,12 @@ new class extends Component {
         if (!$player) {
             return;
         }
-        $this->loading = false ;
+        $this->loading = false;
 
         $player->update([
             'status' => 'finished',
         ]);
+        $this->finished = true;
         $service = app(GameService::class);
 
         $service->editAttempt($this->attempt, $this->game);
@@ -247,7 +283,7 @@ new class extends Component {
         }
     }
     #[On('echo-private:game.finished.{gameId},.game.finished')]
-    public function toResutls()
+    public function toResults()
     {
         if (!$this->game) {
             return;
@@ -259,7 +295,6 @@ new class extends Component {
         $service->finishGame($this->game->attempts);
         return redirect()->route('game.results', [
             'game' => $this->game,
-            'player' => $this->currentPlayer,
         ]);
     }
 };
@@ -344,6 +379,9 @@ new class extends Component {
         <div class="content-grid">
             {{-- ===================== CENTER ===================== --}}
             <section class="battle-col">
+                <div class="alert alert-danger bg-danger border border-0 text-white" role="alert" wire:offline>
+                    You Are Offline
+                </div>
                 {{-- ===================== VS CARD ===================== --}}
                 <div class="vs-card">
                     <div class="vs-top">
@@ -351,7 +389,7 @@ new class extends Component {
                             <div class="avatar avatar-blue lg">R</div>
                             <div>
                                 <div class="">{{ auth()->user()->name }}</div>
-                                <div class="player-elo">ELO {{ auth()->user()->rank }} <i
+                                <div class="player-elo">ELO {{ auth()->user()->game_rank }} <i
                                         class="fa-solid fa-trophy"></i></div>
                             </div>
                         </div>
@@ -368,7 +406,7 @@ new class extends Component {
 
                                 <div class="player-elo right">
                                     ELO
-                                    {{ $this->player1?->id === auth()->id() ? $this->player2?->rank : $this->player1?->rank }}
+                                    {{ $this->player1?->id === auth()->id() ? $this->player2?->game_rank : $this->player1?->game_rank }}
                                     <i class="fa-solid fa-trophy"></i>
                                 </div>
                             </div>
@@ -391,8 +429,11 @@ new class extends Component {
                                 <span class="question-index">
                                     Question {{ $loop->iteration }} / {{ $game->questions->count() }}
                                 </span>
-
-                                <span class="badge-medium"> {{ $game->difficulty ?? 'Medium' }} </span>
+                                @foreach ($game?->difficulty ?? [] as $d)
+                                    <span class="badge-medium">
+                                        {{ $d }}
+                                    </span>
+                                @endforeach
                             </div>
 
                             {{-- QUESTION --}}
@@ -528,19 +569,34 @@ new class extends Component {
             <aside class="side-col">
                 {{-- ===================== BATTLE STATUS ===================== --}}
                 <div class="panel">
-                    <div class="panel-title-row">
-                        <span class="panel-title"> Battle Status </span>
+                    <div class="panel-title-row" x-data="{ online: navigator.onLine }" x-init="window.addEventListener('online', () => online = true);
+                    window.addEventListener('offline', () => online = false);">
+                        <span class="panel-title">Battle Status</span>
 
                         <span class="live-pill">
-                            <span class="live-dot"></span>
+                            <template x-if="online">
+                                <span class="flex items-center gap-2">
+                                    <span class="live-dot"></span>
+                                    <span>Live</span>
+                                </span>
+                            </template>
 
-                            Live
+                            <template x-if="!online">
+                                <span class="flex items-center gap-2">
+                                    <span class="live-dot-offline"></span>
+                                    <span class="text-danger">Offline</span>
+                                </span>
+                            </template>
                         </span>
                     </div>
 
+
                     {{-- Battle Type --}}
                     <div class="stat-row">
-                        <i class="fa-solid fa-swords stat-icon"></i>
+                         <svg
+                                        class="menu-icon icon-base text-primary"
+
+                             xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-question-mark-icon lucide-circle-question-mark"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
 
                         <div>
                             <div class="stat-label">Battle Type</div>
@@ -549,18 +605,7 @@ new class extends Component {
                         </div>
                     </div>
 
-                    {{-- Time --}}
-                    <div class="stat-row">
-                        <i class="fa-regular fa-clock stat-icon"></i>
 
-                        <div>
-                            <div class="stat-label">Time per Question</div>
-
-                            <div class="stat-value">
-                                {{-- Question --}}
-                            </div>
-                        </div>
-                    </div>
 
                     {{-- Reward --}}
                     <div class="stat-row">
@@ -572,10 +617,19 @@ new class extends Component {
                             <div class="stat-value">{{ $this->currentElo ?? 4 }}</div>
                         </div>
                     </div>
+                    <div class="stat-row">
+                        <i class="fa-solid fa-trophy stat-icon"></i>
+
+                        <div>
+                            <div class="stat-label">Lose Reward </div>
+
+                            <div class="stat-value">{{ $this->currentInCorrectElo ?? 5 }}</div>
+                        </div>
+                    </div>
                 </div>
 
                 {{-- ===================== BATTLE PROGRESS ===================== --}}
-                <div class="panel">
+                <div class="panel" wire:show='!finished'>
                     <div class="panel-title-row">
                         <span class="panel-title"> Battle Progress </span>
 
@@ -608,6 +662,9 @@ new class extends Component {
                             @endforeach
                         </div>
                     </div>
+                </div>
+                <div class="panel  justify-content-center align-items-center" wire:show="finished">
+                    Waiting For Your Opponent
                 </div>
 
                 {{-- ===================== PERFORMANCE ===================== --}}
@@ -658,6 +715,7 @@ new class extends Component {
             <i class="fa-solid fa-shield-halved"></i>
             Every question is a battle. Every battle makes you better.
         </footer>
+
     @endif
     @script
         <script>
