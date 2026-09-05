@@ -1,12 +1,20 @@
 <!doctype html>
 
-<html lang="en" class="layout-navbar-fixed layout-menu-fixed layout-compact" dir="ltr" data-skin="default"
-    data-bs-theme="light" data-assets-path="../../assets/" data-template="vertical-menu-template-starter">
-
+<html
+    lang="en"
+    class="layout-navbar-fixed layout-menu-fixed layout-compact"
+    dir="ltr"
+    data-skin="default"
+    data-bs-theme="light"
+    data-assets-path="../../assets/"
+    data-template="vertical-menu-template-starter"
+>
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport"
-        content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0" />
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0"
+    />
     <meta name="robots" content="noindex, nofollow" />
     <title>{{ $title ?? 'Home Page' }}</title>
     <meta name="description" content="" />
@@ -15,7 +23,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
         href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&ampdisplay=swap"
-        rel="stylesheet" />
+        rel="stylesheet"
+    />
     <link rel="stylesheet" href="{{ asset('assets/vendor/fonts/iconify-icons.css') }}" />
     <link rel="stylesheet" href="{{ asset('assets/vendor/libs/node-waves/node-waves.css') }}" />
     <link rel="stylesheet" href="{{ asset('assets/vendor/libs/pickr/pickr-themes.css') }}" />
@@ -26,9 +35,9 @@
     <link rel="stylesheet" href="{{ asset('assets/css/question.css') }}" />
     <link rel="stylesheet" href="{{ asset('assets/vendor/libs/select2/select2.css') }}" />
     <link rel="stylesheet" href="{{ asset('assets/css/demo.css') }}" />
-    <link rel="stylesheet" href="{{ asset("assets/css/all.css") }}">
-    @stack("styles")
-    
+    <link rel="stylesheet" href="{{ asset("assets/css/all.css") }}" />
+    @stack('styles')
+
     @livewireStyles
 </head>
 
@@ -43,20 +52,39 @@
                     <a href="index.html" class="app-brand-link">
                         <span class="app-brand-logo demo">
                             <span class="text-primary">
-                                <svg width="32" height="22" viewBox="0 0 32 22" fill="none"
-                                    xmlns="http://www.w3.org/2000/svg">
-                                    <path fill-rule="evenodd" clip-rule="evenodd"
+                                <svg
+                                    width="32"
+                                    height="22"
+                                    viewBox="0 0 32 22"
+                                    fill="none"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                >
+                                    <path
+                                        fill-rule="evenodd"
+                                        clip-rule="evenodd"
                                         d="M0.00172773 0V6.85398C0.00172773 6.85398 -0.133178 9.01207 1.98092 10.8388L13.6912 21.9964L19.7809 21.9181L18.8042 9.88248L16.4951 7.17289L9.23799 0H0.00172773Z"
-                                        fill="currentColor" />
-                                    <path opacity="0.06" fill-rule="evenodd" clip-rule="evenodd"
+                                        fill="currentColor"
+                                    />
+                                    <path
+                                        opacity="0.06"
+                                        fill-rule="evenodd"
+                                        clip-rule="evenodd"
                                         d="M7.69824 16.4364L12.5199 3.23696L16.5541 7.25596L7.69824 16.4364Z"
-                                        fill="#161616" />
-                                    <path opacity="0.06" fill-rule="evenodd" clip-rule="evenodd"
+                                        fill="#161616"
+                                    />
+                                    <path
+                                        opacity="0.06"
+                                        fill-rule="evenodd"
+                                        clip-rule="evenodd"
                                         d="M8.07751 15.9175L13.9419 4.63989L16.5849 7.28475L8.07751 15.9175Z"
-                                        fill="#161616" />
-                                    <path fill-rule="evenodd" clip-rule="evenodd"
+                                        fill="#161616"
+                                    />
+                                    <path
+                                        fill-rule="evenodd"
+                                        clip-rule="evenodd"
                                         d="M7.77295 16.3566L23.6563 0H32V6.88383C32 6.88383 31.8262 9.17836 30.6591 10.4057L19.7824 22H13.6938L7.77295 16.3566Z"
-                                        fill="currentColor" />
+                                        fill="currentColor"
+                                    />
                                 </svg>
                             </span>
                         </span>
@@ -82,9 +110,22 @@
                     <li class="menu-item {{ request()->routeIs('questions.*') ? 'active' : '' }}">
                         <a href="{{ route('questions.index') }}" class="menu-link">
                             <svg
-                                        class="menu-icon icon-base"
-
-                             xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-question-mark-icon lucide-circle-question-mark"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
+                                class="menu-icon icon-base"
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="24"
+                                height="24"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                class="lucide lucide-circle-question-mark-icon lucide-circle-question-mark"
+                            >
+                                <circle cx="12" cy="12" r="10" />
+                                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                                <path d="M12 17h.01" />
+                            </svg>
                             <div data-i18n="Page 2">Questions</div>
                         </a>
                     </li>
@@ -96,7 +137,7 @@
                     </li>
                     <li class="menu-item {{ request()->routeIs('branch.*') ? 'active' : '' }}">
                         <a href="{{ route('branch.index') }}" class="menu-link">
-                            <i  class="fs-4 text-center fa-solid fa-code-branch"></i>
+                            <i class="fs-4 fa-solid fa-code-branch text-center"></i>
                             <div data-i18n="Page 2">Branch</div>
                         </a>
                     </li>
@@ -108,22 +149,28 @@
                     </li>
                     <li class="menu-item {{ request()->routeIs('quizez.*') ? 'active' : '' }}">
                         <a href="{{ route('quizez.index') }}" class="menu-link">
-
                             <i class="menu-icon fa-solid fa-stethoscope"></i>
                             <div data-i18n="Page 2">Quizez</div>
                         </a>
                     </li>
                     <li class="menu-item {{ request()->routeIs('references.*') ? 'active' : '' }}">
                         <a href="{{ route('references.index') }}" class="menu-link">
-                            <svg style="z-index: 1000;" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                                        class="menu-icon icon-base"
-
-                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                stroke-linecap="round" stroke-linejoin="round"
-                                class="lucide lucide-book-marked-icon lucide-book-marked">
+                            <svg
+                                style="z-index: 1000"
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="24"
+                                height="24"
+                                class="menu-icon icon-base"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                class="lucide lucide-book-marked-icon lucide-book-marked"
+                            >
                                 <path d="M10 2v8l3-3 3 3V2" />
-                                <path
-                                    d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20" />
+                                <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20" />
                             </svg>
                             <div data-i18n="Page 2">References</div>
                         </a>
@@ -132,8 +179,10 @@
             </aside>
 
             <div class="menu-mobile-toggler d-xl-none rounded-1">
-                <a href="javascript:void(0);"
-                    class="layout-menu-toggle menu-link text-large text-bg-secondary rounded-1 p-2">
+                <a
+                    href="javascript:void(0);"
+                    class="layout-menu-toggle menu-link text-large text-bg-secondary rounded-1 p-2"
+                >
                     <i class="ti tabler-menu icon-base"></i>
                     <i class="ti tabler-chevron-right icon-base"></i>
                 </a>
@@ -144,8 +193,10 @@
             <div class="layout-page">
                 <!-- Navbar -->
 
-                <nav class="layout-navbar container-xxl navbar-detached navbar navbar-expand-xl align-items-center bg-navbar-theme"
-                    id="layout-navbar">
+                <nav
+                    class="layout-navbar container-xxl navbar-detached navbar navbar-expand-xl align-items-center bg-navbar-theme"
+                    id="layout-navbar"
+                >
                     <div class="layout-menu-toggle navbar-nav align-items-xl-center me-xl-0 d-xl-none me-3">
                         <a class="nav-item nav-link me-xl-6 px-0" href="javascript:void(0)">
                             <i class="icon-base ti tabler-menu-2 icon-md"></i>
@@ -155,31 +206,56 @@
                     <div class="navbar-nav-right d-flex align-items-center justify-content-end" id="navbar-collapse">
                         <div class="navbar-nav align-items-center">
                             <div class="nav-item dropdown me-xl-0 me-2">
-                                <a class="nav-link dropdown-toggle hide-arrow" id="nav-theme"
-                                    href="javascript:void(0);" data-bs-toggle="dropdown">
+                                <a
+                                    class="nav-link dropdown-toggle hide-arrow"
+                                    id="nav-theme"
+                                    href="javascript:void(0);"
+                                    data-bs-toggle="dropdown"
+                                >
                                     <i class="icon-base ti tabler-sun icon-md theme-icon-active"></i>
                                     <span class="d-none ms-2" id="nav-theme-text">Toggle theme</span>
                                 </a>
                                 <ul class="dropdown-menu dropdown-menu-start" aria-labelledby="nav-theme-text">
                                     <li>
-                                        <button type="button" class="dropdown-item align-items-center active"
-                                            data-bs-theme-value="light" aria-pressed="false">
-                                            <span><i class="icon-base ti tabler-sun icon-md me-3"
-                                                    data-icon="sun"></i>Light</span>
+                                        <button
+                                            type="button"
+                                            class="dropdown-item align-items-center active"
+                                            data-bs-theme-value="light"
+                                            aria-pressed="false"
+                                        >
+                                            <span
+                                                ><i class="icon-base ti tabler-sun icon-md me-3" data-icon="sun"></i
+                                                >Light</span>
                                         </button>
                                     </li>
                                     <li>
-                                        <button type="button" class="dropdown-item align-items-center"
-                                            data-bs-theme-value="dark" aria-pressed="true">
-                                            <span><i class="icon-base ti tabler-moon-stars icon-md me-3"
-                                                    data-icon="moon-stars"></i>Dark</span>
+                                        <button
+                                            type="button"
+                                            class="dropdown-item align-items-center"
+                                            data-bs-theme-value="dark"
+                                            aria-pressed="true"
+                                        >
+                                            <span
+                                                ><i
+                                                    class="icon-base ti tabler-moon-stars icon-md me-3"
+                                                    data-icon="moon-stars"
+                                                ></i
+                                                >Dark</span>
                                         </button>
                                     </li>
                                     <li>
-                                        <button type="button" class="dropdown-item align-items-center"
-                                            data-bs-theme-value="system" aria-pressed="false">
-                                            <span><i class="icon-base ti tabler-device-desktop-analytics icon-md me-3"
-                                                    data-icon="device-desktop-analytics"></i>System</span>
+                                        <button
+                                            type="button"
+                                            class="dropdown-item align-items-center"
+                                            data-bs-theme-value="system"
+                                            aria-pressed="false"
+                                        >
+                                            <span
+                                                ><i
+                                                    class="icon-base ti tabler-device-desktop-analytics icon-md me-3"
+                                                    data-icon="device-desktop-analytics"
+                                                ></i
+                                                >System</span>
                                         </button>
                                     </li>
                                 </ul>
@@ -190,11 +266,17 @@
                             <!-- User -->
                             @if (auth()->check())
                                 <li class="nav-item navbar-dropdown dropdown-user dropdown">
-                                    <a class="nav-link dropdown-toggle hide-arrow p-0" href="javascript:void(0);"
-                                        data-bs-toggle="dropdown">
+                                    <a
+                                        class="nav-link dropdown-toggle hide-arrow p-0"
+                                        href="javascript:void(0);"
+                                        data-bs-toggle="dropdown"
+                                    >
                                         <div class="avatar avatar-online">
-                                            <img src="{{ asset(auth()->user()->image === null ? 'assets/img/avatars/1.png' : auth()->user()->image) }}"
-                                                alt class="rounded-circle" />
+                                            <img
+                                                src="{{ asset(auth()->user()->image === null ? 'assets/img/avatars/1.png' : auth()->user()->image) }}"
+                                                alt
+                                                class="rounded-circle"
+                                            />
                                         </div>
                                     </a>
                                     <ul class="dropdown-menu dropdown-menu-end">
@@ -203,14 +285,16 @@
                                                 <div class="d-flex">
                                                     <div class="me-3 flex-shrink-0">
                                                         <div class="avatar avatar-online">
-                                                            <img src="{{ asset(auth()->user()->image === null ? 'assets/img/avatars/1.png' : auth()->user()->image) }}"
-                                                                alt class="w-px-40 rounded-circle h-auto" />
+                                                            <img
+                                                                src="{{ asset(auth()->user()->image === null ? 'assets/img/avatars/1.png' : auth()->user()->image) }}"
+                                                                alt
+                                                                class="w-px-40 rounded-circle h-auto"
+                                                            />
                                                         </div>
                                                     </div>
                                                     <div class="flex-grow-1">
                                                         <h6 class="mb-0">{{ auth()->user()->name }}</h6>
-                                                        <small
-                                                            class="text-body-secondary">{{ Str::upper(auth()->user()->role) }}</small>
+                                                        <small class="text-body-secondary">{{ Str::upper(auth()->user()->role) }}</small>
                                                     </div>
                                                 </div>
                                             </a>
@@ -221,8 +305,8 @@
                                         </li>
                                         <li>
                                             <a class="dropdown-item" href="#">
-                                                <i class="icon-base ti tabler-user icon-md me-3"></i><span>My
-                                                    Profile</span>
+                                                <i class="icon-base ti tabler-user icon-md me-3"></i
+                                                ><span>My Profile</span>
                                             </a>
                                         </li>
 
@@ -239,6 +323,7 @@
                                             </a>
                                         </li>
                                     </ul>
+
                             @endif
                             </li>
                             <!--/ User -->
@@ -294,5 +379,4 @@
     {{-- <script src="{{ asset('assets/js/show.js') }}"></script> --}}
     {{-- <script src="{{ asset('assets/js/edit.js') }}"></script> --}}
 </body>
-
 </html>

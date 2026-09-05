@@ -1,16 +1,20 @@
 <?php
 
-use Livewire\Component;
-use Livewire\Attributes\Computed;
 use App\Models\Reference;
+use Livewire\Attributes\Computed;
+use Livewire\Component;
 use Livewire\WithPagination;
 
-new class extends Component {
+new class extends Component
+{
     use WithPagination;
 
     protected $paginationTheme = 'bootstrap';
+
     public $sort = 'created_at';
+
     public $direction = 'desc';
+
     public $search = '';
 
     #[Computed]
@@ -27,7 +31,7 @@ new class extends Component {
         $direction = in_array($this->direction, ['asc', 'desc']) ? $this->direction : 'desc';
         $search = $this->search;
 
-        return Reference::query()->when($search, fn($q) => $q->where('name', 'LIKE', "%{$search}%"))->orderBy($sortColumn, $direction)->simplePaginate(30)->withQueryString();
+        return Reference::query()->when($search, fn ($q) => $q->where('name', 'LIKE', "%{$search}%"))->orderBy($sortColumn, $direction)->simplePaginate(30)->withQueryString();
     }
 };
 ?>
@@ -35,34 +39,55 @@ new class extends Component {
 <div>
     <div class="card">
         <div class="card-datatable table-responsive pt-0">
-            <div class="row align-items-center py-4 gy-3 px-3">
+            <div class="row align-items-center gy-3 px-3 py-4">
+                <div class="col-lg-2"></div>
 
-                <div class="col-lg-2">
-
-                </div>
-
-                <div class="col-12 col-lg-6">
+                <div class="col-lg-6 col-12">
                     <form class="form" action="{{ route('references.index') }}">
-                        <div class="d-flex gap-2 position-relative">
-                            <input type="text" name="search" wire:model.live="search"
-                                class="form-control ps-3 flex-grow-1" style="min-width: 150px;"
-                                placeholder="Search Questions" />
-                            <button type="button" wire:show='search' wire:click="$set('search', '')"
-                                style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none;">
+                        <div class="d-flex position-relative gap-2">
+                            <input
+                                type="text"
+                                name="search"
+                                wire:model.live="search"
+                                class="form-control flex-grow-1 ps-3"
+                                style="min-width: 150px"
+                                placeholder="Search Questions"
+                            />
+                            <button
+                                type="button"
+                                wire:show="search"
+                                wire:click="$set('search', '')"
+                                style="
+                                    position: absolute;
+                                    right: 10px;
+                                    top: 50%;
+                                    transform: translateY(-50%);
+                                    background: none;
+                                    border: none;
+                                "
+                            >
                                 <i class="icon-base ti tabler-x"></i>
                             </button>
                         </div>
                     </form>
                 </div>
 
-                <div class="col-lg-1 text-center text-lg-start">
+                <div class="col-lg-1 text-lg-start text-center">
                     <x-filter align="start">
                         <x-slot:trigger>
                             <span class="btn hide-arrow">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                    stroke-linecap="round" stroke-linejoin="round"
-                                    class="lucide lucide-sliders-horizontal-icon lucide-sliders-horizontal">
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    width="24"
+                                    height="24"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="2"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    class="lucide lucide-sliders-horizontal-icon lucide-sliders-horizontal"
+                                >
                                     <path d="M10 5H3" />
                                     <path d="M12 19H3" />
                                     <path d="M14 3v4" />
@@ -76,13 +101,23 @@ new class extends Component {
                             </span>
                         </x-slot:trigger>
 
-                        <div class="px-4 py-4" style="min-width: 220px;">
+                        <div class="px-4 py-4" style="min-width: 220px">
                             <div class="d-flex justify-content-end mb-2">
                                 @if ($this->direction === 'desc')
-                                    <svg wire:click="$set('direction', 'asc')" wire:key="dir-asc"
-                                        xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                        stroke-linecap="round" stroke-linejoin="round" style="cursor: pointer;">
+                                    <svg
+                                        wire:click="$set('direction', 'asc')"
+                                        wire:key="dir-asc"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        width="24"
+                                        height="24"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        stroke-width="2"
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        style="cursor: pointer"
+                                    >
                                         <path d="m3 8 4-4 4 4" />
                                         <path d="M7 4v16" />
                                         <path d="M11 12h4" />
@@ -90,10 +125,20 @@ new class extends Component {
                                         <path d="M11 20h10" />
                                     </svg>
                                 @else
-                                    <svg wire:click="$set('direction', 'desc')" wire:key="dir-desc"
-                                        xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                        stroke-linecap="round" stroke-linejoin="round" style="cursor: pointer;">
+                                    <svg
+                                        wire:click="$set('direction', 'desc')"
+                                        wire:key="dir-desc"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        width="24"
+                                        height="24"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        stroke-width="2"
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        style="cursor: pointer"
+                                    >
                                         <path d="m3 16 4 4 4-4" />
                                         <path d="M7 20V4" />
                                         <path d="M11 4h4" />
@@ -104,19 +149,28 @@ new class extends Component {
                             </div>
 
                             <div class="text-start">
-                                <p wire:click="$set('sort', 'name')" wire:key="sort-name"
-                                    class="mb-1 pe-5 py-1 cursor-pointer"
-                                    :class="$wire.sort === 'name' ? 'text-success' : 'text-body'">
+                                <p
+                                    wire:click="$set('sort', 'name')"
+                                    wire:key="sort-name"
+                                    class="mb-1 cursor-pointer py-1 pe-5"
+                                    :class="$wire.sort === 'name' ? 'text-success' : 'text-body'"
+                                >
                                     Name
                                 </p>
-                                <p wire:click="$set('sort', 'created_at')" wire:key="sort-created"
-                                    class="mb-1 pe-5 py-1 cursor-pointer"
-                                    :class="$wire.sort === 'created_at' ? 'text-success' : 'text-body'">
+                                <p
+                                    wire:click="$set('sort', 'created_at')"
+                                    wire:key="sort-created"
+                                    class="mb-1 cursor-pointer py-1 pe-5"
+                                    :class="$wire.sort === 'created_at' ? 'text-success' : 'text-body'"
+                                >
                                     Created At
                                 </p>
-                                <p wire:click="$set('sort', 'updated_at')" wire:key="sort-updated"
-                                    class="mb-0 pe-5 py-1 cursor-pointer"
-                                    :class="$wire.sort === 'updated_at' ? 'text-success' : 'text-body'">
+                                <p
+                                    wire:click="$set('sort', 'updated_at')"
+                                    wire:key="sort-updated"
+                                    class="mb-0 cursor-pointer py-1 pe-5"
+                                    :class="$wire.sort === 'updated_at' ? 'text-success' : 'text-body'"
+                                >
                                     Update At
                                 </p>
                             </div>
@@ -124,7 +178,7 @@ new class extends Component {
                     </x-filter>
                 </div>
 
-                <div class="col-6 col-lg-3 text-center text-lg-end">
+                <div class="col-lg-3 text-lg-end col-6 text-center">
                     <a href="{{ route('references.create') }}">
                         <button class="btn btn-primary">Create A New Reference</button>
                     </a>
@@ -172,9 +226,7 @@ new class extends Component {
             </div>
         </div>
 
-        <div class="align-item-center py-4 ps-4 pe-4">
-            {{ $this->references->links() }}
-        </div>
+        <div class="align-item-center py-4 ps-4 pe-4">{{ $this->references->links() }}</div>
     </div>
 
     @if ($this->references?->count() === 0)

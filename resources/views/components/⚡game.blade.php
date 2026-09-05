@@ -1,39 +1,55 @@
 <?php
 
+use App\Events\GameFinished;
+use App\Events\playerAnswered;
+use App\Models\Game;
+use App\Models\GameAnswers;
 use App\Models\Option;
+use App\Models\Questions;
 use App\Services\GameService;
-use App\Models\{Questions, Game, GameAnswers};
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\On;
 use Livewire\Attributes\Session;
 use Livewire\Component;
-use App\Events\{playerAnswered, GameFinished};
 
-new class extends Component {
+new class extends Component
+{
     public $game = null;
+
     public $current;
+
     public $loading = true;
+
     public $progress = 0;
+
     public array $answers = [];
+
     public $attempt;
+
     public $attempts;
+
     public $gameId;
+
     public $player1;
+
     public $player2;
+
     public $currentPlayer;
+
     public $finished = false;
+
     public function mount($gameId)
     {
         $this->gameId = $gameId;
         $this->game = Game::find($gameId);
-        if (!$this->game) {
+        if (! $this->game) {
             return;
         }
         $players = $this->game->players()->with('user')->get();
 
         $this->currentPlayer = $players->where('user_id', auth()->id())->first();
         // $this->attempts = $this->game->attempts()->with('answers')->get();
-        if (!$this->currentPlayer) {
+        if (! $this->currentPlayer) {
             abort(403, 'You are not a player in this game.');
         }
 
@@ -41,7 +57,7 @@ new class extends Component {
             $this->current = $this->currentPlayer->current_question;
         }
         $this->attempt = $this->game->attempts->where('user_id', auth()->id())->first();
-        if (!$this->attempt) {
+        if (! $this->attempt) {
             return;
         }
         if ($this->attempt->status == 'finished') {
@@ -49,14 +65,14 @@ new class extends Component {
         }
         $this->loading = $this->game->status !== 'playing';
 
-        if (!$this->loading) {
+        if (! $this->loading) {
             $this->game->loadMissing('questions.options', 'questions.correctAnswer');
         }
         if ($players->count() == 2) {
             $this->getProgress();
 
             if ($players->count() !== 2) {
-                throw new \RuntimeException('Game does not have exactly 2 players.');
+                throw new RuntimeException('Game does not have exactly 2 players.');
             }
 
             $this->player1 = $players[0]->user;
@@ -69,18 +85,21 @@ new class extends Component {
             ->pluck('option_id', 'question_id')
             ->toArray();
     }
+
     public function hydrate()
     {
         $this->game->loadMissing('questions.options');
     }
+
     #[Computed]
     public function currentInCorrectElo()
     {
         return $this->quiz->questions[$this->current - 1]->elo_incorrect;
     }
+
     public function submit($optionId, $questionId)
     {
-        if (!$this->attempt) {
+        if (! $this->attempt) {
             abort(403);
         }
         if ($this->game->status !== 'playing') {
@@ -89,7 +108,7 @@ new class extends Component {
         if ($this->currentPlayer->status === 'finished') {
             return;
         }
-        if (!$this->game) {
+        if (! $this->game) {
             return;
         }
 
@@ -97,7 +116,7 @@ new class extends Component {
             ->questions()
             ->with(['correctAnswer', 'options'])
             ->findOrFail($questionId);
-        if (!$question->options->contains('id', $optionId)) {
+        if (! $question->options->contains('id', $optionId)) {
             return;
         }
 
@@ -140,12 +159,13 @@ new class extends Component {
     #[Computed]
     public function remainingSeconds()
     {
-        if (!$this->game || !$this->game->ended_at) {
+        if (! $this->game || ! $this->game->ended_at) {
             return;
         }
 
         return max(0, (int) now()->diffInSeconds($this->game->ended_at, false));
     }
+
     #[On('echo-private:game.{gameId},.game.started')]
     public function gameStarted($event)
     {
@@ -155,7 +175,7 @@ new class extends Component {
         $service->gameStarted($this->game, $players);
 
         $this->currentPlayer = $players->where('user_id', auth()->id())->first();
-        if (!$this->currentPlayer) {
+        if (! $this->currentPlayer) {
             return;
         }
         $this->current = $this->currentPlayer->current_question;
@@ -165,6 +185,7 @@ new class extends Component {
         }
         $this->loading = false;
     }
+
     #[On('echo-private:playerAnswerd.{gameId},.game.progress')]
     public function getProgress()
     {
@@ -173,7 +194,7 @@ new class extends Component {
             ->where('user_id', '!=', auth()->id())
             ->first();
 
-        if (!$attempt) {
+        if (! $attempt) {
             return;
         }
 
@@ -181,9 +202,10 @@ new class extends Component {
             ->where('player_id', '!=', auth()->id())
             ->count();
     }
+
     public function updateCurrent($current)
     {
-        if (!$this->game) {
+        if (! $this->game) {
             return;
         }
         $max = $this->game->questions->count();
@@ -205,12 +227,13 @@ new class extends Component {
             return $this->game->questions[$this->current - 1]->elo_correct;
         }
     }
+
     public function finishGame()
     {
-        if (!$this->game) {
+        if (! $this->game) {
             return;
         }
-        if (!$this->attempt) {
+        if (! $this->attempt) {
             return;
         }
         if ($this->game->status !== 'playing') {
@@ -220,7 +243,7 @@ new class extends Component {
             return;
         }
         $player = $this->game->players->where('user_id', auth()->id())->first();
-        if (!$player) {
+        if (! $player) {
             return;
         }
         $this->loading = false;
@@ -237,10 +260,11 @@ new class extends Component {
             GameFinished::dispatch($this->game->id);
         }
     }
+
     public function submitAttempt()
     {
         $game = Game::find($this->gameId);
-        if (!$game) {
+        if (! $game) {
             return;
         }
         $length = $game->questions->count();
@@ -251,9 +275,10 @@ new class extends Component {
 
         if ($answersCount !== $length) {
             $this->addError('answers', 'Please answer all questions.');
+
             return;
         }
-        if (!$this->attempt) {
+        if (! $this->attempt) {
             return;
         }
         if ($game->status !== 'playing') {
@@ -265,7 +290,7 @@ new class extends Component {
         }
 
         $player = $game->players->where('user_id', auth()->id())->first();
-        if (!$player) {
+        if (! $player) {
             return;
         }
         $this->loading = false;
@@ -282,17 +307,19 @@ new class extends Component {
             GameFinished::dispatch($game->id);
         }
     }
+
     #[On('echo-private:game.finished.{gameId},.game.finished')]
     public function toResults()
     {
-        if (!$this->game) {
+        if (! $this->game) {
             return;
         }
-        if (!$this->currentPlayer) {
+        if (! $this->currentPlayer) {
             return;
         }
         $service = app(GameService::class);
         $service->finishGame($this->game->attempts);
+
         return redirect()->route('game.results', [
             'game' => $this->game,
         ]);
@@ -302,19 +329,16 @@ new class extends Component {
 <div>
     @if ($this->loading)
         @push('style')
-            <link rel="stylesheet" href="{{ asset('assets/css/shimmer.css') }}">
+            <link rel="stylesheet" href="{{ asset('assets/css/shimmer.css') }}" />
         @endpush
         <div class="skeleton-wrap">
-
             <div class="grid">
-
                 <div class="card main">
                     <div class="players-grid my-5">
                         <div class="player-card-skeleton">
                             <div class="player-avatar skeleton"></div>
                             <div class="player-name skeleton">
-                                <div class="text-white">
-                                </div>
+                                <div class="text-white"></div>
                             </div>
                             <div class="player-score skeleton"></div>
                         </div>
@@ -326,50 +350,50 @@ new class extends Component {
                         </div>
                     </div>
                     <div class="row">
-                        <div class="skeleton w-90 h-14"></div>
-                        <div class="skeleton w-50 h-22 pill"></div>
+                        <div class="skeleton h-14 w-90"></div>
+                        <div class="skeleton pill h-22 w-50"></div>
                     </div>
-                    <div class="skeleton w-70p h-20 mt-20 mb-20"></div>
+                    <div class="skeleton w-70p mt-20 mb-20 h-20"></div>
                     <div class="options">
-                        <div class="skeleton h-44 r8"></div>
-                        <div class="skeleton h-44 r8"></div>
-                        <div class="skeleton h-44 r8"></div>
-                        <div class="skeleton h-44 r8"></div>
+                        <div class="skeleton r8 h-44"></div>
+                        <div class="skeleton r8 h-44"></div>
+                        <div class="skeleton r8 h-44"></div>
+                        <div class="skeleton r8 h-44"></div>
                     </div>
                     <div class="row">
-                        <div class="skeleton w-100 h-14"></div>
-                        <div class="skeleton w-60 h-14"></div>
+                        <div class="skeleton h-14 w-100"></div>
+                        <div class="skeleton h-14 w-60"></div>
                     </div>
                     <div class="row mt-20">
-                        <div class="skeleton w-40p h-38 r8 mr-1"></div>
-                        <div class="skeleton w-40p h-38 r8"></div>
+                        <div class="skeleton w-40p r8 mr-1 h-38"></div>
+                        <div class="skeleton w-40p r8 h-38"></div>
                     </div>
                 </div>
 
                 <div class="side">
                     <div class="card side-card">
-                        <div class="skeleton w-100 h-14 mb-14"></div>
-                        <div class="skeleton w-80p h-12 mb-8"></div>
-                        <div class="skeleton w-60p h-16 mb-14"></div>
-                        <div class="skeleton w-80p h-12 mb-8"></div>
+                        <div class="skeleton mb-14 h-14 w-100"></div>
+                        <div class="skeleton w-80p mb-8 h-12"></div>
+                        <div class="skeleton w-60p mb-14 h-16"></div>
+                        <div class="skeleton w-80p mb-8 h-12"></div>
                         <div class="skeleton w-40p h-16"></div>
                     </div>
 
                     <div class="card side-card">
-                        <div class="skeleton w-110 h-14 mb-14"></div>
+                        <div class="skeleton mb-14 h-14 w-110"></div>
                         <div class="dots">
-                            <div class="skeleton h-26 r6"></div>
-                            <div class="skeleton h-26 r6"></div>
-                            <div class="skeleton h-26 r6"></div>
-                            <div class="skeleton h-26 r6"></div>
-                            <div class="skeleton h-26 r6"></div>
+                            <div class="skeleton r6 h-26"></div>
+                            <div class="skeleton r6 h-26"></div>
+                            <div class="skeleton r6 h-26"></div>
+                            <div class="skeleton r6 h-26"></div>
+                            <div class="skeleton r6 h-26"></div>
                         </div>
                     </div>
 
                     <div class="card side-card center">
-                        <div class="skeleton w-90 h-14 center-x mb-16"></div>
-                        <div class="skeleton circle mb-10 center-x"></div>
-                        <div class="skeleton w-60 h-12 center-x"></div>
+                        <div class="skeleton center-x mb-16 h-14 w-90"></div>
+                        <div class="skeleton circle center-x mb-10"></div>
+                        <div class="skeleton center-x h-12 w-60"></div>
                     </div>
                 </div>
             </div>
@@ -389,8 +413,9 @@ new class extends Component {
                             <div class="avatar avatar-blue lg">R</div>
                             <div>
                                 <div class="">{{ auth()->user()->name }}</div>
-                                <div class="player-elo">ELO {{ auth()->user()->game_rank }} <i
-                                        class="fa-solid fa-trophy"></i></div>
+                                <div class="player-elo">
+                                    ELO {{ auth()->user()->game_rank }} <i class="fa-solid fa-trophy"></i>
+                                </div>
                             </div>
                         </div>
 
@@ -405,8 +430,7 @@ new class extends Component {
                                 </div>
 
                                 <div class="player-elo right">
-                                    ELO
-                                    {{ $this->player1?->id === auth()->id() ? $this->player2?->game_rank : $this->player1?->game_rank }}
+                                    ELO {{ $this->player1?->id === auth()->id() ? $this->player2?->game_rank : $this->player1?->game_rank }}
                                     <i class="fa-solid fa-trophy"></i>
                                 </div>
                             </div>
@@ -430,9 +454,7 @@ new class extends Component {
                                     Question {{ $loop->iteration }} / {{ $game->questions->count() }}
                                 </span>
                                 @foreach ($game?->difficulty ?? [] as $d)
-                                    <span class="badge-medium">
-                                        {{ $d }}
-                                    </span>
+                                    <span class="badge-medium"> {{ $d }} </span>
                                 @endforeach
                             </div>
 
@@ -442,9 +464,11 @@ new class extends Component {
                             {{-- OPTIONS --}}
                             <div class="options">
                                 @foreach ($question->options as $option)
-                                    <div class="option
+                                    <div
+                                        class="option
                                                                                                                                                                                                                                                                                                                                                                                                                             {{ isset($answers[$question->id]) && $answers[$question->id] == $option->id ? 'selected' : '' }}"
-                                        wire:click="submit({{ $option->id }}, {{ $question->id }})">
+                                        wire:click="submit({{ $option->id }}, {{ $question->id }})"
+                                    >
                                         <span class="option-key">
                                             @if ($loop->iteration === 1)
                                                 A
@@ -477,7 +501,9 @@ new class extends Component {
 
                                 {{-- TIMER --}}
                                 @if ($this->remainingSeconds !== null)
-                                    <div class="timer" x-data="{
+                                    <div
+                                        class="timer"
+                                        x-data="{
                                         seconds: {{ $this->remainingSeconds ?? 0 }},
                                         timer: null,
                                     
@@ -506,7 +532,9 @@ new class extends Component {
                                             }, 1000)
                                     
                                         }
-                                    }" x-init="start()">
+                                    }"
+                                        x-init="start()"
+                                    >
                                         <i class="fa-regular fa-clock"></i>
 
                                         <span x-text="minutes"></span>
@@ -522,8 +550,7 @@ new class extends Component {
                         {{-- ===================== ACTIONS ===================== --}}
                         <div class="actions-row">
                             {{-- PREVIOUS --}}
-                            <button type="button" class="btn btn-ghost" wire:click="previous"
-                                @disabled($loop->first)>
+                            <button type="button" class="btn btn-ghost" wire:click="previous" @disabled($loop->first)>
                                 <i class="fa-solid fa-chevron-left"></i>
 
                                 Previous
@@ -539,14 +566,17 @@ new class extends Component {
                             </button> --}}
 
                             {{-- NEXT / SUBMIT --}}
-                            @if (!$loop->last)
+                            @if (! $loop->last)
                                 <button type="button" class="btn btn-primary" wire:click="next()">
                                     Next
                                     <i class="fa-solid fa-chevron-right"></i>
                                 </button>
                             @else
-                                <button type="button" class="btn btn-primary"
-                                    wire:click="submitAttempt({{ $this->game }})">
+                                <button
+                                    type="button"
+                                    class="btn btn-primary"
+                                    wire:click="submitAttempt({{ $this->game }})"
+                                >
                                     Submit
 
                                     <i class="fa-solid fa-check"></i>
@@ -559,8 +589,7 @@ new class extends Component {
                 {{-- VALIDATION ERROR --}}
                 @error('answers')
                     <h1 class="text-danger fs-5 my-2 text-center">
-                        Please Add Answers Left Questions Answers =
-                        {{ $this->game->questions->count() - count($this->answers) }}
+                        Please Add Answers Left Questions Answers = {{ $this->game->questions->count() - count($this->answers) }}
                     </h1>
                 @enderror
             </section>
@@ -569,8 +598,14 @@ new class extends Component {
             <aside class="side-col">
                 {{-- ===================== BATTLE STATUS ===================== --}}
                 <div class="panel">
-                    <div class="panel-title-row" x-data="{ online: navigator.onLine }" x-init="window.addEventListener('online', () => online = true);
-                    window.addEventListener('offline', () => online = false);">
+                    <div
+                        class="panel-title-row"
+                        x-data="{ online: navigator.onLine }"
+                        x-init="
+                            window.addEventListener('online', () => (online = true));
+                            window.addEventListener('offline', () => (online = false));
+                        "
+                    >
                         <span class="panel-title">Battle Status</span>
 
                         <span class="live-pill">
@@ -581,7 +616,7 @@ new class extends Component {
                                 </span>
                             </template>
 
-                            <template x-if="!online">
+                            <template x-if="! online">
                                 <span class="flex items-center gap-2">
                                     <span class="live-dot-offline"></span>
                                     <span class="text-danger">Offline</span>
@@ -590,13 +625,25 @@ new class extends Component {
                         </span>
                     </div>
 
-
                     {{-- Battle Type --}}
                     <div class="stat-row">
-                         <svg
-                                        class="menu-icon icon-base text-primary"
-
-                             xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-question-mark-icon lucide-circle-question-mark"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
+                        <svg
+                            class="menu-icon icon-base text-primary"
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="24"
+                            height="24"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            class="lucide lucide-circle-question-mark-icon lucide-circle-question-mark"
+                        >
+                            <circle cx="12" cy="12" r="10" />
+                            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                            <path d="M12 17h.01" />
+                        </svg>
 
                         <div>
                             <div class="stat-label">Battle Type</div>
@@ -604,8 +651,6 @@ new class extends Component {
                             <div class="stat-value">{{ $game->questions->count() }} Questions</div>
                         </div>
                     </div>
-
-
 
                     {{-- Reward --}}
                     <div class="stat-row">
@@ -621,7 +666,7 @@ new class extends Component {
                         <i class="fa-solid fa-trophy stat-icon"></i>
 
                         <div>
-                            <div class="stat-label">Lose Reward </div>
+                            <div class="stat-label">Lose Reward</div>
 
                             <div class="stat-value">{{ $this->currentInCorrectElo ?? 5 }}</div>
                         </div>
@@ -629,7 +674,7 @@ new class extends Component {
                 </div>
 
                 {{-- ===================== BATTLE PROGRESS ===================== --}}
-                <div class="panel" wire:show='!finished'>
+                <div class="panel" wire:show="!finished">
                     <div class="panel-title-row">
                         <span class="panel-title"> Battle Progress </span>
 
@@ -639,16 +684,18 @@ new class extends Component {
                     <div class="progress-track">
                         <div class="progress-line-bg"></div>
 
-                        <div class="progress-line-fill"
+                        <div
+                            class="progress-line-fill"
                             style="
                                                             width:
                                                             {{ $game->questions->count() > 1 ? (($current - 1) / ($game->questions->count() - 1)) * 90 : 0 }}%;
-                                                        ">
-                        </div>
+                                                        "
+                        ></div>
 
                         <div class="progress-dots">
                             @foreach ($game->questions as $question)
-                                <button type="button"
+                                <button
+                                    type="button"
                                     class="dot
                                                                                                                                                                 @if (isset($answers[$question->id])) correct
                                                                                                                                                                 @elseif($current === $loop->iteration)
@@ -656,36 +703,46 @@ new class extends Component {
                                                                                                                                                                 @else
                                                                                                                                                                       pending @endif
                                                                                                                                                             "
-                                    wire:click="updateCurrent({{ $loop->iteration }})">
+                                    wire:click="updateCurrent({{ $loop->iteration }})"
+                                >
                                     {{ $loop->iteration }}
                                 </button>
                             @endforeach
                         </div>
                     </div>
                 </div>
-                <div class="panel  justify-content-center align-items-center" wire:show="finished">
+                <div class="panel justify-content-center align-items-center" wire:show="finished">
                     Waiting For Your Opponent
                 </div>
 
                 {{-- ===================== PERFORMANCE ===================== --}}
                 <div class="panel center-panel">
-                    <div class="panel-title"> Opponent Progress</div>
+                    <div class="panel-title">Opponent Progress</div>
 
                     <div class="gauge-wrap">
                         <svg viewBox="0 0 140 80" width="150" height="88">
-                            <path d="M 13 74 A 54 54 0 0 1 127 74" fill="none" class="gauge-bg" stroke-width="3"
-                                stroke-linecap="round" />
+                            <path
+                                d="M 13 74 A 54 54 0 0 1 127 74"
+                                fill="none"
+                                class="gauge-bg"
+                                stroke-width="3"
+                                stroke-linecap="round"
+                            />
 
-                            <path id="gauge-arc" d="M 13 74 A 54 54 0 0 1 127 74" fill="none" class="gauge-arc"
-                                stroke-width="3" stroke-linecap="round"
+                            <path
+                                id="gauge-arc"
+                                d="M 13 74 A 54 54 0 0 1 127 74"
+                                fill="none"
+                                class="gauge-arc"
+                                stroke-width="3"
+                                stroke-linecap="round"
                                 stroke-dasharray="{{ count($answers) != 0 ? $this->progress * (100 / count($game->questions)) : 0 }}"
-                                pathLength="100" />
+                                pathLength="100"
+                            />
                         </svg>
 
                         <div class="gauge-value">
-                            <span class="text-primary ">
-                                {{ $this->progress }}
-                            </span>
+                            <span class="text-primary"> {{ $this->progress }} </span>
                             / {{ $game->questions->count() }}
                         </div>
 
@@ -723,19 +780,18 @@ new class extends Component {
             const root = document.documentElement;
 
             if (themeToggle) {
-                themeToggle.addEventListener('click', function() {
+                themeToggle.addEventListener('click', function () {
                     const isDark = root.getAttribute('data-theme') === 'dark';
 
                     root.setAttribute('data-theme', isDark ? 'light' : 'dark');
 
-                    themeToggle.innerHTML = isDark ? '<i class="fa-solid fa-moon"></i>' :
-                        '<i class="fa-solid fa-sun"></i>';
+                    themeToggle.innerHTML = isDark
+                        ? '<i class="fa-solid fa-moon"></i>'
+                        : '<i class="fa-solid fa-sun"></i>';
                 });
             }
         </script>
     @endscript
-
-
 </div>
 
 {{-- ===================== DARK MODE ONLY ===================== --}}

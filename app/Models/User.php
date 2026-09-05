@@ -3,16 +3,19 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Illuminate\Database\Eloquent\Attributes\{Fillable, Hidden};
+use Database\Factories\UserFactory;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\{BelongsToMany, HasMany};
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Support\{Carbon, Str};
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 use Laravel\Fortify\Contracts\PasskeyUser;
-use Laravel\Fortify\{PasskeyAuthenticatable, TwoFactorAuthenticatable};
-
-use Database\Factories\UserFactory;
+use Laravel\Fortify\PasskeyAuthenticatable;
+use Laravel\Fortify\TwoFactorAuthenticatable;
 
 /**
  * @property int $id
@@ -27,7 +30,7 @@ use Database\Factories\UserFactory;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['name', 'email', 'password', 'image', 'year', 'graduated', 'rank', 'role' ,"country" , "game_rank", "know_about_us" ,"gender"])]
+#[Fillable(['name', 'email', 'password', 'image', 'year', 'graduated', 'rank', 'role', 'country', 'game_rank', 'know_about_us', 'gender'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements PasskeyUser
 {
@@ -78,10 +81,14 @@ class User extends Authenticatable implements PasskeyUser
     {
         return $this->hasMany(GameAnswers::class);
     }
-    public function players(){
+
+    public function players()
+    {
         return $this->hasMany(Players::class);
     }
-    public function gameAttempts(){
+
+    public function gameAttempts()
+    {
         return $this->hasMany(GameAttempt::class);
     }
 }

@@ -2,7 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\{Game, Players};
+use App\Models\Game;
+use App\Models\Players;
 use App\Services\GameService;
 
 class GameController extends Controller
@@ -55,7 +56,6 @@ class GameController extends Controller
         return view('games.gameResult', compact('game', 'winner', 'attempts', 'questions'));
     }
 
-
     public function friendGameStarted(string $challenge_token)
     {
         $game = Game::with('players', 'attempts', 'questions')
@@ -81,11 +81,13 @@ class GameController extends Controller
 
         return redirect()->route('friendGame', ['challenge_token' => $game->challenge_token]);
     }
-    public function friendGame(string $challnge_token){
-        $game = Game::where("challenge_token" , $challnge_token)->first();
+
+    public function friendGame(string $challnge_token)
+    {
+        $game = Game::where('challenge_token', $challnge_token)->first();
         dd($game);
-        if($game->status == "finished"){
-            abort(404 , "there is no games found");
+        if ($game->status == 'finished') {
+            abort(404, 'there is no games found');
         }
 
         abort_unless($game->players()->where('user_id', auth()->id())->exists(), 403);

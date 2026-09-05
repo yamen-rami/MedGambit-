@@ -7,9 +7,12 @@ use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
 
-new class extends Component {
+new class extends Component
+{
     public array $branchesList = [];
+
     public array $references = [];
+
     public array $specialitiesList = [];
 
     public array $skillsList = [];
@@ -35,10 +38,10 @@ new class extends Component {
         $user = auth()->user();
         $userPlayedQuestion = $user->playedQuestions->pluck('id');
         $query = Questions::query()
-            ->when($userPlayedQuestion->isNotEmpty(), fn($q) => $q->whereNotIn('id', $userPlayedQuestion))
+            ->when($userPlayedQuestion->isNotEmpty(), fn ($q) => $q->whereNotIn('id', $userPlayedQuestion))
 
-            ->when($this->difficulty, fn($query) => $query->where('difficulty', $this->difficulty))
-            ->when($this->length, fn($query) => $query->where('length', $this->length))
+            ->when($this->difficulty, fn ($query) => $query->where('difficulty', $this->difficulty))
+            ->when($this->length, fn ($query) => $query->where('length', $this->length))
             ->when($this->branchesList, function ($query) {
                 $query->whereHas('branches', function ($query) {
                     $query->whereIn('branch_of_medicines.id', $this->branchesList);
@@ -63,21 +66,22 @@ new class extends Component {
             $remaining = 20 - $questions->count();
 
             $fallback = Questions::query()
-                ->when($this->difficulty, fn($query) => $query->where('difficulty', $this->difficulty))
-                ->when($this->length, fn($query) => $query->where('length', $this->length))
+                ->when($this->difficulty, fn ($query) => $query->where('difficulty', $this->difficulty))
+                ->when($this->length, fn ($query) => $query->where('length', $this->length))
                 ->whereIn('id', $userPlayedQuestion)
                 ->whereNotIn('id', $questions->pluck('id'))
                 ->limit($remaining)
                 ->get();
             $questions = $questions->merge($fallback);
         }
+
         return $questions;
     }
 
     public function submit()
     {
         // Of the Current User
-        if (!$this->questions) {
+        if (! $this->questions) {
             throw ValidationException::withMessages([
                 'count' => 'The Count Should Be At Least 3 Questions',
             ]);
@@ -109,7 +113,7 @@ new class extends Component {
 
     public function learningQuiz()
     {
-        if (!$this->questions) {
+        if (! $this->questions) {
             throw ValidationException::withMessages([
                 'count' => 'The Count Should Be At Least 3 Questions',
             ]);
@@ -120,19 +124,24 @@ new class extends Component {
             ]);
         }
         $this->validate([
-            'difficulty' => ['nullable', 'array'],
-            'difficulty.*' => [Rule::in(['easy', 'medium', 'hard', 'nerd'])],
-            'length' => ['nullable', 'array'],
-            'length.*' => [Rule::in(['short', 'medium', 'long'])],
+            'difficulty' => ['nullable', 'string'],
+            'length' => ['nullable', 'string'],
             'branchesList' => ['nullable', 'array'],
             'branchesList.*' => ['exists:branch_of_medicines,id'],
             'skillsList' => ['nullable', 'array'],
             'skillsList.*' => ['exists:skills_for_questions,id'],
             'specialitiesList' => ['nullable', 'array'],
             'specialitiesList.*' => ['exists:specialties,id'],
+            'references' => ['nullable', 'array'],
+            'references.*' => ['exists:references,id'],
         ]);
         $quizService = app(QuizService::class);
-        $quiz = $quizService->learningQuiz($this->questions, $this->length ? $this->length[0] : 'short', $this->questions->count(), $this->difficulty ? $this->difficulty[0] : 'hard');
+        $quiz = $quizService->learningQuiz(
+            questions: $this->questions,
+            length: $this->length ? $this->length : 'short',
+            count: $this->questions->count(),
+            difficulty: $this->difficulty ?? 'hard'
+        );
 
         return redirect()->route('start.learning.quiz', $quiz);
     }
@@ -148,9 +157,7 @@ new class extends Component {
             </div>
 
             <div class="row">
-
-
-                <div class="col-md-6 ">
+                <div class="col-md-6">
                     <label for="branches" class="form-label">Branches For Medicine</label>
                     <div class="select2-primary" wire:ignore>
                         <select id="branches" class="select2 form-select branches" multiple></select>
@@ -209,7 +216,6 @@ new class extends Component {
                     @enderror
                 </div>
 
-
                 <div class="col-md-6 mb-4" wire:ignore>
                     <label for="length" class="form-label">Length</label>
                     <div class="select2-primary">
@@ -250,8 +256,7 @@ new class extends Component {
 
             <div class="quiz-config-footer">
                 <p class="quiz-question-found">
-                    Question Found
-                    {{ $this->questions?->count() != 0 ? $this->questions?->count() : 0 }}
+                    Question Found {{ $this->questions?->count() != 0 ? $this->questions?->count() : 0 }}
                 </p>
                 @error('count')
                     <p class="text-danger my-3">{{ $message }}</p>
@@ -268,33 +273,35 @@ new class extends Component {
 
 @script
     <script>
-        $(window).on('load', function() {
+        $(window).on('load', function () {
             if ($('#branches').hasClass('select2-hidden-accessible')) {
                 $('#branches').select2('destroy');
             }
-            $('#references').select2({
-                placeholder: 'Search for References ',
-                ajax: {
-                    url: "{{ route('getReferences') }}",
-                    type: 'GET',
-                    delay: 250,
-                    data: function(params) {
-                        return {
-                            search: params.term
-                        };
+            $('#references')
+                .select2({
+                    placeholder: 'Search for References ',
+                    ajax: {
+                        url: "{{ route('getReferences') }}",
+                        type: 'GET',
+                        delay: 250,
+                        data: function (params) {
+                            return {
+                                search: params.term,
+                            };
+                        },
+                        processResults: function (data) {
+                            return {
+                                results: data.map((ref) => ({
+                                    id: ref.id,
+                                    text: ref.name,
+                                })),
+                            };
+                        },
                     },
-                    processResults: function(data) {
-                        return {
-                            results: data.map((ref) => ({
-                                id: ref.id,
-                                text: ref.name,
-                            })),
-                        };
-                    },
-                },
-            }).on("change", function() {
-                $wire.set("references", $(this).val())
-            });
+                })
+                .on('change', function () {
+                    $wire.set('references', $(this).val());
+                });
             $('#branches')
                 .select2({
                     placeholder: 'Search for Branches ', // Your placeholder text
@@ -303,12 +310,12 @@ new class extends Component {
                         url: "{{ route('getBranches') }}",
                         type: 'GET',
                         delay: 250,
-                        data: function(params) {
+                        data: function (params) {
                             return {
-                                search: params.term
+                                search: params.term,
                             };
                         },
-                        processResults: function(data) {
+                        processResults: function (data) {
                             return {
                                 results: data.map((branch) => ({
                                     id: branch.id,
@@ -318,7 +325,7 @@ new class extends Component {
                         },
                     },
                 })
-                .on('change', function() {
+                .on('change', function () {
                     $wire.set('branchesList', $(this).val());
                 });
             if ($('#specialities').hasClass('select2-hidden-accessible')) {
@@ -332,12 +339,12 @@ new class extends Component {
                         url: "{{ route('getSpeciality') }}",
                         type: 'GET',
                         delay: 250,
-                        data: function(params) {
+                        data: function (params) {
                             return {
-                                search: params.term
+                                search: params.term,
                             };
                         },
-                        processResults: function(data) {
+                        processResults: function (data) {
                             return {
                                 results: data.map((s) => ({
                                     id: s.id,
@@ -347,7 +354,7 @@ new class extends Component {
                         },
                     },
                 })
-                .on('change', function() {
+                .on('change', function () {
                     $wire.set('specialitiesList', $(this).val());
                 });
             // ! Skills
@@ -362,12 +369,12 @@ new class extends Component {
                         url: "{{ route('getSkills') }}",
                         type: 'GET',
                         delay: 250,
-                        data: function(params) {
+                        data: function (params) {
                             return {
-                                search: params.term
+                                search: params.term,
                             };
                         },
-                        processResults: function(data) {
+                        processResults: function (data) {
                             return {
                                 results: data.map((skill) => ({
                                     id: skill.id,
@@ -377,26 +384,26 @@ new class extends Component {
                         },
                     },
                 })
-                .on('change', function() {
+                .on('change', function () {
                     $wire.set('skillsList', $(this).val());
                 });
         });
 
         $('#difficulty')
             .select2({
-                placeholder: "Select Difficulty",
+                placeholder: 'Select Difficulty',
             })
-            .on('change', function() {
+            .on('change', function () {
                 $wire.set('difficulty', $(this).val());
             });
         $('#length')
             .select2()
-            .on('change', function() {
+            .on('change', function () {
                 $wire.set('length', $(this).val());
             });
         $('#duration')
             .select2()
-            .on('change', function() {
+            .on('change', function () {
                 $wire.set('duration', $(this).val());
             });
     </script>

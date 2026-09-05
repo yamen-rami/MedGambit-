@@ -1,10 +1,12 @@
 <?php
 
+use App\Models\GameAttempt;
+use App\Models\Option;
+use App\Models\Questions;
+use App\Models\User;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
-
-use App\Models\{Game, GameAttempt, Option, Questions, User};
 
 return new class extends Migration
 {
@@ -15,11 +17,11 @@ return new class extends Migration
     {
         Schema::create('game_answers', function (Blueprint $table) {
             $table->id();
-            $table->foreignIdFor(Questions::class , "question_id")->constrained()->cascadeOnDelete();
-            $table->foreignIdFor(User::class , "player_id")->constrained()->cascadeOnDelete();
+            $table->foreignIdFor(Questions::class, 'question_id')->constrained()->cascadeOnDelete();
+            $table->foreignIdFor(User::class, 'player_id')->constrained()->cascadeOnDelete();
             $table->foreignIdFor(Option::class)->constrained()->cascadeOnDelete();
-            $table->foreignIdFor(GameAttempt::class , "game_attempt_id")->constrained()->cascadeOnDelete();
-            $table->boolean("is_correct");  
+            $table->foreignIdFor(GameAttempt::class, 'game_attempt_id')->constrained()->cascadeOnDelete();
+            $table->boolean('is_correct');
             $table->timestamps();
 
         });

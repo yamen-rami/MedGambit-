@@ -15,8 +15,12 @@
                             <div class="col-lg-12 my-3">
                                 <label for="select2Primary" class="form-label">Speciality</label>
                                 <div class="select2-primary">
-                                    <select name="speciality[]" id="specialities" class="select2 form-select speciality"
-                                        multiple>
+                                    <select
+                                        name="speciality[]"
+                                        id="specialities"
+                                        class="select2 form-select speciality"
+                                        multiple
+                                    >
                                         @foreach ($oldSpecialities ?? [] as $s)
                                             <option value="{{ $s?->id }}" selected>{{ $s?->name }}</option>
                                         @endforeach
@@ -30,8 +34,7 @@
                             <div class="col-lg-12 my-3">
                                 <label for="select2Primary" class="form-label">Branches For Medicine</label>
                                 <div class="select2-primary">
-                                    <select name="branches[]" id="branches" class="select2 form-select branch"
-                                        multiple>
+                                    <select name="branches[]" id="branches" class="select2 form-select branch" multiple>
                                         @foreach ($oldBranches ?? [] as $b)
                                             <option value="{{ $b?->id }}" selected>{{ $b?->name }}</option>
                                         @endforeach
@@ -117,8 +120,7 @@
                                 @enderror
                             </div>
                             <div id="" class="mt-4">
-                                <img class="rounded-5" id="image-preview" width="100%" height="300px" src=""
-                                    alt="" />
+                                <img class="rounded-5" id="image-preview" width="100%" height="300px" src="" alt="" />
                             </div>
                             <div class="mt-4 mb-4">
                                 <label for="exampleFormControlInput1" class="form-label">Question Image </label>
@@ -142,9 +144,15 @@
                             <p id="para" role="alert"></p>
                             <div class="mt-4 mb-4">
                                 <label for="exampleFormControlInput1" class="form-label">Options Number</label>
-                                <input type="number" name="options_number" max="5" class="form-control"
-                                    value="{{ old('options_number') }}" id="options_number"
-                                    placeholder="Enter Option Number That You Want to Create" />
+                                <input
+                                    type="number"
+                                    name="options_number"
+                                    max="5"
+                                    class="form-control"
+                                    value="{{ old('options_number') }}"
+                                    id="options_number"
+                                    placeholder="Enter Option Number That You Want to Create"
+                                />
                             </div>
                             @error('options_number')
                                 <p class="text-danger">{{ $message }}</p>
@@ -179,7 +187,7 @@
     @push('scripts')
         <script src="{{ asset('assets/js/question.js') }}"></script>
         <script>
-            $(window).on('load', function() {
+            $(window).on('load', function () {
                 if ($('#branches').hasClass('select2-hidden-accessible')) {
                     $('#branches').select2('destroy');
                 }
@@ -189,12 +197,12 @@
                         url: "{{ route('getBranches') }}",
                         type: 'GET',
                         delay: 250,
-                        data: function(params) {
+                        data: function (params) {
                             return {
-                                search: params.term
+                                search: params.term,
                             };
                         },
-                        processResults: function(data) {
+                        processResults: function (data) {
                             return {
                                 results: data.map((branch) => ({
                                     id: branch.id,
@@ -214,12 +222,12 @@
                         url: "{{ route('getSpeciality') }}",
                         type: 'GET',
                         delay: 250,
-                        data: function(params) {
+                        data: function (params) {
                             return {
-                                search: params.term
+                                search: params.term,
                             };
                         },
-                        processResults: function(data) {
+                        processResults: function (data) {
                             return {
                                 results: data.map((s) => ({
                                     id: s.id,
@@ -238,12 +246,12 @@
                         url: "{{ route('getSkills') }}",
                         type: 'GET',
                         delay: 250,
-                        data: function(params) {
+                        data: function (params) {
                             return {
-                                search: params.term
+                                search: params.term,
                             };
                         },
-                        processResults: function(data) {
+                        processResults: function (data) {
                             return {
                                 results: data.map((skill) => ({
                                     id: skill.id,
@@ -259,12 +267,12 @@
                         url: "{{ route('getReferences') }}",
                         type: 'GET',
                         delay: 250,
-                        data: function(params) {
+                        data: function (params) {
                             return {
-                                search: params.term
+                                search: params.term,
                             };
                         },
-                        processResults: function(data) {
+                        processResults: function (data) {
                             return {
                                 results: data.map((skill) => ({
                                     id: skill.id,

@@ -8,16 +8,30 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" />
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    
     <link rel="stylesheet" href="{{ asset('assets/css/quiztheme.css') }}" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" />
-    @stack('style')
+    <link
+        href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@500;600;700&display=swap"
+        rel="stylesheet"
+    />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+        rel="stylesheet"
+    />
+    <style>
+        * {
+            font-family: 'Space Grotesk', sans-serif !important;
+        }
+    </style>
     <script>
         (() => {
             const theme = localStorage.getItem('quiz-theme') || 'light';
-
+            
             document.documentElement.setAttribute('data-theme', theme);
         })();
-    </script>
+        </script>
+        <link rel="stylesheet" href="{{ asset("assets/css/all.css") }}">
+        {{-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" /> --}}
 </head>
 
 <body>
@@ -89,14 +103,13 @@
     </div>
     @stack('scripts')
 
-
-
     <script>
         let quitQuiz = document.querySelector('#quitQuiz');
         quitQuiz.addEventListener('click', (event) => {
             window.dispatchEvent(new CustomEvent('quit-quiz'));
         });
     </script>
+    <script src="{{ asset("assets/js/all.js") }}"></script>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.min.js"></script>
 </body>

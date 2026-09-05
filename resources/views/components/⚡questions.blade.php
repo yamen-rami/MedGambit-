@@ -1,22 +1,37 @@
 <?php
 
-use Livewire\Component;
+use App\Models\Option;
+use App\Models\Questions;
 use Livewire\Attributes\Computed;
+use Livewire\Component;
 use Livewire\WithPagination;
-use App\Models\{Questions, Option};
-new class extends Component {
+
+new class extends Component
+{
     use WithPagination;
+
     protected $paginationTheme = 'bootstrap';
+
     public $sort = 'created_at';
+
     public $references = [];
+
     public $direction = 'desc';
+
     public $search = '';
+
     public $difficulty = '';
+
     public $length = '';
+
     public $elo = '';
+
     public $eloIncorrect = '';
+
     public array $branches = [];
+
     public array $sp = [];
+
     public array $skills = [];
 
     #[Computed]
@@ -63,13 +78,15 @@ new class extends Component {
                     $query->whereIn('references.id', $this->references);
                 });
             })
-            ->when($this->elo, fn($q) => $q->where('elo_correct', $this->elo))
-            ->when($this->eloIncorrect, fn($q) => $q->where('elo_incorrect', $this->eloIncorrect))
+            ->when($this->elo, fn ($q) => $q->where('elo_correct', $this->elo))
+            ->when($this->eloIncorrect, fn ($q) => $q->where('elo_incorrect', $this->eloIncorrect))
             ->orderBy($sortColumn, $direction)
             ->simplePaginate()
             ->withQueryString();
+
         return $questions;
     }
+
     public function playedTime($question) {}
 };
 ?>
@@ -99,16 +116,30 @@ new class extends Component {
         <div style="overflow-x: hidden" class="card-datatable table-responsive pt-0">
             <div class="d-grid">
                 <div class="row align-items-center py-4">
-                    <div class="col-lg-2">
-
-                    </div>
+                    <div class="col-lg-2"></div>
                     <div class="col-lg-5 col-md-6 my-3">
-                        <div class="d-flex gap-2 position-relative ">
-                            <input type="text" name="search" wire:model.live.debounce.300ms="search"
-                                class="form-control ps-3 flex-grow-1" style="min-width: 150px;"
-                                placeholder="Search Questions" />
-                            <button type="button" wire:show='search' wire:click="$set('search', '')"
-                                style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none;">
+                        <div class="d-flex position-relative gap-2">
+                            <input
+                                type="text"
+                                name="search"
+                                wire:model.live.debounce.300ms="search"
+                                class="form-control flex-grow-1 ps-3"
+                                style="min-width: 150px"
+                                placeholder="Search Questions"
+                            />
+                            <button
+                                type="button"
+                                wire:show="search"
+                                wire:click="$set('search', '')"
+                                style="
+                                    position: absolute;
+                                    right: 10px;
+                                    top: 50%;
+                                    transform: translateY(-50%);
+                                    background: none;
+                                    border: none;
+                                "
+                            >
                                 <i class="icon-base ti tabler-x"></i>
                             </button>
                         </div>
@@ -118,10 +149,18 @@ new class extends Component {
                             <x-filter align="start">
                                 <x-slot:trigger>
                                     <span class="btn hide-arrow">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                            stroke-linecap="round" stroke-linejoin="round"
-                                            class="lucide lucide-sliders-horizontal-icon lucide-sliders-horizontal">
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            width="24"
+                                            height="24"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            stroke-width="2"
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            class="lucide lucide-sliders-horizontal-icon lucide-sliders-horizontal"
+                                        >
                                             <path d="M10 5H3" />
                                             <path d="M12 19H3" />
                                             <path d="M14 3v4" />
@@ -135,14 +174,23 @@ new class extends Component {
                                     </span>
                                 </x-slot:trigger>
 
-                                <div class="px-4 py-4" style="min-width: 220px;">
+                                <div class="px-4 py-4" style="min-width: 220px">
                                     <div class="d-flex justify-content-end mb-2">
                                         @if ($this->direction === 'desc')
-                                            <svg wire:click="$set('direction', 'asc')" wire:key="dir-asc"
-                                                xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                                                viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                                                style="cursor: pointer;">
+                                            <svg
+                                                wire:click="$set('direction', 'asc')"
+                                                wire:key="dir-asc"
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                width="24"
+                                                height="24"
+                                                viewBox="0 0 24 24"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                stroke-width="2"
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                style="cursor: pointer"
+                                            >
                                                 <path d="m3 8 4-4 4 4" />
                                                 <path d="M7 4v16" />
                                                 <path d="M11 12h4" />
@@ -150,11 +198,20 @@ new class extends Component {
                                                 <path d="M11 20h10" />
                                             </svg>
                                         @else
-                                            <svg wire:click="$set('direction', 'desc')" wire:key="dir-desc"
-                                                xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                                                viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                                                style="cursor: pointer;">
+                                            <svg
+                                                wire:click="$set('direction', 'desc')"
+                                                wire:key="dir-desc"
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                width="24"
+                                                height="24"
+                                                viewBox="0 0 24 24"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                stroke-width="2"
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                style="cursor: pointer"
+                                            >
                                                 <path d="m3 16 4 4 4-4" />
                                                 <path d="M7 20V4" />
                                                 <path d="M11 4h4" />
@@ -165,48 +222,74 @@ new class extends Component {
                                     </div>
 
                                     <div class="text-start">
-                                        <p wire:click="$set('sort', 'content')" wire:key="sort-name"
-                                            class="mb-1 pe-5 py-1 cursor-pointer"
-                                            :class="$wire.sort === 'content' ? 'text-success' : 'text-body'">
+                                        <p
+                                            wire:click="$set('sort', 'content')"
+                                            wire:key="sort-name"
+                                            class="mb-1 cursor-pointer py-1 pe-5"
+                                            :class="$wire.sort === 'content' ? 'text-success' : 'text-body'"
+                                        >
                                             Content
                                         </p>
-                                        <p wire:click="$set('sort', 'topic')" wire:key="sort-name"
-                                            class="mb-1 pe-5 py-1 cursor-pointer"
-                                            :class="$wire.sort === 'topic' ? 'text-success' : 'text-body'">
+                                        <p
+                                            wire:click="$set('sort', 'topic')"
+                                            wire:key="sort-name"
+                                            class="mb-1 cursor-pointer py-1 pe-5"
+                                            :class="$wire.sort === 'topic' ? 'text-success' : 'text-body'"
+                                        >
                                             Topic
                                         </p>
-                                        <p wire:click="$set('sort', 'created_at')" wire:key="sort-created"
-                                            class="mb-1 pe-5 py-1 cursor-pointer"
-                                            :class="$wire.sort === 'created_at' ? 'text-success' : 'text-body'">
+                                        <p
+                                            wire:click="$set('sort', 'created_at')"
+                                            wire:key="sort-created"
+                                            class="mb-1 cursor-pointer py-1 pe-5"
+                                            :class="$wire.sort === 'created_at' ? 'text-success' : 'text-body'"
+                                        >
                                             Created At
                                         </p>
-                                        <p wire:click="$set('sort', 'updated_at')" wire:key="sort-updated"
-                                            class="mb-0 pe-5 py-1 cursor-pointer"
-                                            :class="$wire.sort === 'updated_at' ? 'text-success' : 'text-body'">
+                                        <p
+                                            wire:click="$set('sort', 'updated_at')"
+                                            wire:key="sort-updated"
+                                            class="mb-0 cursor-pointer py-1 pe-5"
+                                            :class="$wire.sort === 'updated_at' ? 'text-success' : 'text-body'"
+                                        >
                                             Update At
                                         </p>
-                                        <p type="button" class="text-body" data-bs-toggle="modal"
-                                            data-bs-target="#staticBackdrop">
+                                        <p
+                                            type="button"
+                                            class="text-body"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#staticBackdrop"
+                                        >
                                             Advance Filtering
                                         </p>
                                     </div>
                                 </div>
                             </x-filter>
 
-                            <div wire:ignore.self class="modal fade" id="staticBackdrop" data-bs-backdrop="static"
-                                data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel"
-                                aria-hidden="true">
+                            <div
+                                wire:ignore.self
+                                class="modal fade"
+                                id="staticBackdrop"
+                                data-bs-backdrop="static"
+                                data-bs-keyboard="false"
+                                tabindex="-1"
+                                aria-labelledby="staticBackdropLabel"
+                                aria-hidden="true"
+                            >
                                 <div class="modal-dialog">
                                     <div class="modal-content">
                                         <div class="modal-header">
                                             <h1 class="modal-title fs-5" id="staticBackdropLabel">Modal title</h1>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                                aria-label="Close"></button>
+                                            <button
+                                                type="button"
+                                                class="btn-close"
+                                                data-bs-dismiss="modal"
+                                                aria-label="Close"
+                                            ></button>
                                         </div>
-                                        <div class="modal-body d-grid ">
-                                            <div class="d-grid  ">
+                                        <div class="modal-body d-grid">
+                                            <div class="d-grid">
                                                 <div class="row align-items-center">
-
                                                     <div class="col-lg-3">
                                                         <div class="">
                                                             <span>
@@ -215,12 +298,14 @@ new class extends Component {
                                                         </div>
                                                     </div>
                                                     <div class="col-lg-9">
-
-                                                        <select wire:model.live.debounce.1000ms='difficulty'
-                                                            class="form-select col-lg-3" id="difficulty"
-                                                            style="max-width: 70%;">
-                                                            <option class="form-select" value="">Select
-                                                                Difficulty
+                                                        <select
+                                                            wire:model.live.debounce.1000ms="difficulty"
+                                                            class="form-select col-lg-3"
+                                                            id="difficulty"
+                                                            style="max-width: 70%"
+                                                        >
+                                                            <option class="form-select" value="">
+                                                                Select Difficulty
                                                             </option>
                                                             <option class="form-option" value="easy">Easy</option>
                                                             <option value="medium">Medium</option>
@@ -228,13 +313,10 @@ new class extends Component {
                                                             <option value="nerd">Nerd</option>
                                                         </select>
                                                     </div>
-
                                                 </div>
-
                                             </div>
-                                            <div class="d-grid   my-2">
+                                            <div class="d-grid my-2">
                                                 <div class="row align-items-center">
-
                                                     <div class="col-lg-3">
                                                         <div class="">
                                                             <span>
@@ -243,22 +325,22 @@ new class extends Component {
                                                         </div>
                                                     </div>
                                                     <div class="col-lg-9">
-                                                        <select wire:model.live.debounce.300ms='length'
-                                                            class="form-select col-lg-3" id="difficulty"
-                                                            style="max-width: 70%;">
-                                                            <option class="form-select" value="">Select Length
-                                                            </option>
+                                                        <select
+                                                            wire:model.live.debounce.300ms="length"
+                                                            class="form-select col-lg-3"
+                                                            id="difficulty"
+                                                            style="max-width: 70%"
+                                                        >
+                                                            <option class="form-select" value="">Select Length</option>
                                                             <option value="short">Short</option>
                                                             <option value="medium">Medium</option>
                                                             <option value="long">Hard</option>
                                                         </select>
                                                     </div>
-
                                                 </div>
                                             </div>
                                             <div class="d-grid my-1">
                                                 <div class="row align-items-center">
-
                                                     <div class="col-lg-3">
                                                         <div class="">
                                                             <span>
@@ -267,22 +349,23 @@ new class extends Component {
                                                         </div>
                                                     </div>
                                                     <div class="col-lg-9">
-                                                        <select wire:model.live.debounce.300ms='elo'
-                                                            class="form-select col-lg-3" style="max-width: 70%;">
-                                                            <option class="form-select" value="">Select Elo
-                                                                Correct
+                                                        <select
+                                                            wire:model.live.debounce.300ms="elo"
+                                                            class="form-select col-lg-3"
+                                                            style="max-width: 70%"
+                                                        >
+                                                            <option class="form-select" value="">
+                                                                Select Elo Correct
                                                             </option>
                                                             <option value="4">4</option>
                                                             <option value="8">8</option>
                                                             <option value="12">12</option>
                                                         </select>
                                                     </div>
-
                                                 </div>
                                             </div>
                                             <div class="d-grid my-1">
                                                 <div class="row align-items-center">
-
                                                     <div class="col-lg-3">
                                                         <div class="">
                                                             <span>
@@ -291,21 +374,23 @@ new class extends Component {
                                                         </div>
                                                     </div>
                                                     <div class="col-lg-9">
-                                                        <select wire:model.live.debounce.300ms='eloIncorrect'
-                                                            class="form-select col-lg-3" style="max-width: 70%;">
-                                                            <option class="form-select" value="">Select Elo
-                                                                Incorrect
+                                                        <select
+                                                            wire:model.live.debounce.300ms="eloIncorrect"
+                                                            class="form-select col-lg-3"
+                                                            style="max-width: 70%"
+                                                        >
+                                                            <option class="form-select" value="">
+                                                                Select Elo Incorrect
                                                             </option>
                                                             <option value="5">5</option>
                                                             <option value="10">10</option>
                                                             <option value="15">15</option>
                                                         </select>
                                                     </div>
-
                                                 </div>
                                             </div>
                                             <div class="d-grid my-2">
-                                                <div class="row align-items-center ">
+                                                <div class="row align-items-center">
                                                     <div class="col-lg-3">
                                                         <div class="">
                                                             <span>
@@ -314,14 +399,17 @@ new class extends Component {
                                                         </div>
                                                     </div>
                                                     <div class="col-lg-9" wire:ignore>
-                                                        <select style="z-index: 100000;" id="references"
-                                                            class="form-control select2" multiple="multiple">
-                                                        </select>
+                                                        <select
+                                                            style="z-index: 100000"
+                                                            id="references"
+                                                            class="form-control select2"
+                                                            multiple="multiple"
+                                                        ></select>
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div class="d-grid ">
-                                                <div class="row align-items-center ">
+                                            <div class="d-grid">
+                                                <div class="row align-items-center">
                                                     <div class="col-lg-3">
                                                         <div class="">
                                                             <span>
@@ -330,18 +418,20 @@ new class extends Component {
                                                         </div>
                                                     </div>
                                                     <div class="col-lg-9" wire:ignore>
-                                                        <select style="z-index: 100000;" id="branches"
-                                                            class="form-control select2" multiple="multiple">
+                                                        <select
+                                                            style="z-index: 100000"
+                                                            id="branches"
+                                                            class="form-control select2"
+                                                            multiple="multiple"
+                                                        >
                                                             <option value=""></option>
                                                         </select>
                                                     </div>
-
                                                 </div>
-
                                             </div>
 
                                             <div class="d-grid my-2">
-                                                <div class="row align-items-center ">
+                                                <div class="row align-items-center">
                                                     <div class="col-lg-3">
                                                         <div class="">
                                                             <span>
@@ -350,16 +440,17 @@ new class extends Component {
                                                         </div>
                                                     </div>
                                                     <div class="col-lg-9" wire:ignore>
-                                                        <select style="z-index: 100000;" id="skills"
-                                                            class="form-control select2" multiple="multiple">
-                                                        </select>
+                                                        <select
+                                                            style="z-index: 100000"
+                                                            id="skills"
+                                                            class="form-control select2"
+                                                            multiple="multiple"
+                                                        ></select>
                                                     </div>
-
                                                 </div>
-
                                             </div>
                                             <div class="d-grid my-2">
-                                                <div class="row align-items-center ">
+                                                <div class="row align-items-center">
                                                     <div class="col-lg-3">
                                                         <div class="">
                                                             <span>
@@ -368,19 +459,19 @@ new class extends Component {
                                                         </div>
                                                     </div>
                                                     <div class="col-lg-9" wire:ignore>
-                                                        <select style="z-index: 100000;" id="specialities"
-                                                            class="form-control select2" multiple="multiple">
-                                                        </select>
+                                                        <select
+                                                            style="z-index: 100000"
+                                                            id="specialities"
+                                                            class="form-control select2"
+                                                            multiple="multiple"
+                                                        ></select>
                                                     </div>
                                                 </div>
                                             </div>
-
                                         </div>
-
                                     </div>
                                 </div>
                             </div>
-
                         </div>
                     </div>
                     <div class="col-lg-3 col text-center">
@@ -411,10 +502,14 @@ new class extends Component {
                             <th>{{ $question->id }}</th>
                             <td>
                                 <ul class="list-unstyled avatar-group d-flex align-items-center m-0">
-                                    <li data-bs-toggle="tooltip" data-popup="tooltip-custom" data-bs-placement="top"
-                                        class="avatar avatar-xs pull-up" title="{{ $question->content }}">
-                                        <img src="{{ asset($question->image) }}" alt="Avatar"
-                                            class="rounded-circle" />
+                                    <li
+                                        data-bs-toggle="tooltip"
+                                        data-popup="tooltip-custom"
+                                        data-bs-placement="top"
+                                        class="avatar avatar-xs pull-up"
+                                        title="{{ $question->content }}"
+                                    >
+                                        <img src="{{ asset($question->image) }}" alt="Avatar" class="rounded-circle" />
                                     </li>
                                 </ul>
                             </td>
@@ -432,18 +527,21 @@ new class extends Component {
             @else
                 btn-outline-dark @endif
         "
-                                    style="width: 80px;">
+                                    style="width: 80px"
+                                >
                                     {{ $question->difficulty }}
                                 </span>
                             </th>
 
                             <th class="text-center align-middle">
-                                <span style="width: 100px;"
+                                <span
+                                    style="width: 100px"
                                     class="
             @if ($question->length === 'short') btn btn-outline-success
             @elseif($question->length === 'medium') btn btn-outline-warning
             @else btn btn-outline-danger @endif
-        ">
+        "
+                                >
                                     {{ $question->length }}
                                 </span>
                             </th>
@@ -452,8 +550,11 @@ new class extends Component {
                             <th>{{ Str::limit($question->reference->name, 10) }}</th>
                             <td>
                                 <div class="dropdown">
-                                    <button type="button" class="btn dropdown-toggle hide-arrow p-0"
-                                        data-bs-toggle="dropdown">
+                                    <button
+                                        type="button"
+                                        class="btn dropdown-toggle hide-arrow p-0"
+                                        data-bs-toggle="dropdown"
+                                    >
                                         <i class="icon-base ti tabler-dots-vertical"></i>
                                     </button>
                                     <div class="dropdown-menu">
@@ -462,11 +563,10 @@ new class extends Component {
                                             <img src="{{ asset('assets/images/eye.svg') }}" alt="Show Questions" />
                                             Show
                                         </a>
-                                        <a class="dropdown-item" href="{{ route('questions.edit', $question) }}"><i
-                                                class="icon-base ti tabler-pencil me-1"></i> Edit</a>
+                                        <a class="dropdown-item" href="{{ route('questions.edit', $question) }}"
+                                            ><i class="icon-base ti tabler-pencil me-1"></i> Edit</a>
                                         {{-- Delete tag --}}
-                                        <form action="{{ route('questions.destroy', $question->id) }}"
-                                            method="POST">
+                                        <form action="{{ route('questions.destroy', $question->id) }}" method="POST">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="dropdown-item">
@@ -492,8 +592,7 @@ new class extends Component {
     </div>
     @script
         <script>
-            $(window).on("load", function() {
-
+            $(window).on('load', function () {
                 $('#branches')
                     .select2({
                         placeholder: 'Search for Branches ', // Your placeholder text
@@ -501,12 +600,12 @@ new class extends Component {
                             url: "{{ route('getBranches') }}",
                             type: 'GET',
                             delay: 250,
-                            data: function(params) {
+                            data: function (params) {
                                 return {
-                                    search: params.term
+                                    search: params.term,
                                 };
                             },
-                            processResults: function(data) {
+                            processResults: function (data) {
                                 return {
                                     results: data.map((branch) => ({
                                         id: branch.id,
@@ -516,7 +615,7 @@ new class extends Component {
                             },
                         },
                     })
-                    .on('change', function() {
+                    .on('change', function () {
                         $wire.set('branches', $(this).val());
                     });
                 $('#skills')
@@ -526,12 +625,12 @@ new class extends Component {
                             url: "{{ route('getSkills') }}",
                             type: 'GET',
                             delay: 250,
-                            data: function(params) {
+                            data: function (params) {
                                 return {
-                                    search: params.term
+                                    search: params.term,
                                 };
                             },
-                            processResults: function(data) {
+                            processResults: function (data) {
                                 return {
                                     results: data.map((skill) => ({
                                         id: skill.id,
@@ -541,7 +640,7 @@ new class extends Component {
                             },
                         },
                     })
-                    .on('change', function() {
+                    .on('change', function () {
                         $wire.set('skills', $(this).val());
                     });
                 $('#specialities')
@@ -551,12 +650,12 @@ new class extends Component {
                             url: "{{ route('getSpeciality') }}",
                             type: 'GET',
                             delay: 250,
-                            data: function(params) {
+                            data: function (params) {
                                 return {
-                                    search: params.term
+                                    search: params.term,
                                 };
                             },
-                            processResults: function(data) {
+                            processResults: function (data) {
                                 return {
                                     results: data.map((sp) => ({
                                         id: sp.id,
@@ -566,7 +665,7 @@ new class extends Component {
                             },
                         },
                     })
-                    .on('change', function() {
+                    .on('change', function () {
                         $wire.set('sp', $(this).val());
                     });
                 $('#references')
@@ -576,12 +675,12 @@ new class extends Component {
                             url: "{{ route('getReferences') }}",
                             type: 'GET',
                             delay: 250,
-                            data: function(params) {
+                            data: function (params) {
                                 return {
-                                    search: params.term
+                                    search: params.term,
                                 };
                             },
-                            processResults: function(data) {
+                            processResults: function (data) {
                                 return {
                                     results: data.map((ref) => ({
                                         id: ref.id,
@@ -591,7 +690,7 @@ new class extends Component {
                             },
                         },
                     })
-                    .on('change', function() {
+                    .on('change', function () {
                         $wire.set('references', $(this).val());
                     });
             });

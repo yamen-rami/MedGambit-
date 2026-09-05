@@ -2,9 +2,8 @@
 
 namespace Database\Factories;
 
-use Illuminate\Database\Eloquent\Factories\Factory;
-
 use App\Models\Reference;
+use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
  * @extends Factory<Reference>
@@ -19,7 +18,7 @@ class ReferenceFactory extends Factory
     public function definition(): array
     {
         return [
-            "name" => fake()->sentence(),
+            'name' => fake()->sentence(),
         ];
     }
 }

@@ -17,7 +17,7 @@ return new class extends Migration
             $table->text('topic');
             $table->enum('difficulty', ['easy', 'medium', 'hard', 'nerd']);
             $table->enum('length', ['short', 'medium', 'long']);
-            $table->enum('type', ['random', 'detected', 'admin', 'learning' , "game"]);
+            $table->enum('type', ['random', 'detected', 'admin', 'learning', 'game']);
             $table->integer('questions_number');
             $table->unsignedBigInteger('duration')->nullable();
             $table->timestamps();

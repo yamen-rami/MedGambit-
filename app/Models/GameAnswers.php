@@ -7,11 +7,15 @@ use Illuminate\Database\Eloquent\Model;
 class GameAnswers extends Model
 {
     //
-protected $fillable = ["player_id" , "question_id" , "game_attempt_id" , "option_id" , "is_correct"];
-    public function gameAttempt(){
+    protected $fillable = ['player_id', 'question_id', 'game_attempt_id', 'option_id', 'is_correct'];
+
+    public function gameAttempt()
+    {
         return $this->belongsTo(GameAttempt::class);
     }
-    public function question(){
-        return $this->belongsTo(Questions::class , "question_id");
+
+    public function question()
+    {
+        return $this->belongsTo(Questions::class, 'question_id');
     }
 }

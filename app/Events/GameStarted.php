@@ -2,12 +2,13 @@
 
 namespace App\Events;
 
-use Illuminate\Broadcasting\{Channel, InteractsWithSockets, PresenceChannel, PrivateChannel};
+use App\Models\Game;
+use Illuminate\Broadcasting\Channel;
+use Illuminate\Broadcasting\InteractsWithSockets;
+use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
-
-use App\Models\Game;
 
 class GameStarted implements ShouldBroadcast
 {
@@ -28,15 +29,18 @@ class GameStarted implements ShouldBroadcast
      */
     public function broadcastOn(): array
     {
-       return [
+        return [
             new PrivateChannel("game.{$this->game->id}"),
         ];
     }
-    public function broadcastWith(){
+
+    public function broadcastWith()
+    {
         return [
             'gameId' => $this->game->id,
         ];
     }
+
     public function broadcastAs(): string
     {
         return 'game.started';

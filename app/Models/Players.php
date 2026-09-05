@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Players extends Model
 {
-    protected $fillable = ['user_id', 'game_id', 'current_question', 'correct_answers', 'wrong_answers', 'time_taken' , "status"];
+    protected $fillable = ['user_id', 'game_id', 'current_question', 'correct_answers', 'wrong_answers', 'time_taken', 'status'];
 
     public function user(): BelongsTo
     {
@@ -23,5 +23,4 @@ class Players extends Model
     {
         return $this->hasMany(GameAttempt::class);
     }
-
 }

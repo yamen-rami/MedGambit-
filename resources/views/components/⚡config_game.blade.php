@@ -7,7 +7,8 @@ use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
 
-new class extends Component {
+new class extends Component
+{
     public array $branchesList = [];
 
     public array $specialitiesList = [];
@@ -33,12 +34,10 @@ new class extends Component {
             return null;
         }
 
-        $questions = Questions::query()->when($this->difficulty, fn($query) => $query->whereIn('difficulty', $this->difficulty))->when($this->length, fn($query) => $query->whereIn('length', $this->length))->when($this->branchesList, fn($query) => $query->whereHas('branches', fn($query) => $query->whereIn('branch_of_medicines.id', $this->branchesList)))->when($this->skillsList, fn($query) => $query->whereHas('skills', fn($query) => $query->whereIn('skills_for_questions.id', $this->skillsList)))->when($this->specialitiesList, fn($query) => $query->whereHas('specialties', fn($query) => $query->whereIn('specialties.id', $this->specialitiesList)))->limit(20)->get();
+        $questions = Questions::query()->when($this->difficulty, fn ($query) => $query->whereIn('difficulty', $this->difficulty))->when($this->length, fn ($query) => $query->whereIn('length', $this->length))->when($this->branchesList, fn ($query) => $query->whereHas('branches', fn ($query) => $query->whereIn('branch_of_medicines.id', $this->branchesList)))->when($this->skillsList, fn ($query) => $query->whereHas('skills', fn ($query) => $query->whereIn('skills_for_questions.id', $this->skillsList)))->when($this->specialitiesList, fn ($query) => $query->whereHas('specialties', fn ($query) => $query->whereIn('specialties.id', $this->specialitiesList)))->limit(20)->get();
 
         return $questions->isEmpty() ? null : $questions;
     }
-
-  
 
     public function friendGame()
     {
@@ -62,12 +61,13 @@ new class extends Component {
         $gameService = app(GameService::class);
         $game = $gameService->friendGame(
             difficulty: $this->difficulty,
-            length:$this->length ,
-            duration : $this->duration  ,
+            length: $this->length,
+            duration : $this->duration,
             sp : $this->specialitiesList,
-            branches : $this->branchesList , 
-            skills : $this->skillsList , 
+            branches : $this->branchesList,
+            skills : $this->skillsList,
         );
+
         return redirect()->route('friend.game.started', $game->challenge_token);
 
     }
@@ -80,7 +80,6 @@ new class extends Component {
             <div class="quiz-config-header">
                 <h5 class="quiz-config-title">Configure Game</h5>
                 <p class="quiz-config-subtitle">Set the parameters for your next game set.</p>
-
             </div>
 
             <div class="row">
@@ -102,8 +101,6 @@ new class extends Component {
                         <p class="text-danger py-2">{{ $message }}</p>
                     @enderror
                 </div>
-
-
             </div>
 
             <div class="row">
@@ -173,15 +170,14 @@ new class extends Component {
 
             <div class="quiz-config-footer">
                 <p class="quiz-question-found">
-                    Question Found
-                    {{ $this->questions?->count()== null  ?  0 : $this->questions?->count()  }}
+                    Question Found {{ $this->questions?->count()== null  ?  0 : $this->questions?->count() }}
                 </p>
                 @error('count')
                     <p class="text-danger my-3">{{ $message }}</p>
                 @enderror
 
                 <div class="quiz-config-actions">
-                    <button class="btn btn-outline-info   me-4" wire:click="friendGame">Friend Game </button>
+                    <button class="btn btn-outline-info me-4" wire:click="friendGame">Friend Game</button>
                     {{-- <button class="btn btn-success" wire:click="submit">Start </button> --}}
                 </div>
             </div>
@@ -191,7 +187,7 @@ new class extends Component {
 
 @script
     <script>
-        $(window).on('load', function() {
+        $(window).on('load', function () {
             if ($('#branches').hasClass('select2-hidden-accessible')) {
                 $('#branches').select2('destroy');
             }
@@ -204,12 +200,12 @@ new class extends Component {
                         url: "{{ route('getBranches') }}",
                         type: 'GET',
                         delay: 250,
-                        data: function(params) {
+                        data: function (params) {
                             return {
-                                search: params.term
+                                search: params.term,
                             };
                         },
-                        processResults: function(data) {
+                        processResults: function (data) {
                             return {
                                 results: data.map((branch) => ({
                                     id: branch.id,
@@ -219,7 +215,7 @@ new class extends Component {
                         },
                     },
                 })
-                .on('change', function() {
+                .on('change', function () {
                     $wire.set('branchesList', $(this).val());
                 });
             if ($('#specialities').hasClass('select2-hidden-accessible')) {
@@ -233,12 +229,12 @@ new class extends Component {
                         url: "{{ route('getSpeciality') }}",
                         type: 'GET',
                         delay: 250,
-                        data: function(params) {
+                        data: function (params) {
                             return {
-                                search: params.term
+                                search: params.term,
                             };
                         },
-                        processResults: function(data) {
+                        processResults: function (data) {
                             return {
                                 results: data.map((s) => ({
                                     id: s.id,
@@ -248,7 +244,7 @@ new class extends Component {
                         },
                     },
                 })
-                .on('change', function() {
+                .on('change', function () {
                     $wire.set('specialitiesList', $(this).val());
                 });
             // ! Skills
@@ -263,12 +259,12 @@ new class extends Component {
                         url: "{{ route('getSkills') }}",
                         type: 'GET',
                         delay: 250,
-                        data: function(params) {
+                        data: function (params) {
                             return {
-                                search: params.term
+                                search: params.term,
                             };
                         },
-                        processResults: function(data) {
+                        processResults: function (data) {
                             return {
                                 results: data.map((skill) => ({
                                     id: skill.id,
@@ -278,23 +274,23 @@ new class extends Component {
                         },
                     },
                 })
-                .on('change', function() {
+                .on('change', function () {
                     $wire.set('skillsList', $(this).val());
                 });
         });
         $('#difficulty')
             .select2()
-            .on('change', function() {
+            .on('change', function () {
                 $wire.set('difficulty', $(this).val());
             });
         $('#length')
             .select2()
-            .on('change', function() {
+            .on('change', function () {
                 $wire.set('length', $(this).val());
             });
         $('#duration')
             .select2()
-            .on('change', function() {
+            .on('change', function () {
                 $wire.set('duration', $(this).val());
             });
     </script>

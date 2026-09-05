@@ -2,12 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\BranchOfMedicine;
+use App\Models\Questions;
+use App\Models\Reference;
+use App\Models\SkillsForQuestion;
+use App\Models\Specialty;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\{DB, Storage};
-use Illuminate\Validation\{Rule, ValidationException};
-
-use App\Models\{BranchOfMedicine, Questions, Reference, SkillsForQuestion, Specialty};
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class QuestionsController extends Controller
 {
@@ -24,7 +29,7 @@ class QuestionsController extends Controller
         */
         $sort = $request->sort ?? 'desc';
 
-        $query = Questions::query()->with("reference");
+        $query = Questions::query()->with('reference');
 
         if ($request->filled('search')) {
             $query->whereFullText(['content', 'topic'], $request->search);
@@ -56,8 +61,9 @@ class QuestionsController extends Controller
         $oldSkills = SkillsForQuestion::whereIn('id', old('skills', []))->get();
         // dd(old("skills"));
         $oldReferenece = Reference::whereIn('id', old('references', []))->get();
+
         // Getting value s
-        return view('questions.create', compact('oldSpecialities', 'oldBranches', 'oldSkills' , "oldReferenece"));
+        return view('questions.create', compact('oldSpecialities', 'oldBranches', 'oldSkills', 'oldReferenece'));
     }
 
     public function edit(int $id)
@@ -67,7 +73,7 @@ class QuestionsController extends Controller
         $oldBranchesIds = old('branches', $question->branches->pluck('id')->toArray());
         $oldSkillsIds = old('skills', $question->skills->pluck('id')->toArray());
 
-        $oldReferenceId = old("reference", $question->reference->id);        
+        $oldReferenceId = old('reference', $question->reference->id);
         $oldSpecialities = Specialty::whereIn('id', $oldSpecialityIds)->get();
         $oldBranches = BranchOfMedicine::whereIn('id', $oldBranchesIds)->get();
         $oldSkills = SkillsForQuestion::whereIn('id', $oldSkillsIds)->get();
@@ -125,8 +131,8 @@ class QuestionsController extends Controller
         }
         DB::transaction(function () use ($questionData, $request) {
             $path = '';
-            if ($request->file("image")) {
-                $path  = $request->file("image")->store('questions', 'public');
+            if ($request->file('image')) {
+                $path = $request->file('image')->store('questions', 'public');
             }
             $question = Questions::create([
                 'content' => $questionData['content'],
@@ -138,7 +144,7 @@ class QuestionsController extends Controller
                 'elo_correct' => $questionData['elo_correct'],
                 'elo_incorrect' => $questionData['elo_incorrect'],
                 'image' => $path,
-                "reference_id" => $questionData["reference"],
+                'reference_id' => $questionData['reference'],
             ]);
             $question->specialties()->attach($questionData['speciality']);
             $question->skills()->attach($questionData['skills']);

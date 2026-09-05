@@ -2,11 +2,11 @@
 
 namespace App\Actions\Fortify;
 
+use App\Concerns\PasswordValidationRules;
+use App\Concerns\ProfileValidationRules;
+use App\Models\User;
 use Illuminate\Support\Facades\Validator;
 use Laravel\Fortify\Contracts\CreatesNewUsers;
-
-use App\Concerns\{PasswordValidationRules, ProfileValidationRules};
-use App\Models\User;
 
 class CreateNewUser implements CreatesNewUsers
 {
@@ -23,12 +23,12 @@ class CreateNewUser implements CreatesNewUsers
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'password' => $this->passwordRules(),
-            'country' => ['required', 'string' , "max:40"],
-            'know_about_us' => ['required', 'string', "max:100"],
+            'country' => ['required', 'string', 'max:40'],
+            'know_about_us' => ['required', 'string', 'max:100'],
             'image' => ['nullable', 'image', 'max:2048'],
             'graduated' => ['required', 'in:true,false'],
             'gender' => ['required', 'in:male,female'],
-            'year' => ['nullable', 'integer', 'required_if:graduated,false' ,'prohibited_if:graduated,true' ],
+            'year' => ['nullable', 'integer', 'required_if:graduated,false', 'prohibited_if:graduated,true'],
         ])->validate();
         $imagePath = null;
         if (isset($input['image'])) {

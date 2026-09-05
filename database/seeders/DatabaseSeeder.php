@@ -2,10 +2,13 @@
 
 namespace Database\Seeders;
 
+use App\Models\BranchOfMedicine;
+use App\Models\Option;
+use App\Models\Questions;
+use App\Models\SkillsForQuestion;
+use App\Models\Specialty;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-
-use App\Models\{BranchOfMedicine, Option, Questions, SkillsForQuestion, Specialty};
 
 class DatabaseSeeder extends Seeder
 {

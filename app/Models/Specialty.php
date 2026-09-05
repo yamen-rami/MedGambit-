@@ -2,11 +2,10 @@
 
 namespace App\Models;
 
+use Database\Factories\SpecialtyFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-
-use Database\Factories\SpecialtyFactory;
 
 class Specialty extends Model
 {
@@ -19,7 +18,8 @@ class Specialty extends Model
     {
         return $this->belongsToMany(Questions::class, 'question_speciality');
     }
-     public function games(): BelongsToMany
+
+    public function games(): BelongsToMany
     {
         return $this->belongsToMany(Game::class, 'games_specialities');
     }

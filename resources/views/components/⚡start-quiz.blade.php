@@ -12,7 +12,9 @@ new class extends Component {
     public $quiz;
 
     public $current = 1;
+
     public $currentQuestion;
+
     public array $answers = [];
 
     public $attempt;
@@ -39,16 +41,19 @@ new class extends Component {
         $answers = $this->answers;
         $quizService = app(QuizService::class);
         $attempt = $quizService->updateAttempt(auth()->id(), $this->quiz->id, $answers);
+
         return redirect()->route('quizResult', $this->quiz);
     }
+
     public function loadQuestion()
     {
         $questionId = $this->quiz->questions->get($this->current - 1)?->id;
-        if(!$questionId){
-            return ;
+        if (!$questionId) {
+            return;
         }
-        $this->currentQuestion = Questions::with('options', 'correctAnswer', 'playedCount')->findOrFail($questionId);
+        $this->currentQuestion = Questions::with('options', 'correctAnswer', 'playedCount', 'branches', 'specialties')->findOrFail($questionId);
     }
+
     public function hydrate()
     {
         $this->quiz->loadMissing('questions');
@@ -56,7 +61,7 @@ new class extends Component {
 
     public function submit($optionId, $questionId)
     {
-        $question= $this->currentQuestion ; 
+        $question = $this->currentQuestion;
         if (!$question) {
             abort(403);
         }
@@ -88,6 +93,7 @@ new class extends Component {
             $this->updateCurrent($this->current + 1);
         }
     }
+
     public function updateCurrent($current)
     {
         $max = $this->quiz->questions->count();
@@ -121,12 +127,13 @@ new class extends Component {
     #[Computed]
     public function currentElo()
     {
-        return $this->quiz->questions[$this->current - 1]->elo_correct;
+        return $this->currentQuestion->elo_correct;
     }
+
     #[Computed]
     public function currentInCorrectElo()
     {
-        return $this->quiz->questions[$this->current - 1]->elo_incorrect;
+        return $this->currentQuestion->elo_incorrect;
     }
 
     public function finishQuiz()
@@ -168,129 +175,124 @@ new class extends Component {
         <section class="battle-col">
             {{-- ===================== VS CARD ===================== --}}
             @php
-            $question = $this->currentQuestion ; 
+                $question = $this->currentQuestion;
             @endphp
             {{-- ===================== QUESTIONS ===================== --}}
-                    <div class="question-card">
-                        {{-- QUESTION HEADER --}}
-                        <div class="question-head">
-                            <span class="question-index">
-                                Question {{ $this->current }} / {{ $quiz->questions->count() }}
-                                <span class="question-index">Played Count
-                                    {{ $question->playedCount->count ?? 0 }}</span>
+            <div class="question-card">
+                {{-- QUESTION HEADER --}}
+                <div class="question-head">
+                    <span class="question-index">
+                        Question {{ $this->current }} / {{ $quiz->questions->count() }}
+                        <span class="question-index">Played Count {{ $question->playedCount->count ?? 0 }}</span>
+                    </span>
+
+                    <div>
+                        <span class="badge-medium"> {{ $quiz->difficulty ?? 'Medium' }} </span>
+                    </div>
+                </div>
+
+                {{-- QUESTION --}}
+                <div class="question-content">
+                    <p class="question-text">{{ $question->content }}</p>
+                  
+                </div>
+                {{-- OPTIONS --}}
+                <div class="options">
+                    @foreach ($question->options as $option)
+                        <div class="option
+                                                                                                                                                                                                            {{ isset($answers[$question->id]) && $answers[$question->id] == $option->id ? 'selected' : '' }}"
+                            wire:click="submit({{ $option->id }}, {{ $question->id }})">
+                            <span class="option-key">
+                                @if ($loop->iteration === 1)
+                                    A
+                                @elseif ($loop->iteration === 2)
+                                    B
+                                @elseif ($loop->iteration === 3)
+                                    C
+                                @elseif ($loop->iteration === 4)
+                                    D
+                                @else
+                                    E
+                                @endif
                             </span>
 
-                            <div>
+                            <span class="option-label"> {{ $option->content }} </span>
 
-                                <span class="badge-medium"> {{ $quiz->difficulty ?? 'Medium' }} </span>
-
-                            </div>
-
-                        </div>
-
-                        {{-- QUESTION --}}
-                        <p class="question-text">{{ $question->content }}</p>
-
-                        {{-- OPTIONS --}}
-                        <div class="options">
-                            @foreach ($question->options as $option)
-                                <div class="option
-                                                                                                                                                                                                            {{ isset($answers[$question->id]) && $answers[$question->id] == $option->id ? 'selected' : '' }}"
-                                    wire:click="submit({{ $option->id }}, {{ $question->id }})">
-                                    <span class="option-key">
-                                        @if ($loop->iteration === 1)
-                                            A
-                                        @elseif ($loop->iteration === 2)
-                                            B
-                                        @elseif ($loop->iteration === 3)
-                                            C
-                                        @elseif ($loop->iteration === 4)
-                                            D
-                                        @else
-                                            E
-                                        @endif
-                                    </span>
-
-                                    <span class="option-label"> {{ $option->content }} </span>
-
-                                    <span class="option-check">
-                                        <i class="fa-solid fa-check"></i>
-                                    </span>
-                                </div>
-                            @endforeach
-                        </div>
-
-                        {{-- QUESTION FOOT --}}
-                        <div class="question-foot">
-                            <button type="button" class="report-link">
-                                <i class="fa-regular fa-flag"></i>
-                                Report Question
-                            </button>
-
-                            {{-- TIMER --}}
-                            @if ($this->remainingSeconds !== null)
-                                <div class="timer" x-data="{
-                                    seconds: {{ $this->remainingSeconds ?? 0 }},
-                                    timer: null,
-                                
-                                    get minutes() {
-                                        return Math.floor(this.seconds / 60)
-                                    },
-                                
-                                    get displaySeconds() {
-                                        return this.seconds % 60
-                                    },
-                                
-                                    start() {
-                                
-                                        this.timer = setInterval(() => {
-                                
-                                            this.seconds--
-                                
-                                            if (this.seconds <= 0) {
-                                
-                                                clearInterval(this.timer)
-                                
-                                                $wire.finishQuiz()
-                                
-                                            }
-                                
-                                        }, 1000)
-                                
-                                    }
-                                }" x-init="start()">
-                                    <i class="fa-regular fa-clock"></i>
-
-                                    <span x-text="minutes"></span>
-
-                                    <span>:</span>
-
-                                    <span x-text="String(displaySeconds).padStart(2, '0')"></span>
-                                </div>
-                            @endif
-                        </div>
-                    </div>
-
-                    {{-- ===================== ACTIONS ===================== --}}
-                    <div class="actions-row">
-                        <button type="button" class="btn btn-ghost" wire:click="previous" @disabled($this->current < 1 )>
-                            <i class="fa-solid fa-chevron-left"></i>
-
-                            Previous
-                        </button>
-                        @if ($this->current !== $this->quiz->questions->count())
-                            <button type="button" class="btn btn-primary" wire:click="next">
-                                Next
-                                <i class="fa-solid fa-chevron-right"></i>
-                            </button>
-                        @else
-                            <button type="button" class="btn btn-primary" wire:click="submitAttempt">
-                                Submit
-
+                            <span class="option-check">
                                 <i class="fa-solid fa-check"></i>
-                            </button>
-                        @endif
-                    </div>
+                            </span>
+                        </div>
+                    @endforeach
+                </div>
+
+                {{-- QUESTION FOOT --}}
+                <div class="question-foot">
+                    
+
+                    {{-- TIMER --}}
+                    @if ($this->remainingSeconds !== null)
+                        <div class="timer" x-data="{
+                            seconds: {{ $this->remainingSeconds ?? 0 }},
+                            timer: null,
+                        
+                            get minutes() {
+                                return Math.floor(this.seconds / 60)
+                            },
+                        
+                            get displaySeconds() {
+                                return this.seconds % 60
+                            },
+                        
+                            start() {
+                        
+                                this.timer = setInterval(() => {
+                        
+                                    this.seconds--
+                        
+                                    if (this.seconds <= 0) {
+                        
+                                        clearInterval(this.timer)
+                        
+                                        $wire.finishQuiz()
+                        
+                                    }
+                        
+                                }, 1000)
+                        
+                            }
+                        }" x-init="start()">
+                            <i class="fa-regular fa-clock"></i>
+
+                            <span x-text="minutes"></span>
+
+                            <span>:</span>
+
+                            <span x-text="String(displaySeconds).padStart(2, '0')"></span>
+                        </div>
+                    @endif
+                </div>
+            </div>
+
+            {{-- ===================== ACTIONS ===================== --}}
+            <div class="actions-row">
+                <button type="button" class="btn btn-ghost" wire:click="previous" @disabled($this->current < 1)>
+                    <i class="fa-solid fa-chevron-left"></i>
+
+                    Previous
+                </button>
+                @if ($this->current !== $this->quiz->questions->count())
+                    <button type="button" class="btn btn-primary" wire:click="next">
+                        Next
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                @else
+                    <button type="button" class="btn btn-primary" wire:click="submitAttempt">
+                        Submit
+
+                        <i class="fa-solid fa-check"></i>
+                    </button>
+                @endif
+            </div>
 
             {{-- VALIDATION ERROR --}}
             @error('answers')
@@ -327,7 +329,6 @@ new class extends Component {
                     </svg>
 
                     <div>
-
                         <div class="stat-label">Battle Type</div>
 
                         <div class="stat-value">{{ $quiz->questions->count() }} Questions</div>
@@ -335,7 +336,6 @@ new class extends Component {
                 </div>
 
                 {{-- Time --}}
-
 
                 {{-- Reward --}}
                 <div class="stat-row">
@@ -348,7 +348,7 @@ new class extends Component {
                     </div>
                 </div>
                 <div class="stat-row">
-                    <i class="text-primary fa-solid fa-droplet"></i>
+                    <i class="text-danger fa-solid fa-droplet"></i>
 
                     <div>
                         <div class="stat-label">Lose Reward</div>
@@ -364,7 +364,6 @@ new class extends Component {
                     <span class="panel-title"> Battle Progress </span>
 
                     <span class="progress-frac"> {{ $current }} / {{ $quiz->questions->count() }} </span>
-
                 </div>
 
                 <div class="progress-track">
@@ -422,12 +421,10 @@ new class extends Component {
         <div class="panel-title">Topic</div>
 
         <div class="topic-row">
-            <div class="topic-icon">
-                <i class="fa-solid fa-heart-pulse"></i>
-            </div>
-
             <div>
-                <div class="topic-name">{{ $quiz->topic ?? 'Cardiology' }}</div>
+                <div class="topic-name">
+
+                </div>
             </div>
         </div>
     </div>

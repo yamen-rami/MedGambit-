@@ -603,15 +603,21 @@
     .results-page {
         padding: 16px;
     }
+    
     .results-header h1 {
-        font-size: 21px;
+        font-size: 21px ;
     }
     .results-header p {
         font-size: 12px;
     }
     .header-actions {
-        display: none;
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        margin-top: 16px;
+        gap: 12px;
     }
+
     .stats-grid {
         grid-template-columns: 1fr;
     }

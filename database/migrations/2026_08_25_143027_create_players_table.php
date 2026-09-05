@@ -24,7 +24,7 @@ return new class extends Migration
             $table->unsignedInteger('correct_answers')->default(0);
             $table->unsignedInteger('wrong_answers')->default(0);
             $table->unsignedInteger('time_taken')->default(0);
-            $table->enum("status" , ["playing" , "finished"]);
+            $table->enum('status', ['playing', 'finished']);
             $table->timestamps();
 
             $table->unique(['game_id', 'user_id']);

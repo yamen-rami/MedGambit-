@@ -2,5 +2,5 @@
     <x-slot:title>Questions Admin</x-slot:title>
     <!-- Content -->
     <!-- DataTable with Buttons -->
-    <livewire:questions /> 
+    <livewire:questions />
 </x-app>

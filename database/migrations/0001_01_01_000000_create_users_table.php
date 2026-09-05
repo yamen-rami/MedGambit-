@@ -19,10 +19,10 @@ return new class extends Migration
             $table->text('country');
             $table->string('image')->nullable();
             $table->enum('year', [1, 2, 3, 4, 5, 6])->nullable();
-            $table->string("know_about_us");
-            $table->enum('role', ['user', 'admin', "super_admin"])->default('user');
+            $table->string('know_about_us');
+            $table->enum('role', ['user', 'admin', 'super_admin'])->default('user');
             $table->boolean('graduated')->default(false);
-            $table->enum("geneder", ["male" , "female"]) ;
+            $table->enum('geneder', ['male', 'female']);
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');

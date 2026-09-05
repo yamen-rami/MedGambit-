@@ -2,9 +2,10 @@
 
 namespace Database\Factories;
 
+use App\Models\Option;
+use App\Models\Questions;
+use App\Models\Reference;
 use Illuminate\Database\Eloquent\Factories\Factory;
-
-use App\Models\{Option, Questions, Reference};
 
 /**
  * @extends Factory<Questions>

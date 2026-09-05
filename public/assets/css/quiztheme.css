@@ -6,7 +6,7 @@
 :root {
     --blue: #2f6bff;
     --blue-dark: #1d4fd8;
-    --text : black  ; 
+    --text: black;
 
     --red: #ef4444;
 
@@ -25,7 +25,7 @@
 [data-theme="dark"] {
     --blue: #5b8bff;
     --blue-dark: #3f6de0;
-    --text : white ; 
+    --text: white;
     --red: #f36565;
 
     --ink: #eef1fa;
@@ -39,8 +39,6 @@
     --green: #34d17b;
     --green-bg: #12301f;
 }
-
-
 
 body {
     font-family:
@@ -231,8 +229,8 @@ body {
 
 .player-name {
     font-weight: 700;
-    width:fit-content ; 
-    padding: 10px 0 ;
+    width: fit-content;
+    padding: 10px 0;
     font-size: 14.5px;
 }
 
@@ -1070,3 +1068,11 @@ body {
 .opponent-value {
     color: red;
 }
+.incorrect {
+    background-color: rgb(224, 7, 7);
+    color: white;
+}
+[x-cloak] {
+    display: none !important;
+}
+

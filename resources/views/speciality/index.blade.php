@@ -7,14 +7,14 @@
             <div class="d-grid">
                 <div class="row align-items-center py-4">
                     <div class="col-lg-4 text-center">
-                        <div class=" text-center dropdown-center">
+                        <div class="dropdown-center text-center">
                             <button type="button" class="btn dropdown-toggle hide-arrow p-0" data-bs-toggle="dropdown">
                                 <div class="">
                                     <img src="{{ asset("assets/images/filter.svg") }}" alt="" />
                                 </div>
                             </button>
                             <div class="dropdown-menu dropdown-">
-                                <a class="dropdown-item ">
+                                <a class="dropdown-item">
                                     <div class="text-center">
                                         <form action="{{ route("speciality.index") }}">
                                             <input type="hidden" name="sort" value="{{ $sort ?? "desc" }}" />

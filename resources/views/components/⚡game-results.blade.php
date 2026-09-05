@@ -1,23 +1,29 @@
 <?php
 
-use Livewire\Component;
 use Illuminate\Database\Eloquent\Collection;
 use Livewire\Attributes\Reactive;
-new class extends Component {
+use Livewire\Component;
+
+new class extends Component
+{
     //
     // #[Reactive()]
     public $questions;
+
     public $attempts;
+
     public $selectedQuestion = null;
+
     public function mount(?Collection $questions, ?Collection $attempts)
     {
         $this->questions = $questions;
         $this->attempts = $attempts;
     }
+
     public function showQuestion(int $questionId)
     {
         $this->selectedQuestion = $this->questions->findOrFail($questionId);
-        if (!$this->selectedQuestion) {
+        if (! $this->selectedQuestion) {
             return;
         }
         $this->selectedQuestion->loadMissing('options', 'correctAnswer');
@@ -77,7 +83,7 @@ new class extends Component {
 
             .qd-modal .qd-close::before,
             .qd-modal .qd-close::after {
-                content: "" !important;
+                content: '' !important;
                 position: absolute !important;
                 width: 16px !important;
                 height: 2px !important;
@@ -153,9 +159,7 @@ new class extends Component {
             /* Correct option */
             .qd-modal .qd-option.is-correct {
                 border-color: var(--success) !important;
-                background-color: color-mix(in srgb,
-                        var(--success) 8%,
-                        var(--surface)) !important;
+                background-color: color-mix(in srgb, var(--success) 8%, var(--surface)) !important;
             }
 
             /* Option row */
@@ -252,34 +256,48 @@ new class extends Component {
             }
         </style>
     @endpush
-    <div class="modal fade modal-xl qd-modal" id="staticBackdrop" data-bs-backdrop="static" data-bs-keyboard="false"
-        tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+    <div
+        class="modal fade modal-xl qd-modal"
+        id="staticBackdrop"
+        data-bs-backdrop="static"
+        data-bs-keyboard="false"
+        tabindex="-1"
+        aria-labelledby="staticBackdropLabel"
+        aria-hidden="true"
+    >
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content qd-content">
-
                 <div class="modal-header qd-header">
                     <h1 class="modal-title fs-5 qd-title" id="staticBackdropLabel">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-                            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="24"
+                            height="24"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
                             stroke-linejoin="round"
-                            class="lucide lucide-shield-question-mark-icon lucide-shield-question-mark">
-                            <path
-                                d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />
+                            class="lucide lucide-shield-question-mark-icon lucide-shield-question-mark"
+                        >
+                            <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />
                             <path d="M9.1 9a3 3 0 0 1 5.82 1c0 2-3 3-3 3" />
                             <path d="M12 17h.01" />
                         </svg>
                         QUESTION DETAIL
                     </h1>
-                    <button type="button" class="btn-close qd-close" data-bs-dismiss="modal"
-                        aria-label="Close"></button>
+                    <button
+                        type="button"
+                        class="btn-close qd-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Close"
+                    ></button>
                 </div>
 
                 <div class="modal-body qd-body">
-
-                    <div class="qd-prompt-label">Question Details </div>
-                    <div class="qd-prompt">
-                        {{ $this->selectedQuestion?->content }}
-                    </div>
+                    <div class="qd-prompt-label">Question Details</div>
+                    <div class="qd-prompt">{{ $this->selectedQuestion?->content }}</div>
 
                     @if (isset($selectedQuestion))
                         <div class="qd-options">
@@ -289,22 +307,32 @@ new class extends Component {
                                     $isCorrect = $option->id == $correct;
                                 @endphp
 
-                                <div x-data="{ showEx: false }" class="qd-option {{ $isCorrect ? 'is-correct' : '' }}"
-                                    x-cloak @click="showEx = !showEx">
-
+                                <div
+                                    x-data="{ showEx: false }"
+                                    class="qd-option {{ $isCorrect ? 'is-correct' : '' }}"
+                                    x-cloak
+                                    @click="showEx = ! showEx"
+                                >
                                     <div class="qd-option-row">
                                         <span class="qd-option-key">{{ $option->name }}</span>
                                         <span class="qd-option-label">{{ $option->content }}</span>
 
                                         @if ($isCorrect)
                                             <span class="qd-correct-badge">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                                                    viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                                                    class="lucide lucide-check-icon lucide-check">
+                                                <svg
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    width="24"
+                                                    height="24"
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    stroke-width="2"
+                                                    stroke-linecap="round"
+                                                    stroke-linejoin="round"
+                                                    class="lucide lucide-check-icon lucide-check"
+                                                >
                                                     <path d="M20 6 9 17l-5-5" />
                                                 </svg>
-
                                             </span>
                                         @endif
                                     </div>
@@ -315,20 +343,15 @@ new class extends Component {
                                 </div>
                             @endforeach
                             <div>
-                                <p>High Yield </p>
-                                <p class="ps-5">
-                                    {{ $selectedQuestion?->high_yield }}
-                                </p>
-                                <hr>
+                                <p>High Yield</p>
+                                <p class="ps-5">{{ $selectedQuestion?->high_yield }}</p>
+                                <hr />
                                 <p>Question Explanation</p>
-                                <p class="ps-5">
-                                    {{ $selectedQuestion?->main_explanation }}
-                                </p>
+                                <p class="ps-5">{{ $selectedQuestion?->main_explanation }}</p>
                             </div>
                         </div>
 
                     @endif
-
                 </div>
 
                 <div class="modal-footer qd-footer">
@@ -336,7 +359,6 @@ new class extends Component {
                         Back To Results
                     </button>
                 </div>
-
             </div>
         </div>
     </div>
@@ -354,11 +376,13 @@ new class extends Component {
         <tbody>
             @foreach ($questions as $question)
                 <tr>
-                    <td class="num-cell">
-                        {{ $loop->iteration < 9 ? '0' . $loop->iteration : $loop->iteration }}
-                    </td>
-                    <td class="question-cell" wire:click='showQuestion({{ $question->id }})' data-bs-toggle="modal"
-                        data-bs-target="#staticBackdrop">
+                    <td class="num-cell">{{ $loop->iteration < 9 ? '0' . $loop->iteration : $loop->iteration }}</td>
+                    <td
+                        class="question-cell"
+                        wire:click='showQuestion({{ $question->id }})'
+                        data-bs-toggle="modal"
+                        data-bs-target="#staticBackdrop"
+                    >
                         {{ Str::limit($question->content, 30, '') }}
                     </td>
 
@@ -368,17 +392,35 @@ new class extends Component {
                         @endphp
                         <td class="result-cell">
                             @if ($answer && $answer->is_correct)
-                                <svg class="text-success" xmlns="http://www.w3.org/2000/svg" width="16"
-                                    height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                                    class="lucide lucide-check-icon lucide-check">
+                                <svg
+                                    class="text-success"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    width="16"
+                                    height="16"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="2"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    class="lucide lucide-check-icon lucide-check"
+                                >
                                     <path d="M20 6 9 17l-5-5" />
                                 </svg>
                             @else
-                                <svg class = "text-danger " xmlns="http://www.w3.org/2000/svg" width="16"
-                                    height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                                    class="lucide lucide-x-icon lucide-x">
+                                <svg
+                                    class="text-danger"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    width="16"
+                                    height="16"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="2"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    class="lucide lucide-x-icon lucide-x"
+                                >
                                     <path d="M18 6 6 18" />
                                     <path d="m6 6 12 12" />
                                 </svg>
@@ -387,7 +429,6 @@ new class extends Component {
                     @endforeach
                 </tr>
             @endforeach
-
         </tbody>
     </table>
 </div>

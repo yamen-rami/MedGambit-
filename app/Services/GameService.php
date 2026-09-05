@@ -2,12 +2,15 @@
 
 namespace App\Services;
 
+use App\Events\GameStarted;
+use App\Models\Game;
+use App\Models\GameAttempt;
+use App\Models\Players;
+use App\Models\Questions;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-
-use App\Events\GameStarted;
-use App\Models\{Game, GameAttempt, Players, Questions, User};
 
 class GameService
 {
@@ -80,11 +83,11 @@ class GameService
         ?int $duration = null,
         ?array $difficulty = null,
         ?array $length = null,
-        ?Collection $specialties = null ,
-        ?Collection $skills = null ,
+        ?Collection $specialties = null,
+        ?Collection $skills = null,
         ?Collection $branches = null,
     ) {
-        
+
         $player_1->loadMissing('playedQuestions');
         $player_2->loadMissing('playedQuestions');
         $p1 = $player_1->playedQuestions->pluck('id')->toArray();
@@ -112,6 +115,7 @@ class GameService
             ->whereNotIn('id', $ignore)
             ->limit(20)
             ->get();
+
         return $questions;
     }
 
@@ -258,9 +262,9 @@ class GameService
                 $game->duration,
                 $game->difficulty,
                 $game->length,
-                $game->specialties->count() > 0  ? $game->specialties : null,
-                $game->skills->count() > 0  ? $game->skills : null,
-                $game->branches->count() > 0  ? $game->branches : null,
+                $game->specialties->count() > 0 ? $game->specialties : null,
+                $game->skills->count() > 0 ? $game->skills : null,
+                $game->branches->count() > 0 ? $game->branches : null,
             );
             $game->questions()->attach($questions->pluck('id'));
             $this->gameStarted($game, $game->players);
@@ -269,6 +273,7 @@ class GameService
                 'started_at' => now(),
             ]);
             DB::afterCommit(fn () => GameStarted::dispatch($game));
+
             return $game;
         });
     }

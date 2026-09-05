@@ -4,9 +4,6 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-use App\Http\Controllers\ReferenceController;
-use App\Models\Reference;
-
 return new class extends Migration
 {
     /**
@@ -26,7 +23,7 @@ return new class extends Migration
             $table->enum('length', ['short', 'medium', 'long']);
             $table->enum('elo_correct', [4, 8, 12]);
             $table->enum('elo_incorrect', [5, 10, 15]);
-            $table->foreignId("reference_id")->constrained()->cascadeOnDelete();        
+            $table->foreignId('reference_id')->constrained()->cascadeOnDelete();
             $table->fullText(['content', 'topic']);
             $table->timestamps();
         });

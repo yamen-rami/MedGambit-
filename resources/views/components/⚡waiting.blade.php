@@ -1,10 +1,13 @@
 <?php
 
-use Livewire\Component;
 use App\Models\Game;
 use Livewire\Attributes\On;
-new class extends Component {
+use Livewire\Component;
+
+new class extends Component
+{
     public Game $game;
+
     public function mount($game)
     {
         $this->game = $game;
@@ -12,7 +15,7 @@ new class extends Component {
 
     #[On('echo-private:game.{gameId},.game.started')]
     public function toGame($event)
-    {   
+    {
         return redirect()->route('friend.game.started', [
             'challenge_token' => $this->game->challenge_token,
         ]);

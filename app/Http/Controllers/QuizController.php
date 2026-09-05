@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
-
-use App\Models\{BranchOfMedicine, Questions, Quiz, SkillsForQuestion, Specialty};
+use App\Models\BranchOfMedicine;
+use App\Models\Questions;
+use App\Models\Quiz;
+use App\Models\SkillsForQuestion;
+use App\Models\Specialty;
 use App\Services\QuizService;
+use Illuminate\Http\Request;
 
 class QuizController extends Controller
 {
@@ -87,19 +89,19 @@ class QuizController extends Controller
     // Random funcitonality
     public function quizResult(Quiz $quiz)
     {
-       
+
         $array = [];
-        $quiz->loadMissing('attempts', "questions.options");
+        $quiz->loadMissing('attempts', 'questions.options');
         $attempt = $quiz->attempts()->where('user_id', auth()->id())->latest()->first();
         $answers = $attempt->answers;
         $answers->loadMissing('question.options', 'question.correctAnswer');
         $questions = $quiz->questions;
-        $correctAnswers = $answers->where("is_correct" , true);
-        $wrongAnswers = $answers->where("is_correct" , false);
-        foreach($answers as $answer){
-            $array[] = $answer->question->id ;
+        $correctAnswers = $answers->where('is_correct', true);
+        $wrongAnswers = $answers->where('is_correct', false);
+        foreach ($answers as $answer) {
+            $array[] = $answer->question->id;
         }
-        $unanswered = $quiz->questions->whereNotIn("id" , $array);
+        $unanswered = $quiz->questions->whereNotIn('id', $array);
 
         session()->forget([
             'answers',
@@ -113,9 +115,9 @@ class QuizController extends Controller
             'attempt' => $attempt,
             'questions' => $questions,
             'answers' => $answers,
-            "correctAnswers" => $correctAnswers,
-            'wrongAnswers' => $wrongAnswers, 
-            "unanswered" => $unanswered ,
+            'correctAnswers' => $correctAnswers,
+            'wrongAnswers' => $wrongAnswers,
+            'unanswered' => $unanswered,
         ]);
         // dd($attempt , $question , $quiz);
     }
