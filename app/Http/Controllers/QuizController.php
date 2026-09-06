@@ -2,13 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\BranchOfMedicine;
-use App\Models\Questions;
-use App\Models\Quiz;
-use App\Models\SkillsForQuestion;
-use App\Models\Specialty;
-use App\Services\QuizService;
 use Illuminate\Http\Request;
+
+use App\Models\{BranchOfMedicine, Questions, Quiz, SkillsForQuestion, Specialty};
+use App\Services\QuizService;
 
 class QuizController extends Controller
 {
@@ -89,37 +86,42 @@ class QuizController extends Controller
     // Random funcitonality
     public function quizResult(Quiz $quiz)
     {
+        $attempt = $quiz->attempts()
+            ->where('user_id', auth()->id())
+            ->where('status', 'completed')
+            ->latest()
+            ->first();
 
-        $array = [];
-        $quiz->loadMissing('attempts', 'questions.options');
-        $attempt = $quiz->attempts()->where('user_id', auth()->id())->latest()->first();
-        $answers = $attempt->answers;
-        $answers->loadMissing('question.options', 'question.correctAnswer');
-        $questions = $quiz->questions;
+        if (! $attempt) {
+            abort(403, 'Finish your attempt');
+        }
+        // getting answers with questions and options
+
+        $answers = $attempt->answers()
+            ->with([
+                'question.options',
+                'question.correctAnswer',
+            ])
+            ->get();
+
         $correctAnswers = $answers->where('is_correct', true);
         $wrongAnswers = $answers->where('is_correct', false);
-        foreach ($answers as $answer) {
-            $array[] = $answer->question->id;
-        }
-        $unanswered = $quiz->questions->whereNotIn('id', $array);
 
-        session()->forget([
-            'answers',
-            'current',
-            'correctAnswers',
-            'wrongAnswers',
-        ]);
+        $answeredQuestionIds = $answers->pluck('question_id');
+
+        $unanswered = $quiz->questions()
+            ->whereNotIn('questions.id', $answeredQuestionIds)
+            ->with('options')
+            ->get();
 
         return view('home.quiz.quizResults', [
             'quiz' => $quiz,
             'attempt' => $attempt,
-            'questions' => $questions,
             'answers' => $answers,
             'correctAnswers' => $correctAnswers,
             'wrongAnswers' => $wrongAnswers,
             'unanswered' => $unanswered,
         ]);
-        // dd($attempt , $question , $quiz);
     }
 
     public function learningQuiz(Quiz $quiz)

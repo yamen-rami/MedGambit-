@@ -2,16 +2,17 @@
 
 namespace App\Models;
 
-use Database\Factories\GameAttemptFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+
+use Database\Factories\GameAttemptFactory;
 
 class GameAttempt extends Model
 {
     /** @use HasFactory<GameAttemptFactory> */
     use HasFactory;
 
-    protected $fillable = ['user_id', 'game_id', 'is_winner', 'status', 'score', 'started_at', 'ended_at'];
+    protected $fillable = ['user_id', 'game_id', 'is_winner', 'status', 'score', 'started_at', 'ended_at' , "new_rank" , "current_rank"];
 
     protected function casts(): array
     {

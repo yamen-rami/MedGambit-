@@ -17,8 +17,8 @@ return new class extends Migration
             $table->text('challenge_token')->unique()->nullable();
             $table->enum('status', ['pending', 'playing', 'completed'])->index();
             $table->unsignedBigInteger('duration')->nullable();
-            $table->json('difficulty')->nullable();
-            $table->json('length')->nullable();
+            $table->enum('difficulty' , ['easy' , "medium" , "hard" , "nerd"])->nullable();
+            $table->enum('length' , ['short' , "medium" , "long"])->nullable();
             $table->timestamp('started_at')->nullable();
             $table->timestamp('ended_at')->nullable();
             $table->timestamps();

@@ -2,24 +2,23 @@
 
 namespace App\Models;
 
-use Database\Factories\GameFactory;
-use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\{Builder, Model};
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+
+use Database\Factories\GameFactory;
 
 class Game extends Model
 {
     /** @use HasFactory<GameFactory> */
     use HasFactory;
 
-    protected $fillable = ['max_players', 'status', 'challenge_token', 'started_at', 'ended_at', 'length', 'difficulty'];
+    protected $fillable = ['max_players', 'status', 'challenge_token', 'started_at', 'ended_at', 'length', 'difficulty' , "duration"];
 
     // TODO Duration
-    protected $casts = [
-        'difficulty' => 'array',
-        'length' => 'array',
-    ];
+    public function references() : BelongsToMany{
+        return $this->belongsToMany(Reference::class , "game_references");
+    }
 
     public function questions()
     {

@@ -2,28 +2,26 @@
 
 namespace App\Services;
 
-use App\Events\GameStarted;
-use App\Models\Game;
-use App\Models\GameAttempt;
-use App\Models\Players;
-use App\Models\Questions;
-use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+
+use App\Events\GameStarted;
+use App\Models\{Game, GameAttempt, Players, Questions, User};
 
 class GameService
 {
     public function searchOrCreate(
         User $user,
-        ?array $difficulty = null,
-        ?array $length = null,
-        ?int $duration = null,
+        ?string $difficulty = null,
+        ?string $length = null,
+        ?int $duration = 20,
         ?Collection $sp = null,
         ?Collection $branches = null,
-        ?Collection $skills = null
+        ?Collection $skills = null,
+        ?Collection $references = null,
     ) {
-        return DB::transaction(function () use ($user, $difficulty, $length, $duration, $sp, $branches, $skills) {
+        return DB::transaction(function () use ($user, $difficulty, $length, $duration, $sp, $branches, $skills, $references) {
             $game = Game::where('status', 'pending')
                 ->whereDoesntHave('players', function ($query) use ($user) {
                     $query->where('user_id', $user->id);
@@ -35,6 +33,8 @@ class GameService
             if (! $game) {
                 $game = Game::create([
                     'status' => 'pending',
+                    'difficulty' => $difficulty ?? null,
+                    'length' => $length ?? null,
                     'max_players' => 2,
                     'duration' => $duration,
                     'ended_at' => null,
@@ -58,12 +58,12 @@ class GameService
             $questions = $this->createQuiz(
                 player_1: $player1,
                 player_2: $player2,
-                duration: $duration,
                 difficulty: $difficulty,
                 length: $length,
                 specialties: $sp,
                 branches: $branches,
-                skills: $skills
+                skills: $skills,
+                references : $references,
             );
             $game->questions()->attach($questions->pluck('id'));
 
@@ -80,12 +80,12 @@ class GameService
     public function createQuiz(
         ?User $player_1,
         ?User $player_2,
-        ?int $duration = null,
-        ?array $difficulty = null,
-        ?array $length = null,
+        ?string $difficulty = null,
+        ?string $length = null,
         ?Collection $specialties = null,
         ?Collection $skills = null,
         ?Collection $branches = null,
+        ?Collection $references = null,
     ) {
 
         $player_1->loadMissing('playedQuestions');
@@ -94,9 +94,8 @@ class GameService
         $p2 = $player_2->playedQuestions->pluck('id')->toArray();
         $ignore = array_merge($p1, $p2);
         $questions = Questions::query()
-            ->when($difficulty, fn ($query) => $query->whereIn('difficulty', $difficulty))
-            ->when($length, fn ($query) => $query->whereIn('length', $length))
-            // TODO A Good Duration
+            ->when($difficulty, fn ($query) => $query->where('difficulty', $difficulty))
+            ->when($length, fn ($query) => $query->where('length', $length))
             ->when($branches, function ($query) use ($branches) {
                 $query->whereHas('branches', function ($q) use ($branches) {
                     $q->whereIn('branch_of_medicines.id', $branches->pluck('id'));
@@ -110,6 +109,11 @@ class GameService
             ->when($specialties, function ($query) use ($specialties) {
                 $query->whereHas('specialties', function ($q) use ($specialties) {
                     $q->whereIn('specialties.id', $specialties->pluck('id'));
+                });
+            })
+            ->when($references, function ($query) use ($references) {
+                $query->whereHas('reference', function ($q) use ($references) {
+                    $q->whereIn('references.id', $references->pluck('id'));
                 });
             })
             ->whereNotIn('id', $ignore)
@@ -149,11 +153,11 @@ class GameService
                 'started_at' => $now,
             ]);
         });
-        $players->each(function ($player) use ($now) {
-            $player->update([
-                'started_at' => $now,
-            ]);
-        });
+        // $players->each(function ($player) use ($now) {
+        //     $player->update([
+        //         'started_at' => $now,
+        //     ]);
+        // });
     }
 
     public function editAttempt(GameAttempt $attempt, Game $game): void
@@ -174,9 +178,7 @@ class GameService
             }
         }
         $user->playedQuestions()->syncWithoutDetaching($questionIds);
-        $user->update([
-            'game_rank' => $game_rank,
-        ]);
+        
 
         $correct = $attempt->answers->where('is_correct', true)->count();
         $wrong = $attempt->answers->where('is_correct', false)->count();
@@ -185,6 +187,11 @@ class GameService
             'status' => 'finished',
             'time_taken' => $attempt->started_at->diffInSeconds($now),
             'score' => $correct,
+            "current_rank" => $user->game_rank , 
+            "new_rank" => $game_rank , 
+        ]);
+        $user->update([
+            'game_rank' => $game_rank,
         ]);
 
         $game->loadMissing('players');
@@ -206,7 +213,7 @@ class GameService
         $winner = $attempts
             ->loadMissing('answers')
             ->sortBy([
-                fn ($attempt) => -$attempt->answers->where('is_correct', true)->count(),
+                fn ($attempt) => $attempt->score,
                 fn ($attempt) => $attempt->time_taken,
             ])
             ->first();
@@ -224,101 +231,96 @@ class GameService
             'is_winner' => true,
         ]);
         $winner->game()->update([
-            'status' => 'completed',
+            'status' => 'finished',
         ]);
     }
 
-    public function friendGame(?array $difficulty, ?array $length, $duration = null, $sp = null, $branches = null, $skills = null)
-    {
-        $game = Game::create([
-            'status' => 'pending',
-            'max_players' => 2,
-            'challenge_token' => Str::random(32),
-            'difficulty' => $difficulty,
-            'length' => $length,
-            'duration' => $duration,
-        ]);
-        $userId = auth()->id();
-        $this->createPlayer($userId, $game->id);
-        $this->createAttempt($game->id, $userId);
-        $game->specialties()->attachOrFail($sp);
-        $game->branches()->attachOrFail($branches);
-        $game->skills()->attachOrFail($skills);
-
-        return $game;
-    }
-
-    public function joinFriendGame(Game $game)
-    {
-        $userId = auth()->id();
-
-        return DB::transaction(function () use ($game, $userId) {
+    public function friendGame(
+        ?string $difficulty = null,
+        ?string $length = null,
+        $duration = null,
+        $sp = null,
+        $branches = null,
+        $skills = null,
+        $references = null
+    ) {
+        return DB::transaction(function () use ($difficulty, $length, $duration, $sp, $branches, $skills, $references) {
+            $game = Game::create([
+                'status' => 'pending',
+                'max_players' => 2,
+                'challenge_token' => Str::random(32),
+                'difficulty' => $difficulty ? $difficulty : null,
+                'length' => $length ? $length : null,
+                'duration' => $duration,
+            ]);
+            $userId = auth()->id();
             $this->createPlayer($userId, $game->id);
             $this->createAttempt($game->id, $userId);
-            $game->load('players.user', 'branches', 'skills', 'specialties');
-            $questions = $this->createQuiz(
-                $game->players[0]->user,
-                $game->players[1]->user,
-                $game->duration,
-                $game->difficulty,
-                $game->length,
-                $game->specialties->count() > 0 ? $game->specialties : null,
-                $game->skills->count() > 0 ? $game->skills : null,
-                $game->branches->count() > 0 ? $game->branches : null,
-            );
-            $game->questions()->attach($questions->pluck('id'));
-            $this->gameStarted($game, $game->players);
-            $game->update([
-                'status' => 'playing',
-                'started_at' => now(),
-            ]);
-            DB::afterCommit(fn () => GameStarted::dispatch($game));
-
+            $game->specialties()->attachOrFail($sp);
+            $game->branches()->attachOrFail($branches);
+            $game->skills()->attachOrFail($skills);
+            $game->references()->attachOrFail($references);
             return $game;
         });
+
     }
 
-    public function friendChallenge(string $challenge_token)
+    public function joinFriend(int $userId, int $gameId)
     {
-        $game = Game::with('players', 'attempts', 'questions')
-            ->where('challenge_token', $challenge_token)
-            ->where('status', 'pending')
-            ->first();
+        return DB::transaction(function () use ($userId, $gameId) {
+            $game = Game::query()
+                ->whereKey($gameId)
+                ->where('status', 'pending')
+                ->lockForUpdate()
+                ->first();
 
-        if (! $game) {
-            abort(404, 'Challenge Not Found');
-        }
+            if (! $game) {
+                throw new \RuntimeException('Game is no longer available.');
+            }
 
-        if ($game->status !== 'pending') {
-            abort(403, 'Game Is Not Pending');
-        }
+            if ($game->players()->where('user_id', $userId)->exists()) {
+                throw new \RuntimeException('You are already in this game.');
+            }
 
-        if ($game->players()->where('user_id', auth()->id())->exists()) {
-            abort(403, 'You Are Already In This Game');
-        }
+            if ($game->players()->count() >= $game->max_players) {
+                throw new \RuntimeException('Game is full.');
+            }
 
-        if ($game->players->count() > 1) {
-            return;
-        }
+            $this->createPlayer($userId, $gameId);
+            $this->createAttempt($gameId, $userId);
 
-        $this->joinFriendGame($game);
+            $game->load('players.user');
 
-        return redirect()->route('friend.game.started', [
-            'game' => $game,
-            'challenge_token' => $game->challenge_token,
-        ]);
-    }
+            if ($game->players->count() !== $game->max_players) {
+                return;
+            }
 
-    public function friendGameStarted(Game $game, string $challenge_token)
-    {
-        if ($game->challenge_token !== $challenge_token) {
-            abort(403, 'Something Went Wrong');
-        }
+            $questions = $this->createQuiz(
+                player_1: $game->players[0]->user,
+                player_2: $game->players[1]->user,
+                difficulty: $game->difficulty,
+                length: $game->length,
+                specialties: $game->specialties->count() > 0 ? $game->specialties : null,
+                branches: $game->branches->count() > 0 ? $game->branches : null,
+                skills: $game->skills->count() > 0 ? $game->skills : null,
+                references: $game->references->count() > 0 ? $game->references : null,
+            );
 
-        if (! $game->players()->where('user_id', auth()->id())->exists()) {
-            abort(403, 'You Are Not In This Game');
-        }
+            if ($questions->count() < 2) {
+                throw new \RuntimeException('Not enough questions available.');
+            }
 
-        return view('game.challengeStarted', compact('game'));
+            $game->questions()->attach($questions->pluck('id'));
+
+            $this->gameStarted($game, $game->players);
+
+            $game->update([
+                'status' => 'playing',
+            ]);
+
+            DB::afterCommit(
+                fn () => GameStarted::dispatch($game->fresh())
+            );
+        });
     }
 }

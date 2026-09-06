@@ -163,9 +163,7 @@ class QuizService
 
     public function learningQuiz(Collection $questions, $length = 'short', $count = 3, $difficulty = 'easy')
     {
-        // Create Quiz
-        // Learning Quiz
-        //
+
         $quiz = Quiz::create([
             'name' => 'Detected Learning Quiz ',
             'topic' => 'Detected Learning Quiz ',

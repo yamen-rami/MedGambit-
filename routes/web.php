@@ -1,18 +1,10 @@
 <?php
 
-use App\Http\Controllers\ApiController;
-use App\Http\Controllers\BranchOfMedicineController;
-use App\Http\Controllers\GameController;
-use App\Http\Controllers\OptionsController;
-use App\Http\Controllers\QuestionsController;
-use App\Http\Controllers\QuizController;
-use App\Http\Controllers\ReferenceController;
-use App\Http\Controllers\SkillsForQuestionController;
-use App\Http\Controllers\SpecialtyController;
-use App\Http\Controllers\UserController;
+use Illuminate\Support\Facades\Route;
+
+use App\Http\Controllers\{ApiController, BranchOfMedicineController, GameController, OptionsController, QuestionsController, QuizController, ReferenceController, SkillsForQuestionController, SpecialtyController, UserController};
 use App\Http\Middleware\admin;
 use App\Models\Game;
-use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'home')->name('home');
 
@@ -51,13 +43,17 @@ Route::middleware('auth')->group(function () {
 
     Route::get('start/game', [GameController::class, 'startGame'])->name('start.game');
     // Route::get("friend/game/{game}" , [GameController::class , "friendGame"])->name("friendGame");
-    Route::get('game/friend/{challenge_token}', [GameController::class, 'gameStarted'])->name('friendGame');
-
+    
     // To Games
-    Route::get('friend/challenge/{challenge_token}', [GameController::class, 'friendGameStarted'])->name('friend.game.started');
+    
+    Route::get('friend/challenge/{challenge_token}', [GameController::class, 'friendGameCreate'])->name('friend.game.started');
+    Route::get('game/friend/{challenge_token}', [GameController::class, 'friendGame'])->name('friendGame');
+    Route::get('game/challenge/{challenge_token}', [GameController::class, 'gameRedirect'])->name('gameRedirect');
+
     Route::get('game/started/{game}', [GameController::class, 'gameStarted'])->name('gameStarted');
 
     Route::get('config/game', [GameController::class, 'config'])->name('config.game');
+    
     // to waiting page for the player 1
     Route::get('waiting/{game}', [GameController::class, 'waiting'])->name('waiting');
 });

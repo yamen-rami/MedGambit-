@@ -44,10 +44,16 @@ new class extends Component {
             return;
         }
 
-        $this->currentQuestion = Questions::with('options', 'correctAnswer', 'playedCount')->findOrFail($questionId);
+        $this->currentQuestion = Questions::with('options', 'correctAnswer', 'playedCount', 'specialties', 'branches' ,"reference")->findOrFail($questionId);
 
         // If already answered, automatically open the explanation for the chosen option
         $this->activeOptionId = $this->answers[$questionId] ?? null;
+    }
+
+    #[Computed]
+    public function count()
+    {
+        return $this->quiz->questions->count();
     }
 
     #[Computed]
@@ -96,11 +102,12 @@ new class extends Component {
 
         // Open the explanation for the selected option
         $this->answers[$questionId] = (int) $optionId;
+        $this->activeOptionId = (int) $optionId;
     }
 
     public function next()
     {
-        if ($this->current < $this->quiz->questions->count()) {
+        if ($this->current < $this->count) {
             $this->updateCurrent($this->current + 1);
         }
     }
@@ -114,7 +121,7 @@ new class extends Component {
 
     public function updateCurrent($current)
     {
-        $max = $this->quiz->questions->count();
+        $max = $this->count;
         if ($current < 1 || $max < $current) {
             return;
         }
@@ -138,7 +145,7 @@ new class extends Component {
 
     public function submitAttempt()
     {
-        $questionsCount = $this->quiz->questions->count();
+        $questionsCount = $this->count;
 
         $this->validate([
             'answers' => ['required', 'array', "min:$questionsCount"],
@@ -153,6 +160,118 @@ new class extends Component {
 ?>
 <div class="">
     <x-slot:topic>Learning Mode</x-slot:topic>
+    <!-- ===================== QUIZ FILTERS ===================== -->
+    <div class="quiz-filters">
+        <div class="filter-group">
+            <div class="filter-heading">
+                <i class="menu-icon icon-base fa-solid fa-graduation-cap"></i>
+
+                <span>Reference</span>
+            </div>
+
+            <div class="filter-content">
+
+                <div class="filter-chips" id="specialityChips">
+                    <button type="button" class="filter-chip active">
+                        <i class="ti ti-heart"></i>
+                        <span>{{ $this->currentQuestion->reference->name ?? 'No Reference Found For This Question' }}</span>
+                        <i class="ti ti-x chip-remove"></i>
+                    </button>
+                    <p></p>
+
+
+                </div>
+
+                <button type="button" class="filter-expand" data-target="specialityChips"
+                    aria-label="Show more specialities">
+                    <i class="ti ti-chevron-down"></i>
+                </button>
+
+            </div>
+        </div>
+        <!-- Branch -->
+        <div class="filter-group">
+            <div class="filter-heading">
+                <i class=" fa-solid fa-code-branch text-center"></i>
+
+                <span>Branch</span>
+            </div>
+
+            <div class="filter-content">
+
+                <div class="filter-chips" id="branchChips">
+                    @forelse ($this->currentQuestion->branches as $branche)
+                        <button type="button" class="filter-chip active">
+                            <i class="ti ti-heart-rate-monitor"></i>
+                            <span>{{ $branch->name }}</span>
+
+                            <i class="ti ti-x chip-remove"></i>
+                        </button>
+                    @empty
+                        <button type="button" class="filter-chip active">
+                            <span>{{ 'No Branch Found For This Question' }}</span>
+                        </button>
+                    @endforelse
+
+                    <!-- Hidden branches -->
+                    <button type="button" class="filter-chip extra-chip">
+                        <i class="ti ti-brain"></i>
+                        <span></span>
+                        <i class="ti ti-x chip-remove"></i>
+                    </button>
+
+
+                </div>
+
+                <button type="button" class="filter-expand" data-target="branchChips" aria-label="Show more branches">
+                    <i class="ti ti-chevron-down"></i>
+                </button>
+
+            </div>
+        </div>
+
+
+        {{-- <div class="filter-divider"></div> --}}
+
+
+        <!-- Speciality -->
+        <div class="filter-group">
+            <div class="filter-heading">
+                <i class="menu-icon icon-base fa-solid fa-graduation-cap"></i>
+
+                <span>Speciality</span>
+            </div>
+
+            <div class="filter-content">
+
+                <div class="filter-chips" id="specialityChips">
+                    @forelse ($this->currentQuestion?->specialties as $sp)
+                        <button type="button" class="filter-chip active">
+                            <i class="ti ti-heart"></i>
+                            <span>{{ $sp?->name }}</span>
+                            <i class="ti ti-x chip-remove"></i>
+                        </button>
+                    @empty
+                        <button type="button" class="filter-chip active">
+
+                            <span>{{ $sp->name ?? 'No Specialities Found For This Question' }}</span>
+                        </button>
+                    @endforelse
+
+
+                </div>
+
+                <button type="button" class="filter-expand" data-target="specialityChips"
+                    aria-label="Show more specialities">
+                    <i class="ti ti-chevron-down"></i>
+                </button>
+
+            </div>
+        </div>
+
+
+
+    </div>
     {{-- ===================== CONTENT ===================== --}}
     <div class="content-grid">
         {{-- ===================== CENTER ===================== --}}
@@ -165,7 +284,7 @@ new class extends Component {
                 {{-- QUESTION HEADER --}}
                 <div class="question-head">
                     <span class="question-index">
-                        Question {{ $this->current }} / {{ $quiz->questions->count() }}
+                        Question {{ $this->current }} / {{ $this->count }}
                     </span>
 
                     <span class="badge-medium"> {{ $quiz->difficulty ?? 'Medium' }} </span>
@@ -177,7 +296,7 @@ new class extends Component {
                 {{-- OPTIONS --}}
                 <div class="options" x-data="{ activeOptionId: $wire.activeOptionId }">
                     @php
-                        $correct = $question->correctAnswer->id;
+                        $correct = $question->correctAnswer?->id;
                     @endphp
                     @foreach ($question->options as $option)
                         @php
@@ -191,7 +310,8 @@ new class extends Component {
 
                         <div class="option" x-cloak {{-- Apply border only if the question has been answered --}} :class="'{{ $borderClass }}'"
                             wire:click="submit({{ $option->id }}, {{ $question->id }})"
-                            @click="$wire.set('activeOptionId', $wire.activeOptionId == {{ $option->id }} ? null : {{ $option->id }})">
+                            @click="$wire.set('activeOptionId', $wire.activeOptionId == {{ $option->id }} ? null : {{ $option->id }})"
+                            wire:key='{{ $option->id }}'>
 
                             <span class="option-key">
                                 @if ($loop->iteration === 1)
@@ -237,24 +357,16 @@ new class extends Component {
 
             {{-- ===================== ACTIONS ===================== --}}
             <div class="actions-row">
-                <button type="button" class="btn btn-ghost" wire:click="previous({{ $question->elo_correct }})"
-                    @disabled($this->current < 1)>
+                <button type="button" class="btn btn-ghost" wire:click="previous" @disabled($this->current < 1)>
                     <i class="fa-solid fa-chevron-left"></i>
                     Previous
                 </button>
 
-                {{-- SKIP --}}
-                {{-- <button type="button" class="btn btn-ghost btn-skip">
 
-              <i class="fa-solid fa-bolt"></i>
-
-              Skip
-
-            </button> --}}
 
                 {{-- NEXT / SUBMIT --}}
-                @if ($this->current !== $this->quiz->questions->count())
-                    <button type="button" class="btn btn-primary" wire:click="next({{ $question->elo_correct }})">
+                @if ($this->current !== $this->count)
+                    <button type="button" class="btn btn-primary" wire:click="next">
                         Next
 
                         <i class="fa-solid fa-chevron-right"></i>
@@ -278,7 +390,7 @@ new class extends Component {
             @error('answers')
                 <h1 class="text-danger fs-5 my-2 text-center">
                     Please Add Answers Left Questions Answers =
-                    {{ $this->quiz->questions->count() - count($this->answers) }}
+                    {{ $this->count - count($this->answers) }}
                 </h1>
             @enderror
         </section>
@@ -289,8 +401,8 @@ new class extends Component {
 
 
                 <div class="stat-row">
-                    <svg class="text-warning" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    <svg class="text-warning" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                         stroke-linejoin="round" class="lucide lucide-refresh-ccw">
                         <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
                         <path d="M3 3v5h5" />
@@ -310,7 +422,7 @@ new class extends Component {
                     <i class="fa-solid fa-trophy stat-icon"></i>
 
                     <div>
-                        <div class="stat-label fw-bold fs-6" style="color: var(--text)" >Win Elo</div>
+                        <div class="stat-label fw-bold fs-6" style="color: var(--text)">Win Elo</div>
 
                         <div class="stat-value">{{ $this->currentElo ?? 4 }}</div>
                     </div>
@@ -318,8 +430,9 @@ new class extends Component {
                 <div class="stat-row p-0">
                     <div class="stat-row">
                         <svg class="text-opacity-10 text-danger" xmlns="http://www.w3.org/2000/svg" width="20"
-                            height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"
-                            stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-down">
+                            height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="4" stroke-linecap="round" stroke-linejoin="round"
+                            class="lucide lucide-arrow-down">
                             <path d="M12 5v14" />
                             <path d="m19 12-7 7-7-7" />
                         </svg>
@@ -336,7 +449,7 @@ new class extends Component {
                 <div class="panel-title-row">
                     <span class="panel-title"> Quiz Progress </span>
 
-                    <span class="progress-frac"> {{ $current }} / {{ $quiz->questions->count() }} </span>
+                    <span class="progress-frac"> {{ $current }} / {{ $this->count }} </span>
                 </div>
 
                 <div class="progress-track">
@@ -345,7 +458,7 @@ new class extends Component {
                     <div class="progress-line-fill"
                         style="
                                 width:
-                                {{ $quiz->questions->count() > 1 ? (($current - 1) / ($quiz->questions->count() - 1)) * 90 : 0 }}%;
+                                {{ $this->count > 1 ? (($current - 1) / ($this->count - 1)) * 90 : 0 }}%;
                             ">
                     </div>
 
@@ -381,9 +494,9 @@ new class extends Component {
                             pathLength="100" stroke-linecap="round" />
                     </svg>
                     {{-- @dd(100 - count($answers)) --}}
-                    {{-- @dd(count($answers) * $quiz->questions->count()) --}}
+                    {{-- @dd(count($answers) * $this->count) --}}
                     @php
-                        $questionsCount = $quiz->questions->count();
+                        $questionsCount = $this->count;
                         $answeredCount = count($answers);
 
                         $progress = $questionsCount > 0 ? ($answeredCount / $questionsCount) * 100 : 0;

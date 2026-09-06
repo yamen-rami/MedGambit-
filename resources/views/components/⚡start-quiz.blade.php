@@ -25,6 +25,7 @@ new class extends Component {
 
         $this->attempt = QuizAttempt::with('answers')
             ->where('user_id', auth()->id())
+            ->where('status', 'pending')
             ->where('quiz_id', $this->quiz->id)
             ->first();
         if (!$this->attempt) {
@@ -51,7 +52,7 @@ new class extends Component {
         if (!$questionId) {
             return;
         }
-        $this->currentQuestion = Questions::with('options', 'correctAnswer', 'playedCount', 'branches', 'specialties')->findOrFail($questionId);
+        $this->currentQuestion = Questions::with('options', 'correctAnswer', 'playedCount', 'branches', 'specialties' , "reference")->findOrFail($questionId);
     }
 
     public function hydrate()
@@ -72,8 +73,7 @@ new class extends Component {
             return;
         }
         $question->loadMissing('correctAnswer');
-        $isCorrect = 0;
-        $question->correctAnswer?->id === (int) $optionId ? ($isCorrect = 1) : $isCorrect;
+        $isCorrect = $question->correctAnswer?->id === (int) $optionId;
         $this->attempt->answers()->updateOrCreate(
             [
                 'question_id' => $questionId,
@@ -89,7 +89,7 @@ new class extends Component {
 
     public function next()
     {
-        if ($this->current < $this->quiz->questions->count()) {
+        if ($this->current < $this->count) {
             $this->updateCurrent($this->current + 1);
         }
     }
@@ -100,7 +100,6 @@ new class extends Component {
         if ($current < 1 || $max < $current) {
             return;
         }
-
         $this->current = (int) $current;
         $this->attempt->current = (int) $current;
         $this->loadQuestion();
@@ -113,7 +112,11 @@ new class extends Component {
             $this->updateCurrent($this->current - 1);
         }
     }
-
+    #[Computed]
+    public function count()
+    {
+        return $this->quiz->questions->count();
+    }
     #[Computed]
     public function remainingSeconds()
     {
@@ -143,18 +146,17 @@ new class extends Component {
 
     public function timerEnds()
     {
-        $questionsCount = $this->quiz->questions->count();
+        $questionsCount = $this->count;
         $answers = $this->answers;
         $quizService = app(QuizService::class);
         $attempt = $quizService->updateAttempt(auth()->id(), $this->quiz->id, $answers);
-        $this->reset('current', 'answers');
 
         return redirect()->route('quizResult', $this->quiz);
     }
 
     public function submitAttempt()
     {
-        $questionsCount = $this->quiz->questions->count();
+        $questionsCount = $this->count;
         $answers = $this->answers;
         $this->validate([
             'answers' => ['required', 'array', "min:$questionsCount"],
@@ -169,8 +171,120 @@ new class extends Component {
 };
 ?>
 <div class="">
+    <div class="quiz-filters">
+        <div class="filter-group">
+            <div class="filter-heading">
+                <i class="menu-icon icon-base fa-solid fa-graduation-cap"></i>
+
+                <span>Reference</span>
+            </div>
+
+            <div class="filter-content">
+
+                <div class="filter-chips" id="specialityChips">
+                    <button type="button" class="filter-chip active">
+                        <i class="ti ti-heart"></i>
+                        <span>{{ $this->currentQuestion->reference->name ?? 'No Reference Found For This Question' }}</span>
+                        <i class="ti ti-x chip-remove"></i>
+                    </button>
+                    <p></p>
+
+
+                </div>
+
+                <button type="button" class="filter-expand" data-target="specialityChips"
+                    aria-label="Show more specialities">
+                    <i class="ti ti-chevron-down"></i>
+                </button>
+
+            </div>
+        </div>
+        <!-- Branch -->
+        <div class="filter-group">
+            <div class="filter-heading">
+                <i class=" fa-solid fa-code-branch text-center"></i>
+
+                <span>Branch</span>
+            </div>
+
+            <div class="filter-content">
+
+                <div class="filter-chips" id="branchChips">
+                    @forelse ($this->currentQuestion->branches as $branche)
+                        <button type="button" class="filter-chip active">
+                            <i class="ti ti-heart-rate-monitor"></i>
+                            <span>{{ $branch->name }}</span>
+
+                            <i class="ti ti-x chip-remove"></i>
+                        </button>
+                    @empty
+                        <button type="button" class="filter-chip active">
+                            <span>{{ 'No Branch Found For This Question' }}</span>
+                        </button>
+                    @endforelse
+
+                    <!-- Hidden branches -->
+                    <button type="button" class="filter-chip extra-chip">
+                        <i class="ti ti-brain"></i>
+                        <span></span>
+                        <i class="ti ti-x chip-remove"></i>
+                    </button>
+
+
+                </div>
+
+                <button type="button" class="filter-expand" data-target="branchChips" aria-label="Show more branches">
+                    <i class="ti ti-chevron-down"></i>
+                </button>
+
+            </div>
+        </div>
+
+
+        {{-- <div class="filter-divider"></div> --}}
+
+
+        <!-- Speciality -->
+        <div class="filter-group">
+            <div class="filter-heading">
+                <i class="menu-icon icon-base fa-solid fa-graduation-cap"></i>
+
+                <span>Speciality</span>
+            </div>
+
+            <div class="filter-content">
+
+                <div class="filter-chips" id="specialityChips">
+                    @forelse ($this->currentQuestion?->specialties as $sp)
+                        <button type="button" class="filter-chip active">
+                            <i class="ti ti-heart"></i>
+                            <span>{{ $sp?->name }}</span>
+                            <i class="ti ti-x chip-remove"></i>
+                        </button>
+                    @empty
+                        <button type="button" class="filter-chip active">
+
+                            <span>{{ $sp->name ?? 'No Specialities Found For This Question' }}</span>
+                        </button>
+                    @endforelse
+
+
+                </div>
+
+                <button type="button" class="filter-expand" data-target="specialityChips"
+                    aria-label="Show more specialities">
+                    <i class="ti ti-chevron-down"></i>
+                </button>
+
+            </div>
+        </div>
+
+
+
+    </div>
     {{-- ===================== CONTENT ===================== --}}
     <div class="content-grid">
+
         {{-- ===================== CENTER ===================== --}}
         <section class="battle-col">
             {{-- ===================== VS CARD ===================== --}}
@@ -182,7 +296,7 @@ new class extends Component {
                 {{-- QUESTION HEADER --}}
                 <div class="question-head">
                     <span class="question-index">
-                        Question {{ $this->current }} / {{ $quiz->questions->count() }}
+                        Question {{ $this->current }} / {{ $this->count }}
                         <span class="question-index">Played Count {{ $question->playedCount->count ?? 0 }}</span>
                     </span>
 
@@ -194,14 +308,15 @@ new class extends Component {
                 {{-- QUESTION --}}
                 <div class="question-content">
                     <p class="question-text">{{ $question->content }}</p>
-                  
+
                 </div>
                 {{-- OPTIONS --}}
                 <div class="options">
                     @foreach ($question->options as $option)
                         <div class="option
                                                                                                                                                                                                             {{ isset($answers[$question->id]) && $answers[$question->id] == $option->id ? 'selected' : '' }}"
-                            wire:click="submit({{ $option->id }}, {{ $question->id }})">
+                            wire:click="submit({{ $option->id }}, {{ $question->id }})"
+                            wire:key='{{ $option->id }}'>
                             <span class="option-key">
                                 @if ($loop->iteration === 1)
                                     A
@@ -227,7 +342,7 @@ new class extends Component {
 
                 {{-- QUESTION FOOT --}}
                 <div class="question-foot">
-                    
+
 
                     {{-- TIMER --}}
                     @if ($this->remainingSeconds !== null)
@@ -280,7 +395,7 @@ new class extends Component {
 
                     Previous
                 </button>
-                @if ($this->current !== $this->quiz->questions->count())
+                @if ($this->current !== $this->count)
                     <button type="button" class="btn btn-primary" wire:click="next">
                         Next
                         <i class="fa-solid fa-chevron-right"></i>
@@ -298,7 +413,7 @@ new class extends Component {
             @error('answers')
                 <h1 class="text-danger fs-5 my-2 text-center">
                     Please Add Answers Left Questions Answers =
-                    {{ $this->quiz->questions->count() - count($this->answers) }}
+                    {{ $this->count - count($this->answers) }}
                 </h1>
             @enderror
         </section>
@@ -331,7 +446,7 @@ new class extends Component {
                     <div>
                         <div class="stat-label">Battle Type</div>
 
-                        <div class="stat-value">{{ $quiz->questions->count() }} Questions</div>
+                        <div class="stat-value">{{ $this->count }} Questions</div>
                     </div>
                 </div>
 
@@ -363,7 +478,7 @@ new class extends Component {
                 <div class="panel-title-row">
                     <span class="panel-title"> Battle Progress </span>
 
-                    <span class="progress-frac"> {{ $current }} / {{ $quiz->questions->count() }} </span>
+                    <span class="progress-frac"> {{ $current }} / {{ $this->count }} </span>
                 </div>
 
                 <div class="progress-track">
@@ -372,7 +487,7 @@ new class extends Component {
                     <div class="progress-line-fill"
                         style="
                                 width:
-                                {{ $quiz->questions->count() > 1 ? (($current - 1) / ($quiz->questions->count() - 1)) * 90 : 0 }}%;
+                                {{ $this->count > 1 ? (($current - 1) / ($this->count - 1)) * 90 : 0 }}%;
                             ">
                     </div>
 
@@ -405,11 +520,10 @@ new class extends Component {
 
                         <path id="gauge-arc" d="M 13 74 A 54 54 0 0 1 127 74" fill="none" class="gauge-arc"
                             stroke-width="3" stroke-linecap="round"
-                            stroke-dasharray="{{ count($answers) * (100 / count($quiz->questions)) }}"
-                            pathLength="100" />
+                            stroke-dasharray="{{ count($answers) * (100 / $this->count) }}" pathLength="100" />
                     </svg>
 
-                    <div class="gauge-value">{{ count($answers) * (100 / count($quiz->questions)) }}%</div>
+                    <div class="gauge-value">{{ count($answers) * (100 / $this->count) }}%</div>
 
                     <div class="gauge-label">Progress</div>
                 </div>

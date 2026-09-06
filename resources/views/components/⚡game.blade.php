@@ -12,8 +12,7 @@ use Livewire\Attributes\On;
 use Livewire\Attributes\Session;
 use Livewire\Component;
 
-new class extends Component
-{
+new class extends Component {
     public $game = null;
 
     public $current;
@@ -27,7 +26,7 @@ new class extends Component
     public $attempt;
 
     public $attempts;
-
+    public $currentQuestion;
     public $gameId;
 
     public $player1;
@@ -42,14 +41,12 @@ new class extends Component
     {
         $this->gameId = $gameId;
         $this->game = Game::find($gameId);
-        if (! $this->game) {
+        if (!$this->game) {
             return;
         }
         $players = $this->game->players()->with('user')->get();
-
         $this->currentPlayer = $players->where('user_id', auth()->id())->first();
-        // $this->attempts = $this->game->attempts()->with('answers')->get();
-        if (! $this->currentPlayer) {
+        if (!$this->currentPlayer) {
             abort(403, 'You are not a player in this game.');
         }
 
@@ -57,7 +54,7 @@ new class extends Component
             $this->current = $this->currentPlayer->current_question;
         }
         $this->attempt = $this->game->attempts->where('user_id', auth()->id())->first();
-        if (! $this->attempt) {
+        if (!$this->attempt) {
             return;
         }
         if ($this->attempt->status == 'finished') {
@@ -65,8 +62,8 @@ new class extends Component
         }
         $this->loading = $this->game->status !== 'playing';
 
-        if (! $this->loading) {
-            $this->game->loadMissing('questions.options', 'questions.correctAnswer');
+        if (!$this->loading) {
+            $this->loadQuestion();
         }
         if ($players->count() == 2) {
             $this->getProgress();
@@ -76,7 +73,7 @@ new class extends Component
             }
 
             $this->player1 = $players[0]->user;
-
+            
             $this->player2 = $players[1]->user;
         }
 
@@ -84,22 +81,35 @@ new class extends Component
             ->where('player_id', auth()->id())
             ->pluck('option_id', 'question_id')
             ->toArray();
+        $this->loadQuestion();
+    }
+    #[Computed]
+    public function count()
+    {
+        return $this->game->questions->count();
     }
 
-    public function hydrate()
+    public function loadQuestion()
     {
-        $this->game->loadMissing('questions.options');
+        $questionId = $this->game->questions->get($this->current - 1)?->id;
+        if (!$questionId) {
+            return;
+        }
+        $this->currentQuestion = Questions::with('options', 'correctAnswer', 'playedCount')->findOrFail($questionId);
+        if (!$this->currentQuestion) {
+            abort(403, 'something went wrong');
+        }
     }
 
     #[Computed]
     public function currentInCorrectElo()
     {
-        return $this->quiz->questions[$this->current - 1]->elo_incorrect;
+        return $this->currentQuestion->elo_incorrect;
     }
 
     public function submit($optionId, $questionId)
     {
-        if (! $this->attempt) {
+        if (!$this->attempt) {
             abort(403);
         }
         if ($this->game->status !== 'playing') {
@@ -108,7 +118,7 @@ new class extends Component
         if ($this->currentPlayer->status === 'finished') {
             return;
         }
-        if (! $this->game) {
+        if (!$this->game) {
             return;
         }
 
@@ -116,7 +126,7 @@ new class extends Component
             ->questions()
             ->with(['correctAnswer', 'options'])
             ->findOrFail($questionId);
-        if (! $question->options->contains('id', $optionId)) {
+        if (!$question->options->contains('id', $optionId)) {
             return;
         }
 
@@ -137,11 +147,6 @@ new class extends Component
         playerAnswered::dispatch(auth()->id(), $this->gameId);
     }
 
-    public function editCurrent($current)
-    {
-        $this->current = $current;
-    }
-
     public function next()
     {
         if ($this->current < $this->game->questions->count()) {
@@ -159,7 +164,7 @@ new class extends Component
     #[Computed]
     public function remainingSeconds()
     {
-        if (! $this->game || ! $this->game->ended_at) {
+        if (!$this->game || !$this->game->ended_at) {
             return;
         }
 
@@ -170,12 +175,13 @@ new class extends Component
     public function gameStarted($event)
     {
         $service = app(GameService::class);
-        $this->game->loadMissing('questions.options', 'players');
+        $this->loadQuestion();
+        $this->game->loadMissing('players');
         $players = $this->game->players()->with('user')->get();
         $service->gameStarted($this->game, $players);
 
         $this->currentPlayer = $players->where('user_id', auth()->id())->first();
-        if (! $this->currentPlayer) {
+        if (!$this->currentPlayer) {
             return;
         }
         $this->current = $this->currentPlayer->current_question;
@@ -194,7 +200,7 @@ new class extends Component
             ->where('user_id', '!=', auth()->id())
             ->first();
 
-        if (! $attempt) {
+        if (!$attempt) {
             return;
         }
 
@@ -205,7 +211,7 @@ new class extends Component
 
     public function updateCurrent($current)
     {
-        if (! $this->game) {
+        if (!$this->game) {
             return;
         }
         $max = $this->game->questions->count();
@@ -217,23 +223,21 @@ new class extends Component
         $this->currentPlayer->update([
             'current_question' => $current,
         ]);
+        $this->loadQuestion();
     }
 
     #[Computed]
     public function currentElo()
     {
-        if ($this->current > 1) {
-            // Getting the current ELO WHERE NOT 1
-            return $this->game->questions[$this->current - 1]->elo_correct;
-        }
+        return $this->currentQuestion->elo_correct;
     }
 
     public function finishGame()
     {
-        if (! $this->game) {
+        if (!$this->game) {
             return;
         }
-        if (! $this->attempt) {
+        if (!$this->attempt) {
             return;
         }
         if ($this->game->status !== 'playing') {
@@ -243,7 +247,7 @@ new class extends Component
             return;
         }
         $player = $this->game->players->where('user_id', auth()->id())->first();
-        if (! $player) {
+        if (!$player) {
             return;
         }
         $this->loading = false;
@@ -257,6 +261,7 @@ new class extends Component
         $service->editAttempt($this->attempt, $this->game);
 
         if ($this->game->finishedPlayers() === 2) {
+            
             GameFinished::dispatch($this->game->id);
         }
     }
@@ -264,7 +269,7 @@ new class extends Component
     public function submitAttempt()
     {
         $game = Game::find($this->gameId);
-        if (! $game) {
+        if (!$game) {
             return;
         }
         $length = $game->questions->count();
@@ -278,7 +283,7 @@ new class extends Component
 
             return;
         }
-        if (! $this->attempt) {
+        if (!$this->attempt) {
             return;
         }
         if ($game->status !== 'playing') {
@@ -290,7 +295,7 @@ new class extends Component
         }
 
         $player = $game->players->where('user_id', auth()->id())->first();
-        if (! $player) {
+        if (!$player) {
             return;
         }
         $this->loading = false;
@@ -311,10 +316,10 @@ new class extends Component
     #[On('echo-private:game.finished.{gameId},.game.finished')]
     public function toResults()
     {
-        if (! $this->game) {
+        if (!$this->game) {
             return;
         }
-        if (! $this->currentPlayer) {
+        if (!$this->currentPlayer) {
             return;
         }
         $service = app(GameService::class);
@@ -323,6 +328,34 @@ new class extends Component
         return redirect()->route('game.results', [
             'game' => $this->game,
         ]);
+    }
+    #[On('quit-quiz')]
+    public function quitGame()
+    {
+        if (!$this->game) {
+            return;
+        }
+        if (!$this->attempt) {
+            return;
+        }
+        if ($this->game->status !== 'playing') {
+            return;
+        }
+        if ($this->currentPlayer->status === 'finished') {
+            return;
+        }
+        $player = $this->game->players->where('user_id', auth()->id())->first();
+        if (!$player) {
+            return;
+        }
+        $this->loading = false;
+        $player->update([
+            'status' => 'finished',
+        ]);
+        $this->finished = true;
+        $service = app(GameService::class);
+        $service->editAttempt($this->attempt, $this->game);
+        GameFinished::dispatch($this->game->id);
     }
 };
 ?>
@@ -342,7 +375,12 @@ new class extends Component
                             </div>
                             <div class="player-score skeleton"></div>
                         </div>
-                        <div class="vs-text skeleton">VS</div>
+                        <div class="vs-text skeleton text-center">
+                            <span style="color: var(--text)"
+                                class="
+  
+                            rounded-circle px-3 py-3 text-center skeleton">VS</span>
+                        </div>
                         <div class="player-card-skeleton">
                             <div class="player-avatar skeleton"></div>
                             <div class="player-name skeleton"></div>
@@ -398,6 +436,45 @@ new class extends Component
                 </div>
             </div>
         </div>
+        @if ($this->game->challenge_token)
+            {{-- @dd($this->game->players()->get()) --}}
+            <div class="position-absolute top-50 start-50 translate-middle w-100 px-3">
+                <div class="mx-auto rounded-3 shadow-lg p-4 text-center"
+                    style="max-width: 450px; background: var(--bg); color: var(--text);">
+                    <h4 class="mb-2">
+                        Invite a Friend
+                    </h4>
+
+                    <p class="mb-4 opacity-75">
+                        Share this challenge token with your friend to join the game.
+                    </p>
+
+                    <div class="rounded-3 p-3 mb-3" style="background: var(--text); color: var(--bg);">
+                        <small class="d-block mb-2 opacity-75">
+                            Challenge Token
+                        </small>
+
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="flex-grow-1 font-monospace fw-semibold" style="color: var(--bg);">
+                                medgambit.test/game/friend/
+                                {{ $game->challenge_token }}
+                            </div>
+
+                            <button type="button" class="btn btn-sm" style="background: var(--bg); color: var(--text);"
+                                onclick="navigator.clipboard.writeText('{{ $game->challenge_token }}')">
+                                Copy
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="small opacity-75">
+                        <i class="ti ti-loader-2 me-1"></i>
+                        Waiting for your friend to join...
+                    </div>
+                </div>
+
+            </div>
+        @endif
     @else
         {{-- ===================== CONTENT ===================== --}}
         <div class="content-grid">
@@ -410,7 +487,7 @@ new class extends Component
                 <div class="vs-card">
                     <div class="vs-top">
                         <div class="player">
-                            <div class="avatar avatar-blue lg">R</div>
+                            <div class="avatar avatar-blue lg">{{ Str::upper(Str::limit(auth()->user()->name , 1 , '')) }}</div>
                             <div>
                                 <div class="">{{ auth()->user()->name }}</div>
                                 <div class="player-elo">
@@ -430,182 +507,150 @@ new class extends Component
                                 </div>
 
                                 <div class="player-elo right">
-                                    ELO {{ $this->player1?->id === auth()->id() ? $this->player2?->game_rank : $this->player1?->game_rank }}
+                                    ELO
+                                    {{ $this->player1?->id === auth()->id() ? $this->player2?->game_rank : $this->player1?->game_rank }}
                                     <i class="fa-solid fa-trophy"></i>
                                 </div>
                             </div>
 
-                            <div class="avatar avatar-peach lg">O</div>
+                            <div class="avatar avatar-peach lg">
+                                {{ Str::upper(Str::limit($this->player1?->id === auth()->id() ? $this->player2?->name : $this->player1?->name , 1 , '')) }}
+                            </div>
                         </div>
                     </div>
                     {{-- TODO Vs  --}}
-                    <div class="dual-bar" id="dual-bar">
+                    {{-- <div class="dual-bar" id="dual-bar">
                         <div class="dual-bar-blue"></div>
                         <div class="dual-bar-red"></div>
+                    </div> --}}
+                </div>
+                @php
+                    $question = $this->currentQuestion;
+                @endphp
+                {{-- ===================== QUESTIONS ===================== --}}
+                {{-- @foreach ($game->questions as $question)
+                    @if ($loop->iteration === $current) --}}
+                <div class="question-card">
+                    {{-- QUESTION HEADER --}}
+                    <div class="question-head">
+                        <span class="question-index">
+                            Question {{ $this->current }} / {{ $this->count }}
+                        </span>
+
+                        <span class="badge-medium"> {{ $game?->difficulty }} </span>
+
+                    </div>
+
+                    {{-- QUESTION --}}
+                    <p class="question-text">{{ $question->content }}</p>
+
+                    {{-- OPTIONS --}}
+                    <div class="options">
+                        @foreach ($question->options as $option)
+                            <div class="option
+                                                                                                                                                                                                                                                                                                                                                                                                                            {{ isset($answers[$question->id]) && $answers[$question->id] == $option->id ? 'selected' : '' }}"
+                                wire:click="submit({{ $option->id }}, {{ $question->id }})">
+                                <span class="option-key">
+                                    {{ chr(64 + $loop->iteration) }}
+                                </span>
+
+                                <span class="option-label"> {{ $option->content }} </span>
+
+                                <span class="option-check">
+                                    <i class="fa-solid fa-check"></i>
+                                </span>
+                            </div>
+                        @endforeach
+                    </div>
+
+                    {{-- QUESTION FOOT --}}
+                    <div class="question-foot">
+
+
+                        {{-- TIMER --}}
+                        @if ($this->remainingSeconds !== null)
+                            <div class="timer" x-data="{
+                                seconds: {{ $this->remainingSeconds ?? 0 }},
+                                timer: null,
+                            
+                                get minutes() {
+                                    return Math.floor(this.seconds / 60)
+                                },
+                            
+                                get displaySeconds() {
+                                    return this.seconds % 60
+                                },
+                            
+                                start() {
+                            
+                                    this.timer = setInterval(() => {
+                            
+                                        this.seconds--
+                            
+                                        if (this.seconds <= 0) {
+                            
+                                            clearInterval(this.timer)
+                            
+                                            $wire.quitGame()
+                            
+                                        }
+                            
+                                    }, 1000)
+                            
+                                }
+                            }" x-init="start()">
+                                <i class="fa-regular fa-clock"></i>
+
+                                <span x-text="minutes"></span>
+
+                                <span>:</span>
+
+                                <span x-text="String(displaySeconds).padStart(2, '0')"></span>
+                            </div>
+                        @endif
                     </div>
                 </div>
-                {{-- ===================== QUESTIONS ===================== --}}
-                @foreach ($game->questions as $question)
-                    @if ($loop->iteration === $current)
-                        <div class="question-card">
-                            {{-- QUESTION HEADER --}}
-                            <div class="question-head">
-                                <span class="question-index">
-                                    Question {{ $loop->iteration }} / {{ $game->questions->count() }}
-                                </span>
-                                @foreach ($game?->difficulty ?? [] as $d)
-                                    <span class="badge-medium"> {{ $d }} </span>
-                                @endforeach
-                            </div>
 
-                            {{-- QUESTION --}}
-                            <p class="question-text">{{ $question->content }}</p>
+                {{-- ===================== ACTIONS ===================== --}}
+                <div class="actions-row">
+                    {{-- PREVIOUS --}}
+                    <button type="button" class="btn btn-ghost" wire:click="previous" @disabled($this->current === 1)>
+                        <i class="fa-solid fa-chevron-left"></i>
 
-                            {{-- OPTIONS --}}
-                            <div class="options">
-                                @foreach ($question->options as $option)
-                                    <div
-                                        class="option
-                                                                                                                                                                                                                                                                                                                                                                                                                            {{ isset($answers[$question->id]) && $answers[$question->id] == $option->id ? 'selected' : '' }}"
-                                        wire:click="submit({{ $option->id }}, {{ $question->id }})"
-                                    >
-                                        <span class="option-key">
-                                            @if ($loop->iteration === 1)
-                                                A
-                                            @elseif ($loop->iteration === 2)
-                                                B
-                                            @elseif ($loop->iteration === 3)
-                                                C
-                                            @elseif ($loop->iteration === 4)
-                                                D
-                                            @else
-                                                E
-                                            @endif
-                                        </span>
+                        Previous
+                    </button>
 
-                                        <span class="option-label"> {{ $option->content }} </span>
 
-                                        <span class="option-check">
-                                            <i class="fa-solid fa-check"></i>
-                                        </span>
-                                    </div>
-                                @endforeach
-                            </div>
 
-                            {{-- QUESTION FOOT --}}
-                            <div class="question-foot">
-                                <button type="button" class="report-link">
-                                    <i class="fa-regular fa-flag"></i>
-                                    Report Question
-                                </button>
+                    @if ($this->current !== $this->count)
+                        <button type="button" class="btn btn-primary" wire:click="next">
+                            Next
+                            <i class="fa-solid fa-chevron-right"></i>
+                        </button>
+                    @else
+                        <button type="button" class="btn btn-primary" wire:click="submitAttempt">
+                            Submit
 
-                                {{-- TIMER --}}
-                                @if ($this->remainingSeconds !== null)
-                                    <div
-                                        class="timer"
-                                        x-data="{
-                                        seconds: {{ $this->remainingSeconds ?? 0 }},
-                                        timer: null,
-                                    
-                                        get minutes() {
-                                            return Math.floor(this.seconds / 60)
-                                        },
-                                    
-                                        get displaySeconds() {
-                                            return this.seconds % 60
-                                        },
-                                    
-                                        start() {
-                                    
-                                            this.timer = setInterval(() => {
-                                    
-                                                this.seconds--
-                                    
-                                                if (this.seconds <= 0) {
-                                    
-                                                    clearInterval(this.timer)
-                                    
-                                                    $wire.finishGame()
-                                    
-                                                }
-                                    
-                                            }, 1000)
-                                    
-                                        }
-                                    }"
-                                        x-init="start()"
-                                    >
-                                        <i class="fa-regular fa-clock"></i>
-
-                                        <span x-text="minutes"></span>
-
-                                        <span>:</span>
-
-                                        <span x-text="String(displaySeconds).padStart(2, '0')"></span>
-                                    </div>
-                                @endif
-                            </div>
-                        </div>
-
-                        {{-- ===================== ACTIONS ===================== --}}
-                        <div class="actions-row">
-                            {{-- PREVIOUS --}}
-                            <button type="button" class="btn btn-ghost" wire:click="previous" @disabled($loop->first)>
-                                <i class="fa-solid fa-chevron-left"></i>
-
-                                Previous
-                            </button>
-
-                            {{-- SKIP --}}
-                            {{-- <button type="button" class="btn btn-ghost btn-skip">
-
-                                <i class="fa-solid fa-bolt"></i>
-
-                                Skip
-
-                            </button> --}}
-
-                            {{-- NEXT / SUBMIT --}}
-                            @if (! $loop->last)
-                                <button type="button" class="btn btn-primary" wire:click="next()">
-                                    Next
-                                    <i class="fa-solid fa-chevron-right"></i>
-                                </button>
-                            @else
-                                <button
-                                    type="button"
-                                    class="btn btn-primary"
-                                    wire:click="submitAttempt({{ $this->game }})"
-                                >
-                                    Submit
-
-                                    <i class="fa-solid fa-check"></i>
-                                </button>
-                            @endif
-                        </div>
+                            <i class="fa-solid fa-check"></i>
+                        </button>
                     @endif
-                @endforeach
 
-                {{-- VALIDATION ERROR --}}
-                @error('answers')
-                    <h1 class="text-danger fs-5 my-2 text-center">
-                        Please Add Answers Left Questions Answers = {{ $this->game->questions->count() - count($this->answers) }}
-                    </h1>
-                @enderror
+
+                    {{-- VALIDATION ERROR --}}
+                    @error('answers')
+                        <h1 class="text-danger fs-5 my-2 text-center">
+                            Please Add Answers Left Questions Answers =
+                            {{ $this->count - count($this->answers) }}
+                        </h1>
+                    @enderror
             </section>
 
             {{-- ===================== RIGHT SIDEBAR ===================== --}}
             <aside class="side-col">
                 {{-- ===================== BATTLE STATUS ===================== --}}
                 <div class="panel">
-                    <div
-                        class="panel-title-row"
-                        x-data="{ online: navigator.onLine }"
-                        x-init="
-                            window.addEventListener('online', () => (online = true));
-                            window.addEventListener('offline', () => (online = false));
-                        "
-                    >
+                    <div class="panel-title-row" x-data="{ online: navigator.onLine }" x-init="window.addEventListener('online', () => (online = true));
+                    window.addEventListener('offline', () => (online = false));">
                         <span class="panel-title">Battle Status</span>
 
                         <span class="live-pill">
@@ -627,19 +672,10 @@ new class extends Component
 
                     {{-- Battle Type --}}
                     <div class="stat-row">
-                        <svg
-                            class="menu-icon icon-base text-primary"
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="24"
-                            height="24"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            class="lucide lucide-circle-question-mark-icon lucide-circle-question-mark"
-                        >
+                        <svg class="menu-icon icon-base text-primary" xmlns="http://www.w3.org/2000/svg"
+                            width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                            class="lucide lucide-circle-question-mark-icon lucide-circle-question-mark">
                             <circle cx="12" cy="12" r="10" />
                             <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
                             <path d="M12 17h.01" />
@@ -648,7 +684,7 @@ new class extends Component
                         <div>
                             <div class="stat-label">Battle Type</div>
 
-                            <div class="stat-value">{{ $game->questions->count() }} Questions</div>
+                            <div class="stat-value">{{ $this->count }} Questions</div>
                         </div>
                     </div>
 
@@ -659,7 +695,7 @@ new class extends Component
                         <div>
                             <div class="stat-label">Win Reward</div>
 
-                            <div class="stat-value">{{ $this->currentElo ?? 4 }}</div>
+                            <div class="stat-value">{{ $this->currentElo ?? 0 }}</div>
                         </div>
                     </div>
                     <div class="stat-row">
@@ -668,7 +704,7 @@ new class extends Component
                         <div>
                             <div class="stat-label">Lose Reward</div>
 
-                            <div class="stat-value">{{ $this->currentInCorrectElo ?? 5 }}</div>
+                            <div class="stat-value">{{ $this->currentInCorrectElo ?? 0 }}</div>
                         </div>
                     </div>
                 </div>
@@ -678,24 +714,22 @@ new class extends Component
                     <div class="panel-title-row">
                         <span class="panel-title"> Battle Progress </span>
 
-                        <span class="progress-frac"> {{ $current }} / {{ $game->questions->count() }} </span>
+                        <span class="progress-frac"> {{ $current }} / {{ $this->count }} </span>
                     </div>
 
                     <div class="progress-track">
                         <div class="progress-line-bg"></div>
 
-                        <div
-                            class="progress-line-fill"
+                        <div class="progress-line-fill"
                             style="
                                                             width:
-                                                            {{ $game->questions->count() > 1 ? (($current - 1) / ($game->questions->count() - 1)) * 90 : 0 }}%;
-                                                        "
-                        ></div>
+                                                            {{ $this->count > 1 ? (($current - 1) / ($this->count - 1)) * 90 : 0 }}%;
+                                                        ">
+                        </div>
 
                         <div class="progress-dots">
                             @foreach ($game->questions as $question)
-                                <button
-                                    type="button"
+                                <button type="button"
                                     class="dot
                                                                                                                                                                 @if (isset($answers[$question->id])) correct
                                                                                                                                                                 @elseif($current === $loop->iteration)
@@ -703,8 +737,7 @@ new class extends Component
                                                                                                                                                                 @else
                                                                                                                                                                       pending @endif
                                                                                                                                                             "
-                                    wire:click="updateCurrent({{ $loop->iteration }})"
-                                >
+                                    wire:click="updateCurrent({{ $loop->iteration }})">
                                     {{ $loop->iteration }}
                                 </button>
                             @endforeach
@@ -721,29 +754,18 @@ new class extends Component
 
                     <div class="gauge-wrap">
                         <svg viewBox="0 0 140 80" width="150" height="88">
-                            <path
-                                d="M 13 74 A 54 54 0 0 1 127 74"
-                                fill="none"
-                                class="gauge-bg"
-                                stroke-width="3"
-                                stroke-linecap="round"
-                            />
+                            <path d="M 13 74 A 54 54 0 0 1 127 74" fill="none" class="gauge-bg" stroke-width="3"
+                                stroke-linecap="round" />
 
-                            <path
-                                id="gauge-arc"
-                                d="M 13 74 A 54 54 0 0 1 127 74"
-                                fill="none"
-                                class="gauge-arc"
-                                stroke-width="3"
-                                stroke-linecap="round"
-                                stroke-dasharray="{{ count($answers) != 0 ? $this->progress * (100 / count($game->questions)) : 0 }}"
-                                pathLength="100"
-                            />
+                            <path id="gauge-arc" d="M 13 74 A 54 54 0 0 1 127 74" fill="none" class="gauge-arc"
+                                stroke-width="3" stroke-linecap="round"
+                                stroke-dasharray="{{ count($answers) != 0 ? $this->progress * (100 / $this->count) : 0 }}"
+                                pathLength="100" />
                         </svg>
 
                         <div class="gauge-value">
                             <span class="text-primary"> {{ $this->progress }} </span>
-                            / {{ $game->questions->count() }}
+                            / {{ $this->count }}
                         </div>
 
                         <div class="gauge-label">Progress</div>
@@ -752,7 +774,7 @@ new class extends Component
         </div>
 
         {{-- ===================== TOPIC ===================== --}}
-        <div class="panel">
+        {{-- <div class="panel">
             <div class="panel-title">{{ $this->progress }}</div>
 
             <div class="topic-row">
@@ -764,7 +786,7 @@ new class extends Component
                     <div class="topic-name">{{ $game->topic ?? 'Cardiology' }}</div>
                 </div>
             </div>
-        </div>
+        </div> --}}
         </aside>
 
         {{-- ===================== FOOTER ===================== --}}
@@ -780,14 +802,14 @@ new class extends Component
             const root = document.documentElement;
 
             if (themeToggle) {
-                themeToggle.addEventListener('click', function () {
+                themeToggle.addEventListener('click', function() {
                     const isDark = root.getAttribute('data-theme') === 'dark';
 
                     root.setAttribute('data-theme', isDark ? 'light' : 'dark');
 
-                    themeToggle.innerHTML = isDark
-                        ? '<i class="fa-solid fa-moon"></i>'
-                        : '<i class="fa-solid fa-sun"></i>';
+                    themeToggle.innerHTML = isDark ?
+                        '<i class="fa-solid fa-moon"></i>' :
+                        '<i class="fa-solid fa-sun"></i>';
                 });
             }
         </script>

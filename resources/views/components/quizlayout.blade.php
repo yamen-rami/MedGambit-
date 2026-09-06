@@ -30,7 +30,9 @@
             document.documentElement.setAttribute('data-theme', theme);
         })();
         </script>
+        @stack("style")
         <link rel="stylesheet" href="{{ asset("assets/css/all.css") }}">
+
         {{-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" /> --}}
 </head>
 

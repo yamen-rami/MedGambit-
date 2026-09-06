@@ -2,8 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Game;
-use App\Models\Players;
+use App\Models\{Game, Players};
 use App\Services\GameService;
 
 class GameController extends Controller
@@ -15,9 +14,8 @@ class GameController extends Controller
         $user = auth()->user();
         $game = $this->gameService->searchOrCreate(
             $user,
-            ['easy', 'medium'],
-            ['short', 'medium'],
-            20
+            'medium',
+            'medium'
         );
 
         return redirect()->route('gameStarted', $game);
@@ -26,9 +24,9 @@ class GameController extends Controller
     public function gameStarted(Game $game)
     {
         abort_unless($game->players()->where('user_id', auth()->id())->exists(), 403);
-
         $gameId = $game->id;
 
+        // For Random Players
         return view('games/startGame', compact('gameId'));
     }
 
@@ -36,14 +34,9 @@ class GameController extends Controller
     {
         //
         $game->loadMissing('players', 'attempts', 'questions');
-        // dd($game);
         if ($game->status !== 'completed') {
             abort(404, 'Game Status Is Playing');
         }
-        // if(!$game->players()->where("user_id" , auth()->id())->exists()){
-        //     abort(403 , "You Are Not Authroize");
-        // }
-        // dd($game->attempts);
         $winnerAttempt = $game->attempts()->with('user')->where('is_winner', true)->first();
         if (! $winnerAttempt) {
             return;
@@ -56,46 +49,46 @@ class GameController extends Controller
         return view('games.gameResult', compact('game', 'winner', 'attempts', 'questions'));
     }
 
-    public function friendGameStarted(string $challenge_token)
+    public function friendGameCreate(string $challenge_token)
     {
-        $game = Game::with('players', 'attempts', 'questions')
-            ->where('challenge_token', $challenge_token)
-            ->first();
+        $user = auth()->user();
 
-        if (! $game) {
-            abort(404, 'Game Not Found');
-        }
-        if ($game->players->where('user_id', auth()->id())) {
-            return redirect()->route('friendGame', ['challenge_token' => $game->challenge_token]);
+        $game = Game::where('challenge_token', $challenge_token)->firstOrFail();
 
-        }
-        if ($game->status == 'finished') {
-            abort(404, 'GAME Has Finished');
-        }
-        if ($game->challenge_token !== $challenge_token) {
-            abort(403, 'Something Went Wrong');
+        if ($game->players()->where('user_id', $user->id)->exists()) {
+            return redirect()->route('gameRedirect', [
+                'challenge_token' => $game->challenge_token,
+            ]);
         }
 
-        $this->gameService->joinFriendGame($game);
-        $gameId = $game->id;
-
-        return redirect()->route('friendGame', ['challenge_token' => $game->challenge_token]);
     }
 
-    public function friendGame(string $challnge_token)
+    public function friendGame(string $challenge_token)
     {
-        $game = Game::where('challenge_token', $challnge_token)->first();
-        dd($game);
-        if ($game->status == 'finished') {
-            abort(404, 'there is no games found');
-        }
+        $user = auth()->user() ;
+        $game = Game::where('challenge_token', $challenge_token)->first();
+        abort_unless(
+            $game->players()->count() < $game->max_players,
+            403,
+            'You Are Not Allowed'
+        );
+        $h = $this->gameService->joinFriend($user->id, $game->id);
 
-        abort_unless($game->players()->where('user_id', auth()->id())->exists(), 403);
+        return redirect()->route('gameRedirect', [
+            'challenge_token' => $game->challenge_token,
+        ]);
 
-        $gameId = $game->id;
-
-        return view('games/startGame', compact('gameId'));
     }
+    public function gameRedirect(string $challenge_token){
+        $game = Game::where('challenge_token', $challenge_token)->first();
+        if($game->status === "finished"){
+            abort(401 , "Game Has Finished");
+        }
+        $gameId = $game->id ; 
+
+        return view('games.startGame' , compact("gameId"));
+    }   
+
 
     // Config Page
     public function config()
