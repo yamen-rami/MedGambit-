@@ -8,6 +8,7 @@
                     <div class="card">
                         <h5 class="card-header">Create Question</h5>
                         <div class="card-body">
+                            <x-forms.input name="name" label="Name" ></x-forms.input>
                             <x-textarea label="Content" name="content"> </x-textarea>
                             <x-textarea label="High Yield" name="high_yield"> </x-textarea>
                             <x-textarea label="Main Expalantion" name="main_explanation"> </x-textarea>

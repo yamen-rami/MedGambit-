@@ -52,7 +52,7 @@ new class extends Component {
         if (!$questionId) {
             return;
         }
-        $this->currentQuestion = Questions::with('options', 'correctAnswer', 'playedCount', 'branches', 'specialties' , "reference")->findOrFail($questionId);
+        $this->currentQuestion = Questions::with('options', 'correctAnswer', 'playedCount', 'reference')->findOrFail($questionId);
     }
 
     public function hydrate()
@@ -171,117 +171,7 @@ new class extends Component {
 };
 ?>
 <div class="">
-    <div class="quiz-filters">
-        <div class="filter-group">
-            <div class="filter-heading">
-                <i class="menu-icon icon-base fa-solid fa-graduation-cap"></i>
 
-                <span>Reference</span>
-            </div>
-
-            <div class="filter-content">
-
-                <div class="filter-chips" id="specialityChips">
-                    <button type="button" class="filter-chip active">
-                        <i class="ti ti-heart"></i>
-                        <span>{{ $this->currentQuestion->reference->name ?? 'No Reference Found For This Question' }}</span>
-                        <i class="ti ti-x chip-remove"></i>
-                    </button>
-                    <p></p>
-
-
-                </div>
-
-                <button type="button" class="filter-expand" data-target="specialityChips"
-                    aria-label="Show more specialities">
-                    <i class="ti ti-chevron-down"></i>
-                </button>
-
-            </div>
-        </div>
-        <!-- Branch -->
-        <div class="filter-group">
-            <div class="filter-heading">
-                <i class=" fa-solid fa-code-branch text-center"></i>
-
-                <span>Branch</span>
-            </div>
-
-            <div class="filter-content">
-
-                <div class="filter-chips" id="branchChips">
-                    @forelse ($this->currentQuestion->branches as $branche)
-                        <button type="button" class="filter-chip active">
-                            <i class="ti ti-heart-rate-monitor"></i>
-                            <span>{{ $branch->name }}</span>
-
-                            <i class="ti ti-x chip-remove"></i>
-                        </button>
-                    @empty
-                        <button type="button" class="filter-chip active">
-                            <span>{{ 'No Branch Found For This Question' }}</span>
-                        </button>
-                    @endforelse
-
-                    <!-- Hidden branches -->
-                    <button type="button" class="filter-chip extra-chip">
-                        <i class="ti ti-brain"></i>
-                        <span></span>
-                        <i class="ti ti-x chip-remove"></i>
-                    </button>
-
-
-                </div>
-
-                <button type="button" class="filter-expand" data-target="branchChips" aria-label="Show more branches">
-                    <i class="ti ti-chevron-down"></i>
-                </button>
-
-            </div>
-        </div>
-
-
-        {{-- <div class="filter-divider"></div> --}}
-
-
-        <!-- Speciality -->
-        <div class="filter-group">
-            <div class="filter-heading">
-                <i class="menu-icon icon-base fa-solid fa-graduation-cap"></i>
-
-                <span>Speciality</span>
-            </div>
-
-            <div class="filter-content">
-
-                <div class="filter-chips" id="specialityChips">
-                    @forelse ($this->currentQuestion?->specialties as $sp)
-                        <button type="button" class="filter-chip active">
-                            <i class="ti ti-heart"></i>
-                            <span>{{ $sp?->name }}</span>
-                            <i class="ti ti-x chip-remove"></i>
-                        </button>
-                    @empty
-                        <button type="button" class="filter-chip active">
-
-                            <span>{{ $sp->name ?? 'No Specialities Found For This Question' }}</span>
-                        </button>
-                    @endforelse
-
-
-                </div>
-
-                <button type="button" class="filter-expand" data-target="specialityChips"
-                    aria-label="Show more specialities">
-                    <i class="ti ti-chevron-down"></i>
-                </button>
-
-            </div>
-        </div>
-
-
-
-    </div>
     {{-- ===================== CONTENT ===================== --}}
     <div class="content-grid">
 
@@ -528,20 +418,43 @@ new class extends Component {
                     <div class="gauge-label">Progress</div>
                 </div>
             </div>
+
+            <div class="">
+                <div class="filter-heading">
+                    <i class="menu-icon icon-base fa-solid fa-graduation-cap"></i>
+
+                    <span>Reference</span>
+                </div>
+
+                <div class="">
+
+                    <div class="filter-chips" id="specialityChips">
+                        <button type="button" class="filter-chip active">
+                            <span>{{ $this->currentQuestion->reference->name ?? 'No Reference Found For This Question' }}</span>
+                        </button>
+
+
+
+                    </div>
+                </div>
+            </div>
     </div>
 
-    {{-- ===================== TOPIC ===================== --}}
+    {{-- ===================== TOPIC =====================
     <div class="panel">
-        <div class="panel-title">Topic</div>
+        <div class="panel-title"> Reference</div>
 
         <div class="topic-row">
             <div>
                 <div class="topic-name">
+                    {{ $this->currentQuestion->reference->name }}
 
                 </div>
             </div>
         </div>
-    </div>
+    </div> --}}
+
+
     </aside>
 
     {{-- ===================== FOOTER ===================== --}}

@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
-use App\Events\GameStarted;
+use App\Events\{GameStarted, connectedUsers};
 use App\Models\{Game, GameAttempt, Players, Questions, User};
 
 class GameService
@@ -166,15 +166,15 @@ class GameService
         $user = User::findOrFail($attempt->user_id);
 
         $attempt->loadMissing('answers.question');
-        $game_rank = $user->game_rank;
+        $rank = $user->rank;
         $questionIds = [];
         foreach ($attempt->answers as $answer) {
             $questionIds[] = $answer->question->id;
             if ($answer->is_correct) {
-                $game_rank += $answer->question->elo_correct;
+                $rank += $answer->question->elo_correct;
 
             } else {
-                $game_rank -= $answer->question->elo_incorrect;
+                $rank -= $answer->question->elo_incorrect;
             }
         }
         $user->playedQuestions()->syncWithoutDetaching($questionIds);
@@ -187,11 +187,11 @@ class GameService
             'status' => 'finished',
             'time_taken' => $attempt->started_at->diffInSeconds($now),
             'score' => $correct,
-            "current_rank" => $user->game_rank , 
-            "new_rank" => $game_rank , 
+            "current_rank" => $user->rank , 
+            "new_rank" => $rank , 
         ]);
         $user->update([
-            'game_rank' => $game_rank,
+            'rank' => $rank,
         ]);
 
         $game->loadMissing('players');
@@ -319,7 +319,10 @@ class GameService
             ]);
 
             DB::afterCommit(
-                fn () => GameStarted::dispatch($game->fresh())
+                function () use ($game) {
+                    GameStarted::dispatch($game->fresh());
+                    ConnectedUsers::dispatch($game->id);
+                }
             );
         });
     }

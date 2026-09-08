@@ -174,7 +174,7 @@
                                                           {{ route('start.detecated.quiz', $attempt->quiz) }}
                                                     @else {{ route('start.learning.quiz', $attempt->quiz) }} @endif                  
                                                                     "
-                                        >Re Attempt</a>
+                                        >View Your Attempt</a>
                                     </td>
                                 </tbody>
                             @endforeach

@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('questions', function (Blueprint $table) {
             $table->id();
+            $table->string('name')->nullable();
             $table->text('content');
             $table->string('image')->nullable();
             $table->text('topic');
@@ -24,7 +25,7 @@ return new class extends Migration
             $table->enum('elo_correct', [4, 8, 12]);
             $table->enum('elo_incorrect', [5, 10, 15]);
             $table->foreignId('reference_id')->constrained()->cascadeOnDelete();
-            $table->fullText(['content', 'topic']);
+            $table->fullText(['content', 'topic' , "name"]);
             $table->timestamps();
         });
     }

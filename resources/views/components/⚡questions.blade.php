@@ -49,8 +49,9 @@ new class extends Component
         $search = $this->search;
         $questions = Questions::query()
             ->with('reference')
+            
             ->when($this->search, function ($query) {
-                $query->whereFullText(['content', 'topic'], $this->search);
+                $query->whereFullText(['name' , 'content', 'topic'], $this->search);
             })
             ->when($this->difficulty, function ($query) {
                 $query->where('difficulty', $this->difficulty);
@@ -485,6 +486,7 @@ new class extends Component
                 <thead>
                     <tr class="ps-3 pe-4">
                         <th>id</th>
+                        <th>Name</th>
                         <th>Image</th>
                         <th>Content</th>
                         <th>Topic</th>
@@ -500,6 +502,7 @@ new class extends Component
                     @foreach ($this->questions as $question)
                         <tr>
                             <th>{{ $question->id }}</th>
+                            <th>{{ $question->name }}</th>
                             <td>
                                 <ul class="list-unstyled avatar-group d-flex align-items-center m-0">
                                     <li

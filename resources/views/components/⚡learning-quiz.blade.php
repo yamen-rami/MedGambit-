@@ -150,9 +150,13 @@ new class extends Component {
         $this->validate([
             'answers' => ['required', 'array', "min:$questionsCount"],
         ]);
+        if($this->attempt->status === "finished"){
+            return ; 
+            
+        }
 
         $quizService = app(QuizService::class);
-        $quizService->updateAttempt(auth()->id(), $this->quiz->id, $this->answers);
+        $quizService->updateAttemptLearning(auth()->id(), $this->quiz->id, $this->answers);
 
         return redirect()->route('quizResult', $this->quiz);
     }
@@ -161,117 +165,7 @@ new class extends Component {
 <div class="">
     <x-slot:topic>Learning Mode</x-slot:topic>
     <!-- ===================== QUIZ FILTERS ===================== -->
-    <div class="quiz-filters">
-        <div class="filter-group">
-            <div class="filter-heading">
-                <i class="menu-icon icon-base fa-solid fa-graduation-cap"></i>
-
-                <span>Reference</span>
-            </div>
-
-            <div class="filter-content">
-
-                <div class="filter-chips" id="specialityChips">
-                    <button type="button" class="filter-chip active">
-                        <i class="ti ti-heart"></i>
-                        <span>{{ $this->currentQuestion->reference->name ?? 'No Reference Found For This Question' }}</span>
-                        <i class="ti ti-x chip-remove"></i>
-                    </button>
-                    <p></p>
-
-
-                </div>
-
-                <button type="button" class="filter-expand" data-target="specialityChips"
-                    aria-label="Show more specialities">
-                    <i class="ti ti-chevron-down"></i>
-                </button>
-
-            </div>
-        </div>
-        <!-- Branch -->
-        <div class="filter-group">
-            <div class="filter-heading">
-                <i class=" fa-solid fa-code-branch text-center"></i>
-
-                <span>Branch</span>
-            </div>
-
-            <div class="filter-content">
-
-                <div class="filter-chips" id="branchChips">
-                    @forelse ($this->currentQuestion->branches as $branche)
-                        <button type="button" class="filter-chip active">
-                            <i class="ti ti-heart-rate-monitor"></i>
-                            <span>{{ $branch->name }}</span>
-
-                            <i class="ti ti-x chip-remove"></i>
-                        </button>
-                    @empty
-                        <button type="button" class="filter-chip active">
-                            <span>{{ 'No Branch Found For This Question' }}</span>
-                        </button>
-                    @endforelse
-
-                    <!-- Hidden branches -->
-                    <button type="button" class="filter-chip extra-chip">
-                        <i class="ti ti-brain"></i>
-                        <span></span>
-                        <i class="ti ti-x chip-remove"></i>
-                    </button>
-
-
-                </div>
-
-                <button type="button" class="filter-expand" data-target="branchChips" aria-label="Show more branches">
-                    <i class="ti ti-chevron-down"></i>
-                </button>
-
-            </div>
-        </div>
-
-
-        {{-- <div class="filter-divider"></div> --}}
-
-
-        <!-- Speciality -->
-        <div class="filter-group">
-            <div class="filter-heading">
-                <i class="menu-icon icon-base fa-solid fa-graduation-cap"></i>
-
-                <span>Speciality</span>
-            </div>
-
-            <div class="filter-content">
-
-                <div class="filter-chips" id="specialityChips">
-                    @forelse ($this->currentQuestion?->specialties as $sp)
-                        <button type="button" class="filter-chip active">
-                            <i class="ti ti-heart"></i>
-                            <span>{{ $sp?->name }}</span>
-                            <i class="ti ti-x chip-remove"></i>
-                        </button>
-                    @empty
-                        <button type="button" class="filter-chip active">
-
-                            <span>{{ $sp->name ?? 'No Specialities Found For This Question' }}</span>
-                        </button>
-                    @endforelse
-
-
-                </div>
-
-                <button type="button" class="filter-expand" data-target="specialityChips"
-                    aria-label="Show more specialities">
-                    <i class="ti ti-chevron-down"></i>
-                </button>
-
-            </div>
-        </div>
-
-
-
-    </div>
+    
     {{-- ===================== CONTENT ===================== --}}
     <div class="content-grid">
         {{-- ===================== CENTER ===================== --}}
@@ -372,7 +266,7 @@ new class extends Component {
                         <i class="fa-solid fa-chevron-right"></i>
                     </button>
                 @else
-                    <button type="button" class="btn btn-primary" wire:click="submitAttempt">
+                    <button type="button" class="btn btn-primary" wire:click="submitAttempt" @disabled($this->attempt->status === "finished")>
                         Submit
 
                         <i class="fa-solid fa-check"></i>
@@ -422,7 +316,7 @@ new class extends Component {
                     <i class="fa-solid fa-trophy stat-icon"></i>
 
                     <div>
-                        <div class="stat-label fw-bold fs-6" style="color: var(--text)">Win Elo</div>
+                        <div class="stat-label fw-bold fs-6" style="color: var(--text)">Win Points</div>
 
                         <div class="stat-value">{{ $this->currentElo ?? 4 }}</div>
                     </div>
@@ -437,7 +331,7 @@ new class extends Component {
                             <path d="m19 12-7 7-7-7" />
                         </svg>
                         <div>
-                            <div class="stat-label fw-bold fs-6" style="color: var(--text)">Losing Elo</div>
+                            <div class="stat-label fw-bold fs-6" style="color: var(--text)">Lose Points </div>
                             <div class="stat-value fw-bold fs-6">{{ $this->currentInCorrectElo ?? 5 }}</div>
                         </div>
                     </div>
@@ -521,19 +415,23 @@ new class extends Component {
                 </div>
             </div>
 
-            {{-- ===================== TOPIC ===================== --}}
-            <div class="panel">
-                <div class="panel-title">Topic</div>
+            
+            <div class="">
+                <div class="filter-heading">
+                    <i class="menu-icon icon-base fa-solid fa-graduation-cap"></i>
 
-                <div class="topic-row">
-                    <div class="topic-icon">
-                        <i class="fa-solid fa-heart-pulse"></i>
-                    </div>
+                    <span>Reference</span>
+                </div>
 
-                    <div>
-                        <div class="topic-name">{{ $quiz->topic ?? 'Cardiology' }}</div>
+                <div class="">
 
-                        {{-- <div class="topic-sub">Myocardial Infarction</div> --}}
+                    <div class="filter-chips" id="specialityChips">
+                        <button type="button" class="filter-chip active">
+                            <span>{{ $this->currentQuestion->reference->name ?? 'No Reference Found For This Question' }}</span>
+                        </button>
+
+
+
                     </div>
                 </div>
             </div>

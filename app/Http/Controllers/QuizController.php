@@ -88,7 +88,7 @@ class QuizController extends Controller
     {
         $attempt = $quiz->attempts()
             ->where('user_id', auth()->id())
-            ->where('status', 'completed')
+            ->where('status', 'finished')
             ->latest()
             ->first();
 

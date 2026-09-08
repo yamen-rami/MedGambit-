@@ -9,6 +9,7 @@
                     <div class="card">
                         <h5 class="card-header">Create Question</h5>
                         <div class="card-body">
+                            <x.forms.input value="{{ $question->name }}" label="name" name="name"></x.forms.input>
                             <x-forms.textarea value="{{ $question->content }}" label="Content" name="content">
                             </x-forms.textarea>
                             <x-forms.textarea value="{{ $question->high_yield }}" label="High Yield" name="high_yield">

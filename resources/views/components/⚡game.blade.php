@@ -30,7 +30,7 @@ new class extends Component {
     public $gameId;
 
     public $player1;
-
+    public $playersCount = 0  ; 
     public $player2;
 
     public $currentPlayer;
@@ -73,7 +73,7 @@ new class extends Component {
             }
 
             $this->player1 = $players[0]->user;
-            
+
             $this->player2 = $players[1]->user;
         }
 
@@ -261,7 +261,6 @@ new class extends Component {
         $service->editAttempt($this->attempt, $this->game);
 
         if ($this->game->finishedPlayers() === 2) {
-            
             GameFinished::dispatch($this->game->id);
         }
     }
@@ -438,42 +437,59 @@ new class extends Component {
         </div>
         @if ($this->game->challenge_token)
             {{-- @dd($this->game->players()->get()) --}}
-            <div class="position-absolute top-50 start-50 translate-middle w-100 px-3">
-                <div class="mx-auto rounded-3 shadow-lg p-4 text-center"
-                    style="max-width: 450px; background: var(--bg); color: var(--text);">
-                    <h4 class="mb-2">
-                        Invite a Friend
-                    </h4>
+            @if ($this->game->challenge_token)
+                <div class="position-absolute top-50 start-50 translate-middle w-100 px-3">
+                    <div class="mx-auto rounded-3 shadow-lg p-4 text-center"
+                        style="max-width: 450px; background: var(--bg); color: var(--text);" x-data="{
+                            copied: false,
+                            link: window.location.origin + '/game/friend/{{ $game->challenge_token }}',
+                            copy() {
+                                const temp = document.createElement('textarea');
+                                temp.value = this.link;
+                                temp.style.position = 'fixed';
+                                temp.style.opacity = '0';
+                                document.body.appendChild(temp);
+                                temp.focus();
+                                temp.select();
+                                try {
+                                    document.execCommand('copy');
+                                    this.copied = true;
+                                    setTimeout(() => this.copied = false, 2000);
+                                } catch (e) {
+                                    console.error('Copy failed', e);
+                                }
+                                document.body.removeChild(temp);
+                            }
+                        }">
+                        <h4 class="mb-2">Invite a Friend</h4>
 
-                    <p class="mb-4 opacity-75">
-                        Share this challenge token with your friend to join the game.
-                    </p>
+                        <p class="mb-4 opacity-75">
+                            Share this challenge token with your friend to join the game.
+                        </p>
 
-                    <div class="rounded-3 p-3 mb-3" style="background: var(--text); color: var(--bg);">
-                        <small class="d-block mb-2 opacity-75">
-                            Challenge Token
-                        </small>
+                        <div class="rounded-3 p-3 mb-3" style="background: var(--text); color: var(--bg);">
+                            <small class="d-block mb-2 opacity-75">Challenge Token</small>
 
-                        <div class="d-flex align-items-center gap-2">
-                            <div class="flex-grow-1 font-monospace fw-semibold" style="color: var(--bg);">
-                                medgambit.test/game/friend/
-                                {{ $game->challenge_token }}
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="flex-grow-1 font-monospace fw-semibold text-truncate"
+                                    style="color: var(--bg);" x-text="link"></div>
+
+                                <button type="button" class="btn btn-sm"
+                                    style="background: var(--bg); color: var(--text); min-width: 70px;"
+                                    x-on:click="copy()">
+                                    <span x-show="!copied">Copy</span>
+                                    <span x-show="copied" x-cloak>✓ Copied!</span>
+                                </button>
                             </div>
+                        </div>
 
-                            <button type="button" class="btn btn-sm" style="background: var(--bg); color: var(--text);"
-                                onclick="navigator.clipboard.writeText('{{ $game->challenge_token }}')">
-                                Copy
-                            </button>
+                        <div class="small opacity-75">
+                            <i class="ti ti-loader-2 me-1"></i>
+                            Waiting for your friend to join...
                         </div>
                     </div>
-
-                    <div class="small opacity-75">
-                        <i class="ti ti-loader-2 me-1"></i>
-                        Waiting for your friend to join...
-                    </div>
                 </div>
-
-            </div>
+            @endif
         @endif
     @else
         {{-- ===================== CONTENT ===================== --}}
@@ -487,11 +503,12 @@ new class extends Component {
                 <div class="vs-card">
                     <div class="vs-top">
                         <div class="player">
-                            <div class="avatar avatar-blue lg">{{ Str::upper(Str::limit(auth()->user()->name , 1 , '')) }}</div>
+                            <div class="avatar avatar-blue lg">
+                                {{ Str::upper(Str::limit(auth()->user()->name, 1, '')) }}</div>
                             <div>
                                 <div class="">{{ auth()->user()->name }}</div>
                                 <div class="player-elo">
-                                    ELO {{ auth()->user()->game_rank }} <i class="fa-solid fa-trophy"></i>
+                                    ELO {{ auth()->user()->rank }} <i class="fa-solid fa-trophy"></i>
                                 </div>
                             </div>
                         </div>
@@ -508,13 +525,13 @@ new class extends Component {
 
                                 <div class="player-elo right">
                                     ELO
-                                    {{ $this->player1?->id === auth()->id() ? $this->player2?->game_rank : $this->player1?->game_rank }}
+                                    {{ $this->player1?->id === auth()->id() ? $this->player2?->rank : $this->player1?->rank }}
                                     <i class="fa-solid fa-trophy"></i>
                                 </div>
                             </div>
 
                             <div class="avatar avatar-peach lg">
-                                {{ Str::upper(Str::limit($this->player1?->id === auth()->id() ? $this->player2?->name : $this->player1?->name , 1 , '')) }}
+                                {{ Str::upper(Str::limit($this->player1?->id === auth()->id() ? $this->player2?->name : $this->player1?->name, 1, '')) }}
                             </div>
                         </div>
                     </div>
@@ -527,11 +544,9 @@ new class extends Component {
                 @php
                     $question = $this->currentQuestion;
                 @endphp
-                {{-- ===================== QUESTIONS ===================== --}}
-                {{-- @foreach ($game->questions as $question)
-                    @if ($loop->iteration === $current) --}}
+               
                 <div class="question-card">
-                    {{-- QUESTION HEADER --}}
+               
                     <div class="question-head">
                         <span class="question-index">
                             Question {{ $this->current }} / {{ $this->count }}
@@ -669,44 +684,48 @@ new class extends Component {
                             </template>
                         </span>
                     </div>
-
-                    {{-- Battle Type --}}
-                    <div class="stat-row">
-                        <svg class="menu-icon icon-base text-primary" xmlns="http://www.w3.org/2000/svg"
-                            width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                            class="lucide lucide-circle-question-mark-icon lucide-circle-question-mark">
-                            <circle cx="12" cy="12" r="10" />
-                            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-                            <path d="M12 17h.01" />
-                        </svg>
-
-                        <div>
-                            <div class="stat-label">Battle Type</div>
-
-                            <div class="stat-value">{{ $this->count }} Questions</div>
-                        </div>
-                    </div>
-
-                    {{-- Reward --}}
+                      {{-- Reward --}}
                     <div class="stat-row">
                         <i class="fa-solid fa-trophy stat-icon"></i>
 
                         <div>
-                            <div class="stat-label">Win Reward</div>
+                            <div class="stat-label">Win Points</div>
 
                             <div class="stat-value">{{ $this->currentElo ?? 0 }}</div>
                         </div>
                     </div>
                     <div class="stat-row">
-                        <i class="fa-solid fa-trophy stat-icon"></i>
-
+                        <svg class="text-opacity-10 text-danger" xmlns="http://www.w3.org/2000/svg" width="20"
+                            height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="4" stroke-linecap="round" stroke-linejoin="round"
+                            class="lucide lucide-arrow-down">
+                            <path d="M12 5v14" />
+                            <path d="m19 12-7 7-7-7" />
+                        </svg>
                         <div>
-                            <div class="stat-label">Lose Reward</div>
+                            <div class="stat-label">Lose Points</div>
 
                             <div class="stat-value">{{ $this->currentInCorrectElo ?? 0 }}</div>
                         </div>
                     </div>
+
+                    {{-- Battle Type --}}
+                     <div class="stat-row">
+                    <svg class="text-warning" xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" class="lucide lucide-refresh-ccw">
+                        <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                        <path d="M3 3v5h5" />
+                        <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
+                        <path d="M16 16h5v5" />
+                    </svg>
+                    <div>
+                        <div class="stat-label fw-bold " style="color: var(--text)">Frequency</div>
+
+                        <div class="stat-value">{{ $question->playedCount?->count ?? 0 }} </div>
+                    </div>
+                </div>
+                  
                 </div>
 
                 {{-- ===================== BATTLE PROGRESS ===================== --}}
@@ -812,8 +831,21 @@ new class extends Component {
                         '<i class="fa-solid fa-sun"></i>';
                 });
             }
+            let gameId = @js($this->gameId);
+            window.Echo.join(`presence-game.${gameId}`)
+                .here((users) => {
+                    let length = users.length ;
+                    $wire.playersCount = length;
+                    console.log('Currently connected:', users);
+                })
+                .joining((user) => {
+
+                })
+                .leaving((user) => {
+                    console.log('User left:', user);
+                });
+        </script>
         </script>
     @endscript
 </div>
 
-{{-- ===================== DARK MODE ONLY ===================== --}}

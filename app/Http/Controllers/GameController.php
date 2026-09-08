@@ -34,7 +34,7 @@ class GameController extends Controller
     {
         //
         $game->loadMissing('players', 'attempts', 'questions');
-        if ($game->status !== 'completed') {
+        if ($game->status !== 'finished') {
             abort(404, 'Game Status Is Playing');
         }
         $winnerAttempt = $game->attempts()->with('user')->where('is_winner', true)->first();

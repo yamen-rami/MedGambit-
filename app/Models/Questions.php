@@ -2,13 +2,11 @@
 
 namespace App\Models;
 
-use Database\Factories\QuestionsFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\{BelongsTo, BelongsToMany, HasMany, HasOne};
+
+use Database\Factories\QuestionsFactory;
 
 class Questions extends Model
 {
@@ -16,6 +14,7 @@ class Questions extends Model
     use HasFactory;
 
     protected $fillable = [
+        'name',
         'content',
         'image',
         'topic',

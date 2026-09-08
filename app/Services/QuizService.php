@@ -2,13 +2,11 @@
 
 namespace App\Services;
 
-use App\Models\Answers;
-use App\Models\Questions;
-use App\Models\Quiz;
-use App\Models\QuizAttempt;
-use Exception;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
+use Exception;
+
+use App\Models\{Answers, Questions, Quiz, QuizAttempt};
 
 class QuizService
 {
@@ -62,11 +60,12 @@ class QuizService
     public function updateAttempt($userId, $quizId, $answers)
     {
         /*
-        1- ? Searching For Attempt
-        2- see the correct answers
-        3- update Attempt
-        4- create a answers for that attempt with question id
+            1- ? Searching For Attempt
+            2- see the correct answers
+            3- update Attempt
+            4- create a answers for that attempt with question id
         */
+        // 
         $quizAttempt = QuizAttempt::where('quiz_id', $quizId)
             ->where('user_id', $userId)
             ->where('status', 'pending')
@@ -114,7 +113,7 @@ class QuizService
                 'finished_at' => $now,
                 'time_taken' => $quizAttempt->started_at?->diffInSeconds($now),
                 'score' => $score,
-                'status' => 'completed',
+                'status' => 'finished',
                 'current_rank' => $user->rank,
                 'new_rank' => $rank,
             ]);
@@ -123,6 +122,69 @@ class QuizService
             $user->playedQuestions()->syncWithoutDetaching($questionsId);
             $rank = max(0, $rank);
             $user->update(['rank' => $rank]);
+        });
+
+        // $question ->
+        return [
+            'score' => $score,
+            'time_taken' => $quizAttempt->time_taken,
+            'wrong_answers' => $quizAttempt->quiz->questions->count() - $score,
+        ];
+    }
+    public function updateAttemptLearning($userId, $quizId, $answers)
+    {
+        /*
+            1- ? Searching For Attempt
+            2- see the correct answers
+            3- update Attempt
+            4- create a answers for that attempt with question id
+        */
+        // 
+        $quizAttempt = QuizAttempt::where('quiz_id', $quizId)
+            ->where('user_id', $userId)
+            ->where('status', 'pending')
+            ->firstOrFail();
+        if (! $quizAttempt) {
+            throw new Exception('Quiz attempt not found.');
+        }
+        $now = now();
+
+        $score = 0;
+        $wrongAnswers = 0;
+        $user = auth()->user();
+        $playedQuestionIds = $user->playedQuestions->pluck('id');
+        $questions = Questions::with('correctAnswer', 'playedCount')->whereIn('id', array_keys($answers))->get()->keyBy('id');
+        $questions->each(function ($question) {
+            $question->playedCount()->firstOrCreate(
+                [],
+                [
+                    'count' => 0,
+                ]
+            )->increment('count', 1);
+        });
+        foreach ($answers as $questionId => $optionId) {
+
+            $question = $questions[$questionId];
+            $is_correct = $question->correctAnswer?->id == $optionId;
+
+            if ($is_correct) {
+                $score++;
+            } else {
+                $wrongAnswers++;
+            }
+
+        }
+        DB::transaction(function () use ($score, $quizAttempt, $now, $quizId, $user) {
+            $quizAttempt->update([
+                'user_id' => $user->id,
+                'finished_at' => $now,
+                'time_taken' => $quizAttempt->started_at?->diffInSeconds($now),
+                'score' => $score,
+                'status' => 'finished',    
+            ]);
+            $quiz = Quiz::with('questions')->where('id', $quizId)->first();
+            $questionsId = $quiz->questions->pluck('id');
+            $user->playedQuestions()->syncWithoutDetaching($questionsId);
         });
 
         // $question ->
@@ -143,8 +205,8 @@ class QuizService
             'topic' => 'Detected Topic',
             'type' => 'detected',
             'duration' => $duration ?? null,
-            'difficulty' => $difficulty,
-            'length' => $length,
+            'difficulty' => $difficulty ? $difficulty : "easy",
+            'length' => $length ? $length : "short",
             'questions_number' => $count ?? 3,
         ]);
         //
@@ -163,7 +225,6 @@ class QuizService
 
     public function learningQuiz(Collection $questions, $length = 'short', $count = 3, $difficulty = 'easy')
     {
-
         $quiz = Quiz::create([
             'name' => 'Detected Learning Quiz ',
             'topic' => 'Detected Learning Quiz ',

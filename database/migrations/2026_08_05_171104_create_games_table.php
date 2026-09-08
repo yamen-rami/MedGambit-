@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->unsignedBigInteger('max_players')->default(2);
             $table->text('challenge_token')->unique()->nullable();
-            $table->enum('status', ['pending', 'playing', 'completed'])->index();
+            $table->enum('status', ['pending', 'playing', 'finished' , "aborted"])->index();
             $table->unsignedBigInteger('duration')->nullable();
             $table->enum('difficulty' , ['easy' , "medium" , "hard" , "nerd"])->nullable();
             $table->enum('length' , ['short' , "medium" , "long"])->nullable();
