@@ -13,11 +13,17 @@ class Game extends Model
     /** @use HasFactory<GameFactory> */
     use HasFactory;
 
-    protected $fillable = ['max_players', 'status', 'challenge_token', 'started_at', 'ended_at', 'length', 'difficulty' , "duration"];
+    protected $fillable = ['max_players', 'status', 'challenge_token', 'started_at', 'ended_at', 'length', 'difficulty', 'duration',
+        'disconnected_at'];
+        protected $casts = [
+            "ended_at" => "datetime" , 
+            "disconnected_at" => "datetime",
+        ];
 
     // TODO Duration
-    public function references() : BelongsToMany{
-        return $this->belongsToMany(Reference::class , "game_references");
+    public function references(): BelongsToMany
+    {
+        return $this->belongsToMany(Reference::class, 'game_references');
     }
 
     public function questions()

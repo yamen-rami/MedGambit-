@@ -2,13 +2,10 @@
 
 namespace Database\Seeders;
 
-use App\Models\BranchOfMedicine;
-use App\Models\Option;
-use App\Models\Questions;
-use App\Models\SkillsForQuestion;
-use App\Models\Specialty;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+
+use App\Models\{BranchOfMedicine, Option, Questions, SkillsForQuestion, Specialty, User};
 
 class DatabaseSeeder extends Seeder
 {
@@ -19,12 +16,25 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        BranchOfMedicine::factory(100)->create();
-        Specialty::factory(100)->create();
-        SkillsForQuestion::factory(100)->create();
+        // BranchOfMedicine::factory(100)->create();
+        // Specialty::factory(100)->create();
+        // SkillsForQuestion::factory(100)->create();
 
-        // Option::factory(1000)->create();
-        Questions::factory(1000)->create();
+        // Questions::factory(1000)->create();
+        User::factory()->create([
+            "name" => "yamen" , 
+            "country" => "ps",
+            "know_about_us" => "social",
+            "email" => "yamen@gmail.com",
+            'password' => "12345678",
+        ]);
+        User::factory()->create([
+            "name" => "jerj" , 
+            "country" => "ps",
+            "know_about_us" => "social",
+            "email" => "jerj@gmail.com",
+            'password' => "12345678",
+        ]);
         // ->hasAttached(
         //     SkillsForQuestion::factory()->count(4),
         //     [],

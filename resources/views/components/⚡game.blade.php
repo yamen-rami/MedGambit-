@@ -1,7 +1,7 @@
 <?php
 
 use App\Events\GameFinished;
-use App\Events\playerAnswered;
+use App\Events\{playerAnswered, PlayerReconnected};
 use App\Models\Game;
 use App\Models\GameAnswers;
 use App\Models\Option;
@@ -30,12 +30,13 @@ new class extends Component {
     public $gameId;
 
     public $player1;
-    public $playersCount = 0  ; 
+    public $playersCount = 0;
     public $player2;
 
     public $currentPlayer;
 
     public $finished = false;
+    public $disconnected_at;
 
     public function mount($gameId)
     {
@@ -44,6 +45,7 @@ new class extends Component {
         if (!$this->game) {
             return;
         }
+        $this->disconnected_at = $this->game->disconnected_at;
         $players = $this->game->players()->with('user')->get();
         $this->currentPlayer = $players->where('user_id', auth()->id())->first();
         if (!$this->currentPlayer) {
@@ -62,15 +64,8 @@ new class extends Component {
         }
         $this->loading = $this->game->status !== 'playing';
 
-        if (!$this->loading) {
-            $this->loadQuestion();
-        }
         if ($players->count() == 2) {
             $this->getProgress();
-
-            if ($players->count() !== 2) {
-                throw new RuntimeException('Game does not have exactly 2 players.');
-            }
 
             $this->player1 = $players[0]->user;
 
@@ -146,7 +141,46 @@ new class extends Component {
         $this->answers[$questionId] = $optionId;
         playerAnswered::dispatch(auth()->id(), $this->gameId);
     }
+    public function playerDisconnected($userId = null)
+    {
+        if (!$this->game || $this->game->status !== 'playing' || (int) $userId === (int) auth()->id()) {
+            return;
+        }
+        if ($this->game->disconnected_at) {
+            return;
+        }
 
+        $this->game->update([
+            'disconnected_at' => now(),
+        ]);
+
+        $this->game->refresh();
+
+        $this->disconnected_at = $this->game->disconnected_at;
+
+        $this->playersCount = 1;
+    }
+    public function playerConnected()
+    {
+        if (!$this->game) {
+            return;
+        }
+
+        if (!$this->game->disconnected_at) {
+            return;
+        }
+
+        $this->game->update([
+            'disconnected_at' => null,
+        ]);
+
+        $this->game->refresh();
+
+        $this->disconnected_at = null;
+        PlayerReconnected::dispatch($userId ?? auth()->id(), $this->gameId);
+
+        $this->playersCount = 2;
+    }
     public function next()
     {
         if ($this->current < $this->game->questions->count()) {
@@ -169,6 +203,17 @@ new class extends Component {
         }
 
         return max(0, (int) now()->diffInSeconds($this->game->ended_at, false));
+    }
+    #[Computed]
+    public function disconnectRemainingSeconds()
+    {
+        if (!$this->disconnected_at) {
+            return null;
+        }
+        $disconnectedAt = \Carbon\Carbon::parse($this->disconnected_at);
+
+        $elapsed = now()->timestamp - $disconnectedAt->timestamp;
+        return max(0, 120 - $elapsed);
     }
 
     #[On('echo-private:game.{gameId},.game.started')]
@@ -255,6 +300,13 @@ new class extends Component {
         $player->update([
             'status' => 'finished',
         ]);
+        if ($this->disconnected_at) {
+            $disconnectTime = $this->disconnected_at instanceof \Carbon\Carbon ? $this->disconnected_at : \Carbon\Carbon::parse($this->disconnected_at);
+
+            if (now()->lt($disconnectTime->copy()->addSeconds(120))) {
+                return;
+            }
+        }
         $this->finished = true;
         $service = app(GameService::class);
 
@@ -328,6 +380,7 @@ new class extends Component {
             'game' => $this->game,
         ]);
     }
+
     #[On('quit-quiz')]
     public function quitGame()
     {
@@ -509,6 +562,7 @@ new class extends Component {
                                 <div class="">{{ auth()->user()->name }}</div>
                                 <div class="player-elo">
                                     ELO {{ auth()->user()->rank }} <i class="fa-solid fa-trophy"></i>
+                                    {{ $this->playersCount }}
                                 </div>
                             </div>
                         </div>
@@ -544,9 +598,9 @@ new class extends Component {
                 @php
                     $question = $this->currentQuestion;
                 @endphp
-               
+
                 <div class="question-card">
-               
+
                     <div class="question-head">
                         <span class="question-index">
                             Question {{ $this->current }} / {{ $this->count }}
@@ -612,7 +666,9 @@ new class extends Component {
                             
                                     }, 1000)
                             
-                                }
+                                },
+                                return () => clearInterval(this.timer);
+                            
                             }" x-init="start()">
                                 <i class="fa-regular fa-clock"></i>
 
@@ -684,7 +740,7 @@ new class extends Component {
                             </template>
                         </span>
                     </div>
-                      {{-- Reward --}}
+                    {{-- Reward --}}
                     <div class="stat-row">
                         <i class="fa-solid fa-trophy stat-icon"></i>
 
@@ -709,23 +765,62 @@ new class extends Component {
                         </div>
                     </div>
 
-                    {{-- Battle Type --}}
-                     <div class="stat-row">
-                    <svg class="text-warning" xmlns="http://www.w3.org/2000/svg" width="20" height="20"
-                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                        stroke-linejoin="round" class="lucide lucide-refresh-ccw">
-                        <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-                        <path d="M3 3v5h5" />
-                        <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
-                        <path d="M16 16h5v5" />
-                    </svg>
-                    <div>
-                        <div class="stat-label fw-bold " style="color: var(--text)">Frequency</div>
 
-                        <div class="stat-value">{{ $question->playedCount?->count ?? 0 }} </div>
+                    {{-- Battle Type --}}
+                    <div class="stat-row">
+                        <svg class="text-warning" xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-refresh-ccw">
+                            <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                            <path d="M3 3v5h5" />
+                            <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
+                            <path d="M16 16h5v5" />
+                        </svg>
+                        <div>
+                            <div class="stat-label fw-bold " style="color: var(--text)">Frequency</div>
+
+                            <div class="stat-value">{{ $question->playedCount?->count ?? 0 }} </div>
+                        </div>
                     </div>
-                </div>
-                  
+                    @if ($this->disconnectRemainingSeconds !== null)
+                        <div class="timer text-danger" x-data="{
+                            seconds: {{ $this->disconnectRemainingSeconds }},
+                        
+                            timer: null,
+                        
+                            start() {
+                        
+                                this.timer = setInterval(() => {
+                        
+                                    if (this.seconds <= 0) {
+                        
+                                        clearInterval(this.timer)
+                        
+                                        $wire.quitGame()
+                        
+                                        return
+                                    }
+                        
+                                    this.seconds--
+                        
+                                }, 1000)
+                            }
+                        }" x-init="start()">
+
+                            <i class="fa-solid fa-wifi"></i>
+
+                            <span>
+                                Opponent reconnects in
+                            </span>
+
+                            <strong x-text="seconds"></strong>
+
+                        </div>
+                    @endif
+
+
+
+
                 </div>
 
                 {{-- ===================== BATTLE PROGRESS ===================== --}}
@@ -792,20 +887,6 @@ new class extends Component {
                 </div>
         </div>
 
-        {{-- ===================== TOPIC ===================== --}}
-        {{-- <div class="panel">
-            <div class="panel-title">{{ $this->progress }}</div>
-
-            <div class="topic-row">
-                <div class="topic-icon">
-                    <i class="fa-solid fa-heart-pulse"></i>
-                </div>
-
-                <div>
-                    <div class="topic-name">{{ $game->topic ?? 'Cardiology' }}</div>
-                </div>
-            </div>
-        </div> --}}
         </aside>
 
         {{-- ===================== FOOTER ===================== --}}
@@ -832,20 +913,32 @@ new class extends Component {
                 });
             }
             let gameId = @js($this->gameId);
+
             window.Echo.join(`presence-game.${gameId}`)
                 .here((users) => {
-                    let length = users.length ;
-                    $wire.playersCount = length;
-                    console.log('Currently connected:', users);
-                })
-                .joining((user) => {
+                    console.log("Players Count", users.length);
 
                 })
+                .joining((user) => {
+                    console.log("player Joined")
+                    $wire.playerConnected();
+                    $wire.set("playersCount", 2);
+                })
                 .leaving((user) => {
-                    console.log('User left:', user);
+                    console.log('Player left:', user);
+
+
+                    $wire.playerDisconnected(user.id);
+                })
+                .listen('.player.connected', (event) => {
+                    $wire.set("disconnected_at", null);
+                    $wire.set("playersCount", 2);
+                    $wire.playerConnected(event.userId);
+                    console.log("I Am Here");
+
+                    console.log(event);
+
                 });
-        </script>
         </script>
     @endscript
 </div>
-
