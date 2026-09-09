@@ -2,13 +2,12 @@
 
 namespace App\Providers;
 
-use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Pagination\Paginator;
-use Illuminate\Support\Facades\Date;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\{DB, Date, URL};
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
+use Carbon\CarbonImmutable;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -25,6 +24,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        if ($this->app->environment('production')) {
+            URL::forceScheme('https');
+        }
         $this->configureDefaults();
         Paginator::useBootstrapFive();
         Model::preventLazyLoading();
