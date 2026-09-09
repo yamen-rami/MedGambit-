@@ -185,7 +185,7 @@ new class extends Component {
                 </div>
 
                 {{-- QUESTION --}}
-                <p class="question-text">{{ $question->content }}</p>
+                <p class="question-text">{!!   $question->content !!}</p>
 
                 {{-- OPTIONS --}}
                 <div class="options" x-data="{ activeOptionId: $wire.activeOptionId }">
@@ -275,9 +275,9 @@ new class extends Component {
             </div>
             <div class="question-card" x-show="$wire.activeOptionId">
                 <h6>Question Explanation :</h6>
-                <p>{{ $question->main_explanation }}</p>
+                <p>{!! $question->main_explanation !!}</p>
                 <h6>Question High Yield</h6>
-                <p>{{ $question->high_yield }}</p>
+                <p>{!!  $question->high_yield !!}</p>
             </div>
 
             {{-- VALIDATION ERROR --}}

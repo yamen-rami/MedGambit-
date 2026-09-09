@@ -257,7 +257,7 @@ new class extends Component
                                         </p>
                                         <p
                                             type="button"
-                                            class="text-body"
+                                            class="text-body my-2"
                                             data-bs-toggle="modal"
                                             data-bs-target="#staticBackdrop"
                                         >
@@ -516,19 +516,19 @@ new class extends Component
                                     </li>
                                 </ul>
                             </td>
-                            <th>{{ Str::limit($question->content, 10) }}</th>
-                            <th>{{ Str::limit($question->topic, 10) }}</th>
+                            <th>{!!   Str::limit($question->content, 10) !!}</th>
+                            <th>{!!  Str::limit($question->topic, 10) !!}</th>
                             <th class="text-center align-middle">
                                 <span
                                     class="
             btn
-            @if ($question->difficulty === 'easy') btn-outline-success
+            @if ($question->difficulty === 'easy') text-success
             @elseif ($question->difficulty === 'medium')
-                btn-outline-warning
+                text-warning
             @elseif ($question->difficulty === 'hard')
-                btn-outline-danger
+                text-danger
             @else
-                btn-outline-dark @endif
+                text-dark  @endif
         "
                                     style="width: 80px"
                                 >
@@ -540,9 +540,9 @@ new class extends Component
                                 <span
                                     style="width: 100px"
                                     class="
-            @if ($question->length === 'short') btn btn-outline-success
-            @elseif($question->length === 'medium') btn btn-outline-warning
-            @else btn btn-outline-danger @endif
+            @if ($question->length === 'short') text-success
+            @elseif($question->length === 'medium') text-warning
+            @else text-danger @endif
         "
                                 >
                                     {{ $question->length }}

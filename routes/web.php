@@ -53,9 +53,8 @@ Route::middleware('auth')->group(function () {
     Route::get('game/started/{game}', [GameController::class, 'gameStarted'])->name('gameStarted');
 
     Route::get('config/game', [GameController::class, 'config'])->name('config.game');
-    
-    // to waiting page for the player 1
     Route::get('waiting/{game}', [GameController::class, 'waiting'])->name('waiting');
+    Route::livewire("/problems" , 'problems')->name("problems");
 });
 Route::get('user/profile/{user}', [UserController::class, 'profile'])->name('user.profile');
 Route::get('get/branches', [ApiController::class, 'branches'])

@@ -140,7 +140,7 @@
                         <div class="question-number">{{ $loop->iteration }}</div>
 
                         <div class="question-content">
-                            <p class="question-text">{{ $answer->question->content }}</p>
+                            <p class="question-text">{!! $answer->question->content !!}</p>
                         </div>
                         @if ($answer->question->correctAnswer->id == $answer->option_id)
                             <span class="result-badge correct-badge">

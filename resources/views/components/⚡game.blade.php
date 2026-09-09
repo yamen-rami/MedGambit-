@@ -611,7 +611,7 @@ new class extends Component {
                     </div>
 
                     {{-- QUESTION --}}
-                    <p class="question-text">{{ $question->content }}</p>
+                    <p class="question-text">{!! $question->content !!}</p>
 
                     {{-- OPTIONS --}}
                     <div class="options">

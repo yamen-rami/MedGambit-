@@ -344,10 +344,10 @@ new class extends Component
                             @endforeach
                             <div>
                                 <p>High Yield</p>
-                                <p class="ps-5">{{ $selectedQuestion?->high_yield }}</p>
+                                <p class="ps-5">{!! $selectedQuestion?->high_yield !!}</p>
                                 <hr />
                                 <p>Question Explanation</p>
-                                <p class="ps-5">{{ $selectedQuestion?->main_explanation }}</p>
+                                <p class="ps-5">{!!   $selectedQuestion?->main_explanation !!}</p>
                             </div>
                         </div>
 
@@ -383,7 +383,7 @@ new class extends Component
                         data-bs-toggle="modal"
                         data-bs-target="#staticBackdrop"
                     >
-                        {{ Str::limit($question->content, 30, '') }}
+                        {!! Str::limit($question->content, 30, '') !!}
                     </td>
 
                     @foreach ($attempts as $attempt)

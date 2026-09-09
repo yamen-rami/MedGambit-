@@ -4,7 +4,7 @@
         <div class="container pt-2">
             <div class="text-start">
                 <p><strong>Question Content : </strong></p>
-                <p><span>{{ $question->content }}</span></p>
+                <p><span>{!!   $question->content !!}</span></p>
                 <div class="my-2 text-center">
                     <img width="70%" height="400px" class="rounded-5" src="{{ asset($question->image) }}" alt="" />
                 </div>
@@ -22,15 +22,15 @@
                 @endforeach
                 <hr />
                 <p><strong>Question Topic</strong></p>
-                <p><span>{{ $question->topic }}</span></p>
+                <p><span>{!!  $question->topic !!}</span></p>
                 <hr />
 
                 <p><strong>Question Main Explanation</strong></p>
-                <p><span>{{ $question->main_explanation }}</span></p>
+                <p><span>{!!  $question->main_explanation !!}</span></p>
                 <hr />
 
                 <p><strong>Question High Yield</strong></p>
-                <p><span>{{ $question->high_yield }}</span></p>
+                <p><span>{!!   $question->high_yield !!}</span></p>
                 <hr />
 
                 <p><strong>Question Speciality</strong></p>

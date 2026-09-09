@@ -9,10 +9,16 @@
                         <h5 class="card-header">Create Question</h5>
                         <div class="card-body">
                             <x-forms.input name="name" label="Name" ></x-forms.input>
-                            <x-textarea label="Content" name="content"> </x-textarea>
-                            <x-textarea label="High Yield" name="high_yield"> </x-textarea>
-                            <x-textarea label="Main Expalantion" name="main_explanation"> </x-textarea>
-                            <x-textarea label="Topic" name="topic"> </x-textarea>
+                            <x-rich-editior></x-rich-editior>
+                            {{-- <x-rich-editior label="Content" name="content" /> --}}
+                            {{-- <x-textarea label="Content" name="content"> </x-textarea> --}}
+                            {{-- <x-textarea label="High Yield" name="high_yield"> </x-textarea> --}}
+                            <x-rich-editior name="high_yield" label="High Yield"></x-rich-editior>
+
+                            {{-- <x-textarea label="Main Expalantion" name="main_explanation"> </x-textarea> --}}
+                            <x-rich-editior name="main_explanation" label="Main Expalantion"></x-rich-editior>
+                            {{-- <x-textarea label="Topic" name="topic"> </x-textarea> --}}
+                            <x-rich-editior name="topic" label="Topic"></x-rich-editior>
                             <div class="col-lg-12 my-3">
                                 <label for="select2Primary" class="form-label">Speciality</label>
                                 <div class="select2-primary">

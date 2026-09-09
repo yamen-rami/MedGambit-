@@ -36,6 +36,13 @@
     <link rel="stylesheet" href="{{ asset('assets/vendor/libs/select2/select2.css') }}" />
     <link rel="stylesheet" href="{{ asset('assets/css/demo.css') }}" />
     <link rel="stylesheet" href="{{ asset("assets/css/all.css") }}" />
+    <link rel="stylesheet" href="{{ asset('assets/css/typography.css') }}" />
+    <link rel="stylesheet" href="{{ asset('assets/css/highlight.css') }}" />
+    <link rel="stylesheet" href="{{ asset('assets/css/katex.css') }}" />
+    <link rel="stylesheet" href="{{ asset('assets/css/editor.css') }}" />
+
+
+    {{-- @vite([ "resources/js/app.js"]) --}}
     @stack('styles')
 
     @livewireStyles
@@ -373,6 +380,13 @@
     <script src="{{ asset('assets/js/config.js') }}"></script>
     <script src="{{ asset('assets/js/main.js') }}"></script>
     <script src="{{ asset('assets/js/all.js') }}"></script>
+    <script src="resources/views/js/app.js"></script>
+    <script src="{{ asset('assets/js/katex.js')}}"></script>
+    <script src="{{ asset('assets/js/highlight.js')}}"></script>
+    <script src="{{ asset('assets/js/quill.js')}}"></script>
+    <script src="{{ asset('assets/js/editors.js')}}"></script>
+
+
     @stack('scripts')
 
     {{-- <script src="{{ asset('assets/js/question.js') }}"></script> --}}

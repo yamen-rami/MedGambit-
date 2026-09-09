@@ -167,18 +167,23 @@ class GameService
 
         $attempt->loadMissing('answers.question');
         $rank = $user->rank;
+        $playedQuestionIds = $user->playedQuestions->pluck('id');
+
         $questionIds = [];
         foreach ($attempt->answers as $answer) {
             $questionIds[] = $answer->question->id;
             if ($answer->is_correct) {
-                $rank += $answer->question->elo_correct;
+                if (! $playedQuestionIds->contains($question->id)) {
+                    $rank += $answer->question->elo_correct;
+                }
 
             } else {
-                $rank -= $answer->question->elo_incorrect;
+                if (! $playedQuestionIds->contains($question->id)) {
+                    $rank -= $answer->question->elo_incorrect;
+                }
             }
         }
         $user->playedQuestions()->syncWithoutDetaching($questionIds);
-        
 
         $correct = $attempt->answers->where('is_correct', true)->count();
         $wrong = $attempt->answers->where('is_correct', false)->count();
@@ -187,8 +192,8 @@ class GameService
             'status' => 'finished',
             'time_taken' => $attempt->started_at->diffInSeconds($now),
             'score' => $correct,
-            "current_rank" => $user->rank , 
-            "new_rank" => $rank , 
+            'current_rank' => $user->rank,
+            'new_rank' => $rank,
         ]);
         $user->update([
             'rank' => $rank,
@@ -260,6 +265,7 @@ class GameService
             $game->branches()->attachOrFail($branches);
             $game->skills()->attachOrFail($skills);
             $game->references()->attachOrFail($references);
+
             return $game;
         });
 
@@ -321,7 +327,7 @@ class GameService
             DB::afterCommit(
                 function () use ($game) {
                     GameStarted::dispatch($game->fresh());
-                    ConnectedUsers::dispatch($game->id);
+                    connectedUsers::dispatch($game->id);
                 }
             );
         });
