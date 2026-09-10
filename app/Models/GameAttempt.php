@@ -41,7 +41,6 @@ class GameAttempt extends Model
     {
         return $this->hasMany(GameAnswers::class);
     }
-    // The relation itself is wrong
-    // cause it users
+
 
 }

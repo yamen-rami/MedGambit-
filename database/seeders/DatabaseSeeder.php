@@ -20,7 +20,7 @@ class DatabaseSeeder extends Seeder
         // Specialty::factory(100)->create();
         // SkillsForQuestion::factory(100)->create();
 
-        // Questions::factory(1000)->create();
+        Questions::factory(1000)->create();
         User::factory()->create([
             "name" => "yamen" , 
             "country" => "ps",
@@ -38,7 +38,7 @@ class DatabaseSeeder extends Seeder
         // ->hasAttached(
         //     SkillsForQuestion::factory()->count(4),
         //     [],
-        //     'skills'
+        //     'skills' 
         // )
         // ->hasAttached(
         //     BranchOfMedicine::factory()->count(4),

@@ -9,21 +9,20 @@
                     <div class="card">
                         <h5 class="card-header">Create Question</h5>
                         <div class="card-body">
-                            <x-forms.input name="name" label="Name" value="{{ $question->name }}" ></x-forms.input>
+                            <x-forms.input name="name" label="Name" value="{{ $question->name }}"></x-forms.input>
+                            <x-rich-editior name="content" value="{!! old('content', $question->content) !!}">
+                            </x-rich-editior>
 
-                            <h1>Here</h1>
-                           
-                            <x-rich-editior value="{!! old("content" , $question->content) !!}"></x-rich-editior>
+                            <x-rich-editior name="high_yield" label="High Yield" value="{!! old('high_yield', $question->high_yield) !!}">
+                            </x-rich-editior>
 
-                            <x-rich-editior name="high_yield" label="High Yield"
-                                value="{!! old("high_yield" , $question->high_yield) !!}"></x-rich-editior>
+                            <x-rich-editior name="main_explanation" label="Main Explanation"
+                                value="{!! old('main_explanation', $question->main_explanation) !!}">
+                            </x-rich-editior>
 
-                            <x-rich-editior name="main_explanation" label="Main Expalantion"
-                                value="{!! old("main_explanation" , $question->main_explanation )!!}"></x-rich-editior>
+                            <x-rich-editior name="topic" label="Topic" value="{!! old('topic', $question->topic) !!}">
+                            </x-rich-editior>
 
-                            
-                            <x-rich-editior name="topic" label="Topic"
-                                value="{!! old("topic" , $question->topic) !!}"></x-rich-editior>
                             {{-- ? Difficulty --}}
                             <div class="mt-4 mb-4">
                                 <label for="exampleFormControlInput1" class="form-label">Difficulty </label>
@@ -32,8 +31,8 @@
                                     <option value="easy" @selected(old('difficulty', $question->difficulty) === 'easy')>
                                         Easy
                                     </option>
-                                    <option value="meduim" @selected(old('difficulty', $question->difficulty) === 'meduim')>
-                                        Meduim
+                                    <option value="medium" @selected(old('difficulty', $question->difficulty) === 'medium')>
+                                        medium
                                     </option>
                                     <option value="hard" @selected(old('difficulty', $question->difficulty) === 'hard')>
                                         Hard
@@ -54,8 +53,8 @@
                                     <option value="short" @selected(old('length', $question->length) == 'short')>
                                         Short
                                     </option>
-                                    <option value="meduim" @selected(old('length', $question->length) == 'meduim')>
-                                        Meduim
+                                    <option value="medium" @selected(old('length', $question->length) == 'medium')>
+                                        medium
                                     </option>
                                     <option value="long" @selected(old('length', $question->length) == 'long')>
                                         Long
@@ -119,7 +118,8 @@
                                 <label for="exampleFormControlInput1" class="form-label">Reference </label>
                                 <select id="references" class="form-select select2" name="reference">
                                     @if ($oldReference)
-                                        <option value="{{ $oldReference?->id }}">{{ $oldReference?->name }}</option>
+                                        <option value="{{ $oldReference?->id }}">{{ $oldReference?->name }}
+                                        </option>
                                     @else
                                         <option value=""></option>
                                     @endif

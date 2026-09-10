@@ -2,11 +2,11 @@
 
 namespace App\Actions\Fortify;
 
-use App\Concerns\PasswordValidationRules;
-use App\Concerns\ProfileValidationRules;
-use App\Models\User;
 use Illuminate\Support\Facades\Validator;
 use Laravel\Fortify\Contracts\CreatesNewUsers;
+
+use App\Concerns\{PasswordValidationRules, ProfileValidationRules};
+use App\Models\User;
 
 class CreateNewUser implements CreatesNewUsers
 {
@@ -39,6 +39,7 @@ class CreateNewUser implements CreatesNewUsers
             'name' => $input['name'],
             'country' => $input['country'],
             'know_about_us' => $input['know_about_us'],
+            "gender" => $input["gender"],
             'image' => $imagePath,
             'year' => $input['year'],
             'graduated' => $input['graduated'] === 'true' ? true : false,

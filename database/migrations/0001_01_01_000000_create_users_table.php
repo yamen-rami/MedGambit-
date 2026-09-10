@@ -16,13 +16,13 @@ return new class extends Migration
             $table->string('name');
             $table->integer('rank')->default(1500);
             $table->integer('game_rank')->default(1500);
-            $table->text('country');
+            $table->text('country')->nullable();
             $table->string('image')->nullable();
             $table->enum('year', [1, 2, 3, 4, 5, 6])->nullable();
-            $table->string('know_about_us');
+            $table->string('know_about_us')->nullable();
             $table->enum('role', ['user', 'admin', 'super_admin'])->default('user');
             $table->boolean('graduated')->default(false);
-            $table->enum('geneder', ['male', 'female']);
+            $table->enum('gender', ['male', 'female']);
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');

@@ -33,8 +33,8 @@ class GameService
             if (! $game) {
                 $game = Game::create([
                     'status' => 'pending',
-                    'difficulty' => $difficulty ?? null,
-                    'length' => $length ?? null,
+                    'difficulty' => $difficulty ?? 'easy',
+                    'length' => $length ?? 'easy',
                     'max_players' => 2,
                     'duration' => $duration,
                     'ended_at' => null,
@@ -172,6 +172,7 @@ class GameService
         $questionIds = [];
         foreach ($attempt->answers as $answer) {
             $questionIds[] = $answer->question->id;
+            $question = $answer->question;
             if ($answer->is_correct) {
                 if (! $playedQuestionIds->contains($question->id)) {
                     $rank += $answer->question->elo_correct;
@@ -254,8 +255,8 @@ class GameService
                 'status' => 'pending',
                 'max_players' => 2,
                 'challenge_token' => Str::random(32),
-                'difficulty' => $difficulty ? $difficulty : null,
-                'length' => $length ? $length : null,
+                'difficulty' => $difficulty ? $difficulty : 'easy',
+                'length' => $length ? $length : 'short',
                 'duration' => $duration,
             ]);
             $userId = auth()->id();
@@ -332,6 +333,46 @@ class GameService
             );
         });
     }
-    public function notifications(int $current , int $player2Current){
-    }
+
+    public function getMessage(Collection $attempts): array
+{
+    $attempts->loadMissing('answers', 'user');
+
+    $player1 = $attempts->first();
+    $player2 = $attempts->last();
+
+    $player1Score = $player1->answers
+        ->where('is_correct', true)
+        ->count();
+
+    $player2Score = $player2->answers
+        ->where('is_correct', true)
+        ->count();
+
+    $player1Message = match (true) {
+        $player1Score > $player2Score => 'You Are Winning',
+        $player1Score < $player2Score => 'You Are Losing',
+        default => 'Draw',
+    };
+
+    $player2Message = match (true) {
+        $player2Score > $player1Score => 'You Are Winning',
+        $player2Score < $player1Score => 'You Are Losing',
+        default => 'Draw',
+    };
+
+    return [
+        'player1' => [
+            'user' => $player1->user,
+            'message' => $player1Message,
+            'winning' => $player1Score > $player2Score,
+        ],
+
+        'player2' => [
+            'user' => $player2->user,
+            'message' => $player2Message,
+            'winning' => $player2Score > $player1Score,
+        ],
+    ];
+}
 }

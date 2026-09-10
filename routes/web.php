@@ -12,7 +12,7 @@ Route::middleware(['auth', 'verified', admin::class])->group(function () {
     Route::view('dashboard', 'dashboard')->name('dashboard');
 });
 // ? Admin Dashboard
-// Route::middleware([admin::class, "auth"])->group(function () {
+Route::middleware([admin::class, "auth"])->group(function () {
 Route::resource('questions', QuestionsController::class);
 Route::get('options/{option}/edit', [OptionsController::class, 'edit'])->name('options.edit');
 Route::patch('options/update/{option}', [OptionsController::class, 'update'])->name('options.update');
@@ -21,10 +21,13 @@ Route::resource('speciality', SpecialtyController::class);
 Route::resource('branch', BranchOfMedicineController::class);
 Route::resource('skills', SkillsForQuestionController::class);
 Route::resource('references', ReferenceController::class);
+Route::get("users" , function (){
+    return view("user.users");
+})->name("users");
 Route::get('option/create/{id}', [OptionsController::class, 'create'])->name('option.create');
 Route::post('option/store/{id}', [OptionsController::class, 'store'])->name('option.store');
 Route::delete('option/destory/{optionId}/questionId/{questionId}', [OptionsController::class, 'destroy'])->name('option.destroy');
-// });
+});
 // ? User Dashboard
 Route::middleware('auth')->group(function () {
     Route::get('start/quiz', [QuizController::class, 'startQuiz'])->name('start.quiz');
@@ -42,10 +45,6 @@ Route::middleware('auth')->group(function () {
     // TODO Game Routes
 
     Route::get('start/game', [GameController::class, 'startGame'])->name('start.game');
-    // Route::get("friend/game/{game}" , [GameController::class , "friendGame"])->name("friendGame");
-    
-    // To Games
-    
     Route::get('friend/challenge/{challenge_token}', [GameController::class, 'friendGameCreate'])->name('friend.game.started');
     Route::get('game/friend/{challenge_token}', [GameController::class, 'friendGame'])->name('friendGame');
     Route::get('game/challenge/{challenge_token}', [GameController::class, 'gameRedirect'])->name('gameRedirect');

@@ -1368,3 +1368,21 @@ body {
         width: 34px;
     }
 }
+.toasts{
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 20px ;
+    position: fixed;
+    
+    background-color: var(--bg);
+    border: 0;
+    border-radius: 7px;
+    padding: 10px ;  
+}
+.winning{
+    color: var(--green);
+
+}
+.losing{
+    color: var(--red);
+}

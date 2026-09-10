@@ -1,7 +1,7 @@
 <?php
 
 use App\Events\GameFinished;
-use App\Events\{playerAnswered, PlayerReconnected};
+use App\Events\{playerAnswered, PlayerReconnected, GameNotifications};
 use App\Models\Game;
 use App\Models\GameAnswers;
 use App\Models\Option;
@@ -14,7 +14,7 @@ use Livewire\Component;
 
 new class extends Component {
     public $game = null;
-
+    public bool $winner;
     public $current;
 
     public $loading = true;
@@ -22,7 +22,7 @@ new class extends Component {
     public $progress = 0;
 
     public array $answers = [];
-
+    public string $message = '';
     public $attempt;
 
     public $attempts;
@@ -37,9 +37,10 @@ new class extends Component {
 
     public $finished = false;
     public $disconnected_at;
-
+    public $userId;
     public function mount($gameId)
     {
+        $this->userId = auth()->id();
         $this->gameId = $gameId;
         $this->game = Game::find($gameId);
         if (!$this->game) {
@@ -116,6 +117,9 @@ new class extends Component {
         if (!$this->game) {
             return;
         }
+        if (!$this->game->attempts) {
+            return;
+        }
 
         $question = $this->game
             ->questions()
@@ -139,6 +143,15 @@ new class extends Component {
         );
 
         $this->answers[$questionId] = $optionId;
+        if (in_array(count($this->answers), [5, 10, 15])) {
+            $service = new GameService();
+            $notifications = $service->getMessage($this->game->attempts);
+
+            GameNotifications::dispatch($notifications['player1']['user'], $notifications['player1']['message'], $notifications['player1']['winning']);
+
+            GameNotifications::dispatch($notifications['player2']['user'], $notifications['player2']['message'], $notifications['player2']['winning']);
+        }
+
         playerAnswered::dispatch(auth()->id(), $this->gameId);
     }
     public function playerDisconnected($userId = null)
@@ -235,6 +248,13 @@ new class extends Component {
             $this->player2 = $players[1]->user;
         }
         $this->loading = false;
+    }
+    #[On('echo-private:user.{userId},.user.message')]
+    public function getMessage($event)
+    {
+        $this->winner = $event['winner'];
+        $this->message = $event['message'];
+        $this->dispatch('game-message-received');
     }
 
     #[On('echo-private:playerAnswerd.{gameId},.game.progress')]
@@ -547,11 +567,13 @@ new class extends Component {
     @else
         {{-- ===================== CONTENT ===================== --}}
         <div class="content-grid">
+
             {{-- ===================== CENTER ===================== --}}
             <section class="battle-col">
                 <div class="alert alert-danger bg-danger border border-0 text-white" role="alert" wire:offline>
                     You Are Offline
                 </div>
+
                 {{-- ===================== VS CARD ===================== --}}
                 <div class="vs-card">
                     <div class="vs-top">
@@ -567,8 +589,56 @@ new class extends Component {
                             </div>
                         </div>
 
-                        <div class="score-mid">
+                        <div class="score-mid" style="position: relative">
+
                             <span class="vs-pill">VS</span>
+                            @if ($this->message)
+                                <div id="game-message"
+                                    class="toasts text-center {{ $this->winner ? 'text-success' : 'text-danger' }}  my-2"
+                                    x-data="{
+                                        messageTimer: null,
+                                    
+                                        init() {
+                                            this.$watch('$wire.message', (message) => {
+                                                clearTimeout(this.messageTimer);
+                                    
+                                                if (!message) {
+                                                    return;
+                                                }
+                                    
+                                                this.messageTimer = setTimeout(() => {
+                                                    $wire.set('message', '');
+                                                }, 500);
+                                            });
+                                        }
+                                    }">
+                                    <div>
+                                        @if ($this->winner)
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                                viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                                class="lucide lucide-podium">
+                                                <path d="M12 6V2h-1" />
+                                                <path
+                                                    d="M9 15a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v5a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1v-3a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1" />
+                                                <path d="M9 21V11a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v10" />
+                                            </svg>
+                                        @else
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                                viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                                class="lucide lucide-circle-x">
+                                                <circle cx="12" cy="12" r="10" />
+                                                <path d="m15 9-6 6" />
+                                                <path d="m9 9 6 6" />
+                                            </svg>
+                                        @endif
+                                    </div>
+                                    <div>
+                                        {{ $this->message }}
+                                    </div>
+                                </div>
+                            @endif
                         </div>
 
                         <div class="player player-right">
@@ -889,6 +959,7 @@ new class extends Component {
 
         </aside>
 
+
         {{-- ===================== FOOTER ===================== --}}
         <footer class="footer">
             <i class="fa-solid fa-shield-halved"></i>
@@ -912,7 +983,16 @@ new class extends Component {
                         '<i class="fa-solid fa-sun"></i>';
                 });
             }
+            $wire.on('game-message-received', () => {
+                clearTimeout(window.gameMessageTimer);
+
+                window.gameMessageTimer = setTimeout(() => {
+                    $wire.set('message', '');
+                }, 3000);
+            });
+
             let gameId = @js($this->gameId);
+
 
             window.Echo.join(`presence-game.${gameId}`)
                 .here((users) => {
