@@ -312,56 +312,74 @@ new class extends Component {
         <aside class="side-col">
             {{-- ===================== BATTLE STATUS ===================== --}}
             <div class="panel">
-                <div class="panel-title-row">
-                    <span class="panel-title"> Battle Status </span>
+                    <div class="panel-title-row" x-data="{ online: navigator.onLine }" x-init="window.addEventListener('online', () => (online = true));
+                    window.addEventListener('offline', () => (online = false));">
+                        <span class="panel-title">Battle Status</span>
 
-                    <span class="live-pill">
-                        <span class="live-dot"></span>
+                        <span class="live-pill">
+                            <template x-if="online">
+                                <span class="flex items-center gap-2">
+                                    <span class="live-dot"></span>
+                                    <span>Live</span>
+                                </span>
+                            </template>
 
-                        Live
-                    </span>
-                </div>
-
-                {{-- Battle Type --}}
-                <div class="stat-row">
-                    <svg class="menu-icon icon-base text-primary" xmlns="http://www.w3.org/2000/svg" width="24"
-                        height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round"
-                        class="lucide lucide-circle-question-mark-icon lucide-circle-question-mark">
-                        <circle cx="12" cy="12" r="10" />
-                        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-                        <path d="M12 17h.01" />
-                    </svg>
-
-                    <div>
-                        <div class="stat-label">Battle Type</div>
-
-                        <div class="stat-value">{{ $this->count }} Questions</div>
+                            <template x-if="! online">
+                                <span class="flex items-center gap-2">
+                                    <span class="live-dot-offline"></span>
+                                    <span class="text-danger">Offline</span>
+                                </span>
+                            </template>
+                        </span>
                     </div>
-                </div>
+                    {{-- Reward --}}
+                    <div class="stat-row">
+                        <i class="fa-solid fa-trophy stat-icon"></i>
 
-                {{-- Time --}}
+                        <div>
+                            <div class="stat-label">Win Points</div>
 
-                {{-- Reward --}}
-                <div class="stat-row">
-                    <i class="fa-solid fa-trophy stat-icon"></i>
-
-                    <div>
-                        <div class="stat-label">Win Reward</div>
-
-                        <div class="stat-value">{{ $this->currentElo ?? 4 }}</div>
+                            <div class="stat-value">{{ $this->currentElo ?? 0 }}</div>
+                        </div>
                     </div>
-                </div>
-                <div class="stat-row">
-                    <i class="text-danger fa-solid fa-droplet"></i>
+                    <div class="stat-row">
+                        <svg class="text-opacity-10 text-danger" xmlns="http://www.w3.org/2000/svg" width="20"
+                            height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="4" stroke-linecap="round" stroke-linejoin="round"
+                            class="lucide lucide-arrow-down">
+                            <path d="M12 5v14" />
+                            <path d="m19 12-7 7-7-7" />
+                        </svg>
+                        <div>
+                            <div class="stat-label">Lose Points</div>
 
-                    <div>
-                        <div class="stat-label">Lose Reward</div>
-
-                        <div class="stat-value">{{ $this->currentInCorrectElo ?? 5 }}</div>
+                            <div class="stat-value">{{ $this->currentInCorrectElo ?? 0 }}</div>
+                        </div>
                     </div>
+
+
+                    {{-- Battle Type --}}
+                    <div class="stat-row">
+                        <svg class="text-warning" xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-refresh-ccw">
+                            <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                            <path d="M3 3v5h5" />
+                            <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
+                            <path d="M16 16h5v5" />
+                        </svg>
+                        <div>
+                            <div class="stat-label fw-bold " style="color: var(--text)">Frequency</div>
+
+                            <div class="stat-value">{{ $question->playedCount?->count ?? 0 }} </div>
+                        </div>
+                    </div>
+                    
+
+
+
+
                 </div>
-            </div>
 
             {{-- ===================== BATTLE PROGRESS ===================== --}}
             <div class="panel">

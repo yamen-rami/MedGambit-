@@ -185,7 +185,7 @@ new class extends Component {
                 </div>
 
                 {{-- QUESTION --}}
-                <p class="question-text">{!!   $question->content !!}</p>
+                <p class="question-text">{!! $question->content !!}</p>
 
                 {{-- OPTIONS --}}
                 <div class="options" x-data="{ activeOptionId: $wire.activeOptionId }">
@@ -291,37 +291,32 @@ new class extends Component {
 
         {{-- ===================== RIGHT SIDEBAR ===================== --}}
         <aside class="side-col">
-            <div class="panel">
+             <div class="panel">
+                    <div class="panel-title-row" x-data="{ online: navigator.onLine }" x-init="window.addEventListener('online', () => (online = true));
+                    window.addEventListener('offline', () => (online = false));">
+                        <span class="panel-title">Battle Status</span>
 
+                        <span class="live-pill">
+                            
 
-                <div class="stat-row">
-                    <svg class="text-warning" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                        stroke-linejoin="round" class="lucide lucide-refresh-ccw">
-                        <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-                        <path d="M3 3v5h5" />
-                        <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
-                        <path d="M16 16h5v5" />
-                    </svg>
-                    <div>
-                        <div class="stat-label fw-bold fs-6" style="color: var(--text)">Frequency</div>
-
-                        <div class="stat-value">{{ $question->playedCount?->count ?? 0 }} </div>
+                            <template x-if="! online">
+                                <span class="flex items-center gap-2">
+                                    <span class="live-dot-offline"></span>
+                                    <span class="text-danger">Offline</span>
+                                </span>
+                            </template>
+                        </span>
                     </div>
-                </div>
+                    {{-- Reward --}}
+                    <div class="stat-row">
+                        <i class="fa-solid fa-trophy stat-icon"></i>
 
+                        <div>
+                            <div class="stat-label">Win Points</div>
 
-
-                <div class="stat-row p-0">
-                    <i class="fa-solid fa-trophy stat-icon"></i>
-
-                    <div>
-                        <div class="stat-label fw-bold fs-6" style="color: var(--text)">Win Points</div>
-
-                        <div class="stat-value">{{ $this->currentElo ?? 4 }}</div>
+                            <div class="stat-value">{{ $this->currentElo ?? 0 }}</div>
+                        </div>
                     </div>
-                </div>
-                <div class="stat-row p-0">
                     <div class="stat-row">
                         <svg class="text-opacity-10 text-danger" xmlns="http://www.w3.org/2000/svg" width="20"
                             height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -331,12 +326,35 @@ new class extends Component {
                             <path d="m19 12-7 7-7-7" />
                         </svg>
                         <div>
-                            <div class="stat-label fw-bold fs-6" style="color: var(--text)">Lose Points </div>
-                            <div class="stat-value fw-bold fs-6">{{ $this->currentInCorrectElo ?? 5 }}</div>
+                            <div class="stat-label">Lose Points</div>
+
+                            <div class="stat-value">{{ $this->currentInCorrectElo ?? 0 }}</div>
                         </div>
                     </div>
+
+
+                    {{-- Battle Type --}}
+                    <div class="stat-row">
+                        <svg class="text-warning" xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-refresh-ccw">
+                            <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                            <path d="M3 3v5h5" />
+                            <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
+                            <path d="M16 16h5v5" />
+                        </svg>
+                        <div>
+                            <div class="stat-label fw-bold " style="color: var(--text)">Frequency</div>
+
+                            <div class="stat-value">{{ $question->playedCount?->count ?? 0 }} </div>
+                        </div>
+                    </div>
+                    
+
+
+
+
                 </div>
-            </div>
 
             {{-- ===================== BATTLE PROGRESS ===================== --}}
             <div class="panel">

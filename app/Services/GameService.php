@@ -332,4 +332,6 @@ class GameService
             );
         });
     }
+    public function notifications(int $current , int $player2Current){
+    }
 }

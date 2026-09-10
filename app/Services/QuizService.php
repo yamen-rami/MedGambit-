@@ -230,8 +230,8 @@ class QuizService
             'topic' => 'Detected Learning Quiz ',
             'type' => 'learning',
             'duration' => null,
-            'difficulty' => $difficulty,
-            'length' => $length,
+            'difficulty' => $difficulty ? $difficulty : "easy",
+            'length' => $length ? $length : "easy",
             'questions_number' => $count ?? 3,
         ]);
         //
