@@ -2,17 +2,19 @@
 
 use App\Models\User;
 use Livewire\Component;
-use Livewire\Attributes\Computed;
+use Livewire\Attributes\{Computed, On};
 use Livewire\WithPagination;
 use Livewire\WithFileUploads;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\{DB, Storage};
+
 new class extends Component {
     use WithPagination;
     use WithFileUploads;
     public string $search = '';
-
+    public $selectedUser;
     public string $direction = 'desc';
-    public $image ; 
+    public $image;
     public ?string $name = null;
     public ?string $email = null;
     public ?string $password = null;
@@ -165,7 +167,7 @@ new class extends Component {
             'createGender' => ['required', Rule::in(['male', 'female'])],
             'createGraduated' => ['required'],
         ]);
-        $validated['createGraduated'] = $validated["createGraduated"] == "false" ? false : true ;
+        $validated['createGraduated'] = $validated['createGraduated'] == 'false' ? false : true;
         $imagePath = null;
         if ($this->image) {
             $imagePath = $this->image->store('users', 'public');
@@ -189,10 +191,63 @@ new class extends Component {
 
         $this->dispatch('close-modal');
     }
-    public function delete(User $user){
-        $user->delete();
-        flash()->success("User Has Deleted Succefully");
+    public function update()
+    {
+        // $this->authorize('update', auth()->user());
+        $validated = $this->validate([
+            'name' => ['nullable', 'string', 'min:2', 'max:100'],
+            'email' => ['nullable', 'email', Rule::unique('users', 'email')->ignore($this->selectedUser->id)],
+            'password' => ['nullable', 'min:8', 'max:20'],
+            'image' => ['nullable', 'image', 'max:2048'],
+            'createYear' => ['nullable', 'required_if:createGraduated,false', 'integer'],
+            'createRole' => ['nullable', Rule::in(['user', 'admin', 'super_admin'])],
+            'createGender' => ['nullable', Rule::in(['male', 'female'])],
+            'createGraduated' => ['nullable', "prohibited_if:createYear,null"],
+        ]);
+        $validated['year'] = $validated['createYear'];
+        $validated['gender'] = $validated['createGender'];
+        $validated['role'] = $validated['createRole'];
+        $validated['graduated'] = $validated['createGraduated'];
+        unset($validated['createYear'], $validated['createGender'], $validated['createRole'], $validated['createGraduated']);
+        if (!$this->selectedUser) {
+            return;
+        }
+        if ($this->password) {
+            $validated['password'] = Hash::make($this->password);
+        } else {
+            unset($validated['password']);
+        }
+        $validated['graduated'] = $validated['graduated'] == 'false' ? false : true;
+        $imagePath = null;
+        if (isset($this->selectedUser->image)) {
+            if (isset($validated['image'])) {
+                $imagePath = $this->image->store('users', 'public');
+            }
+            Storage::disk('public')->delete($oldImage);
+        }
+        $validated['image'] = $imagePath;
+        $this->selectedUser->update($validated);
+        flash()->success('User has updated');
         $this->resetPage();
+    }
+    public function delete(User $user)
+    {
+        $user->delete();
+        flash()->success('User Has Deleted Succefully');
+        $this->resetPage();
+    }
+    #[On('userSelected')]
+    public function userSelected($id)
+    {
+        $this->selectedUser = User::findOrFail($id);
+        $this->name = $this->selectedUser->name;
+        $this->email = $this->selectedUser->email;
+            $this->name = $this->selectedUser->name;
+    $this->email = $this->selectedUser->email;
+    $this->createRole = $this->selectedUser->role;
+    $this->createGender = $this->selectedUser->gender;
+    $this->createYear = $this->selectedUser->year;
+    $this->createGraduated = $this->selectedUser->graduated ? 'true' : 'false';
     }
 };
 ?>
@@ -489,7 +544,7 @@ new class extends Component {
                         <div class="modal-dialog">
                             <div class="modal-content">
                                 <div class="modal-header">
-                                    <h1 class="modal-title fs-5" id="staticBackdropLabel">Modal title</h1>
+                                    <h1 class="modal-title fs-5" id="staticBackdropLabel">Create User</h1>
                                     <button type="button" class="btn-close" data-bs-dismiss="modal"
                                         aria-label="Close"></button>
                                 </div>
@@ -566,8 +621,7 @@ new class extends Component {
                                     <button type="button" class="btn btn-danger"
                                         data-bs-dismiss="modal">Cancel</button>
                                     <button type="button" class="btn btn-primary" wire:click='create'\
-                                      data-bs-dismiss="modal"
-                                    >Create
+                                        data-bs-dismiss="modal">Create
                                     </button>
                                 </div>
                             </div>
@@ -858,7 +912,10 @@ new class extends Component {
 
                                     <div class="dropdown-menu dropdown-menu-end">
 
-                                        <button type="button" class="dropdown-item">
+                                        <button type="button" class="dropdown-item" data-bs-toggle="modal"
+                                            data-bs-target="#staticBackdropEdit"
+                                            wire:click='$dispatch("userSelected" , {id: {{ $user->id }}})'>
+
                                             <i class="icon-base ti tabler-pencil me-2"></i>
                                             Edit
                                         </button>
@@ -870,7 +927,8 @@ new class extends Component {
 
                                         <div class="dropdown-divider"></div>
 
-                                        <button wire:confirm wire:click='delete({{ $user->id }})' type="button" class="dropdown-item text-danger">
+                                        <button wire:confirm wire:click='delete({{ $user->id }})' type="button"
+                                            class="dropdown-item text-danger">
                                             <i class="icon-base ti tabler-trash me-2"></i>
                                             Delete
                                         </button>
@@ -955,7 +1013,95 @@ new class extends Component {
                     </div>
 
                 </div>
+                <div class="modal fade" id="staticBackdropEdit" data-bs-backdrop="static" data-bs-keyboard="false"
+                    tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h1 class="modal-title fs-5" id="staticBackdropLabel">{{ $selectedUser?->name }}</h1>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                    aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <x-forms.input name="name" value="{{ $selectedUser?->name }}" label="Name"
+                                    wire:model="name"></x-forms.input>
+                                <x-forms.input type="email" value={{ $selectedUser?->email }} name="email"
+                                    label="Email" wire:model="email"></x-forms.input>
+                                <div class="my-3">
+                                    <label for="gender">Role</label>
+                                    <select name="role" wire:model='createRole' class="form-select" id="gender">
+                                        <option value="">Select Role</option>
+                                        <option value="user" @selected($selectedUser?->role === 'user')>User</option>
+                                        <option value="admin" @selected($selectedUser?->role === 'admin')>Admin</option>
+                                        <option value="super_admin" @selected($selectedUser?->role === 'super_admin')>Super Admin</option>
+                                    </select>
+                                    @error('createRole')
+                                        <p class="text-danger">{{ $message }}</p>
+                                    @enderror
+                                </div>
+                                <div class="my-3">
+                                    <label for="gender">Graduated</label>
+                                    <select name="gender" wire:model='createGraduated' class="form-select"
+                                        id="gender">
+                                        <option value=""> Graduated</option>
+                                        <option value="true" @selected($selectedUser?->graduated === 'true')>Yes</option>
+                                        <option value="false" @selected($selectedUser?->graduated === 'false')>No</option>
+                                    </select>
+                                    @error('createGraduated')
+                                        <p class="text-danger">{{ $message }}</p>
+                                    @enderror
+                                </div>
+                                <div class="my-3">
+                                    <label for="gender">Year</label>
+                                    <select name="year" wire:model='createYear' class="form-select" id="gender">
+                                        <option value=""> Year</option>
+                                        <option value="1" @selected($selectedUser?->year === '1')>Year 1</option>
+                                        <option value="2" @selected($selectedUser?->year === '2')>Year 2</option>
+                                        <option value="3" @selected($selectedUser?->year === '3')>Year 3</option>
+                                        <option value="4" @selected($selectedUser?->year === '4')>Year 4</option>
+                                        <option value="5" @selected($selectedUser?->year === '5')>Year 5</option>
+                                        <option value="6" @selected($selectedUser?->year === '6')>Year 6</option>
+                                    </select>
+                                    @error('createYear')
+                                        <p class="text-danger">{{ $message }}</p>
+                                    @enderror
+                                </div>
+                                <div class="my-1">
+                                    <label for="gender">Gender</label>
+                                    <select name="gender" wire:model='createGender' class="form-select" id="gender">
+                                        <option value="">Select Gender</option>
+                                        <option value="male" @selected($selectedUser?->gender === 'male')>Male</option>
+                                        <option value="female" @selected($selectedUser?->gender === 'female')>female</option>
+                                    </select>
+                                    @error('createGender')
+                                        <p class="text-danger">{{ $message }}</p>
+                                    @enderror
+                                </div>
+                                <div>
+                                    <img width="200px" height="200px" src="{{ asset($selectedUser?->image) }}"
+                                        alt="Here ">
+                                </div>
+                                <div class="my-2">
+                                    <label for="image">Image</label>
+                                    <input type="file" wire:model='image' name="image">
+                                </div>
+                                @error('image')
+                                    <p class="text-danger">{{ $message }}</p>
+                                @enderror
+                                <x-forms.input type="password" name="password" label="Password"
+                                    wire:model="password"></x-forms.input>
 
+                            </div>
+
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Cancel</button>
+                                <button type="button" class="btn btn-primary" wire:click='update'
+                                    data-bs-dismiss="modal">Update
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
         </div>

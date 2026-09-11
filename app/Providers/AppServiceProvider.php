@@ -4,10 +4,12 @@ namespace App\Providers;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Pagination\Paginator;
-use Illuminate\Support\Facades\{DB, Date, URL};
+use Illuminate\Support\Facades\{DB, Date, Gate, URL};
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 use Carbon\CarbonImmutable;
+
+use App\Models\User;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -24,9 +26,13 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        
         if ($this->app->environment('production')) {
             URL::forceScheme('https');
         }
+        Gate::define('is_admin' , function (User $user) {
+            return $user->role == "admin" || $user->role === "super_admin";
+        });
         $this->configureDefaults();
         Paginator::useBootstrapFive();
         Model::preventLazyLoading();

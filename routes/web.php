@@ -3,7 +3,7 @@
 use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\{ApiController, BranchOfMedicineController, GameController, OptionsController, QuestionsController, QuizController, ReferenceController, SkillsForQuestionController, SpecialtyController, UserController};
-use App\Http\Middleware\admin;
+use App\Http\Middleware\{SuperAdmin, admin};
 use App\Models\Game;
 
 Route::view('/', 'home')->name('home');
@@ -11,22 +11,25 @@ Route::view('/', 'home')->name('home');
 Route::middleware(['auth', 'verified', admin::class])->group(function () {
     Route::view('dashboard', 'dashboard')->name('dashboard');
 });
+Route::middleware(["auth", SuperAdmin::class]) -> group(function (){
+    Route::get('users', function () {
+        return view('user.users');
+    })->name('users');
+});
 // ? Admin Dashboard
-Route::middleware([admin::class, "auth"])->group(function () {
-Route::resource('questions', QuestionsController::class);
-Route::get('options/{option}/edit', [OptionsController::class, 'edit'])->name('options.edit');
-Route::patch('options/update/{option}', [OptionsController::class, 'update'])->name('options.update');
-Route::resource('quizez', QuizController::class);
-Route::resource('speciality', SpecialtyController::class);
-Route::resource('branch', BranchOfMedicineController::class);
-Route::resource('skills', SkillsForQuestionController::class);
-Route::resource('references', ReferenceController::class);
-Route::get("users" , function (){
-    return view("user.users");
-})->name("users");
-Route::get('option/create/{id}', [OptionsController::class, 'create'])->name('option.create');
-Route::post('option/store/{id}', [OptionsController::class, 'store'])->name('option.store');
-Route::delete('option/destory/{optionId}/questionId/{questionId}', [OptionsController::class, 'destroy'])->name('option.destroy');
+Route::middleware([admin::class, 'auth'])->group(function () {
+    Route::resource('questions', QuestionsController::class);
+    Route::get('options/{option}/edit', [OptionsController::class, 'edit'])->name('options.edit');
+    Route::patch('options/update/{option}', [OptionsController::class, 'update'])->name('options.update');
+    Route::resource('quizez', QuizController::class);
+    Route::resource('speciality', SpecialtyController::class);
+    Route::resource('branch', BranchOfMedicineController::class);
+    Route::resource('skills', SkillsForQuestionController::class);
+    Route::resource('references', ReferenceController::class);
+    
+    Route::get('option/create/{id}', [OptionsController::class, 'create'])->name('option.create');
+    Route::post('option/store/{id}', [OptionsController::class, 'store'])->name('option.store');
+    Route::delete('option/destory/{optionId}/questionId/{questionId}', [OptionsController::class, 'destroy'])->name('option.destroy');
 });
 // ? User Dashboard
 Route::middleware('auth')->group(function () {
@@ -53,7 +56,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('config/game', [GameController::class, 'config'])->name('config.game');
     Route::get('waiting/{game}', [GameController::class, 'waiting'])->name('waiting');
-    Route::livewire("/problems" , 'problems')->name("problems");
+    Route::livewire('/problems', 'problems')->name('problems');
 });
 Route::get('user/profile/{user}', [UserController::class, 'profile'])->name('user.profile');
 Route::get('get/branches', [ApiController::class, 'branches'])
