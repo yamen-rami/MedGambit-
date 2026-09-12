@@ -9,9 +9,9 @@ use App\Services\QuizService;
 
 class QuizController extends Controller
 {
-    //
+    //'
     public function __construct(protected QuizService $quizService) {}
-
+    
     public function index(Request $request)
     {
         $query = Quiz::query()->with(['questions', 'questions.options']);

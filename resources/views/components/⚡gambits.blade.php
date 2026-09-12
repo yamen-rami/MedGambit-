@@ -21,7 +21,15 @@ new class extends Component {
     public string $direction = 'desc';
     public string $sort = 'created_at';
     public int $count = 20;
-
+    #[Computed]
+    public function userPlayedQuestions()
+    {
+        return auth()->user()->playedQuestions;
+    }
+    public function isPlayed($questionId)
+    {
+        return $this->userPlayedQuestions->contains($questionId);
+    }
     #[Computed]
     public function questions()
     {
@@ -120,14 +128,9 @@ new class extends Component {
 
     public function tryQuestion(int $questionId)
     {
-        $this->validate([
-            'selectedQuestions' => ['required'],
-        ]);
-        $questions = Questions::whereIn('id', $this->selectedQuestions)->get();
+        $question = Questions::where('id' , $questionId)->get();
         $service = new App\Services\QuizService();
-        $quiz = $service->learningQuiz(
-            questions: $questions ,
-        );
+        $quiz = $service->learningQuiz(questions: $question);
         return redirect()->route('start.learning.quiz', $quiz);
     }
     public $questionId;
@@ -136,20 +139,15 @@ new class extends Component {
     {
         $this->validate([
             'quizName' => ['required', 'string', 'min:2', 'max:50'],
-            "selectedQuestions" => ['required', 'array' , "max:20"],
+            'selectedQuestions' => ['required', 'array', 'max:20'],
         ]);
     }
     public function learningQuiz()
     {
-        // $this->validateQuiz();
-        $this->validate([
-            'quizName' => ['required', 'string', 'min:2', 'max:50'],
-            "selectedQuestions" => ['required'],
-        ]);
-        dd("here");
+        $this->validateQuiz();
         $questions = Questions::whereIn('id', $this->selectedQuestions)->get();
         $service = new App\Services\QuizService();
-        $quiz = $service->learningQuiz(questions: $questions, name:$this->quizName);
+        $quiz = $service->learningQuiz(questions: $questions, name: $this->quizName);
         return redirect()->route('start.learning.quiz', $quiz);
     }
     public function examQuiz()
@@ -157,9 +155,13 @@ new class extends Component {
         $this->validateQuiz();
         $questions = Questions::whereIn('id', $this->selectedQuestions)->get();
         $service = new App\Services\QuizService();
-        $quiz = $service->detectedQuiz(questions: $questions, name:$this->quizName);
+        $quiz = $service->detectedQuiz(questions: $questions, name: $this->quizName);
 
         return redirect()->route('start.detecated.quiz', $quiz);
+    }
+    public function clearSelected()
+    {
+        $this->selectedQuestions = [];
     }
 };
 ?>
@@ -167,6 +169,21 @@ new class extends Component {
 <div>
     @push('style')
         <style>
+            .quiz-actions-grid {
+                display: grid;
+                grid-template-columns: 1fr;
+                /* stacked by default (mobile) */
+                gap: 1rem;
+            }
+
+            @media (min-width: 768px) {
+
+                /* Bootstrap's md breakpoint */
+                .quiz-actions-grid {
+                    grid-template-columns: 1fr 1fr;
+                }
+            }
+
             .gambits-filter-dropdown.position-absolute {
                 position: absolute !important;
                 /* top: 6rem; */
@@ -289,11 +306,11 @@ new class extends Component {
 
         {{-- Header --}}
         <div class="card-header border-bottom">
+
+
             <div class="d-flex flex-column flex-xl-row justify-content-center align-items-xl-center gap-5">
 
                 {{-- Title --}}
-
-
 
                 {{-- Actions --}}
                 <div class="d-flex align-items-center gap-2">
@@ -610,20 +627,33 @@ new class extends Component {
 
             </div>
         @else
-            <div class="px-4 py-3 border-bottom">
+            <div>
+                <div class="px-4 py-3 border-bottom">
 
-                <div class="d-flex align-items-center gap-2 text-muted">
+                    <div class="d-flex align-items-center gap-2 text-muted">
 
-                    <i class="icon-base ti tabler-adjustments-horizontal"></i>
+                        <i class="icon-base ti tabler-adjustments-horizontal"></i>
 
-                    <small>
-                        No filters applied
-                    </small>
+                        <small>
+                            No filters applied
+                        </small>
+
+                    </div>
 
                 </div>
+                <div role="alert" class="alert alert-primary m-0 p-0 py-2 rounded-0 ">
+                    <div>
 
-            </div>
+                        <span class="px-5">
+                            <span>
+                                <i class="menu-icon fa-solid fa-lightbulb"></i>
+                            </span>
+                            Narrow the field. Sharpen your skills.
+                        </span>
+                    </div>
 
+
+                </div>
         @endif
 
 
@@ -631,19 +661,28 @@ new class extends Component {
         {{-- Table --}}
         <div class="table-responsive">
             @if (count($selectedQuestions))
-                <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex justify-content-between align-items-center py-2 px-4">
 
                     <div class="px-4 py-2  text-primary fw-semibold">
                         <span class="gambits-selected-count">{{ count($selectedQuestions) }} selected</span>
                     </div>
-                    <div class="px-4 py-2 ">
-
+                    <div class="quiz-actions-grid">
                         <button type="button" data-bs-toggle="modal" data-bs-target="#staticBackdrop"
-                            class="btn btn-sm btn-outline-primary">
+                            class="btn btn-primary">
                             <i class="icon-base ti tabler-player-play me-1"></i>
-                            Start A Quiz 
+                            Start A Quiz
+                        </button>
+                        <button class="btn btn-dark" wire:click="clearSelected">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x">
+                                <path d="M18 6 6 18" />
+                                <path d="m6 6 12 12" />
+                            </svg>
+                            Clear Selected
                         </button>
                     </div>
+
                 </div>
             @endif
             <table class="table table-hover align-middle mb-0 gambits-table">
@@ -674,7 +713,8 @@ new class extends Component {
                         <th>
                             Length
                         </th>
-                        <th>Played Count</th>
+                        <th class="text-start">Played Time</th>
+                        <th class="text-start">Played </th>
 
                         <th class="text-start">
                             Actions
@@ -743,6 +783,35 @@ new class extends Component {
                                 {{ $question->playedCount?->count ?? 0 }}
                             </td>
 
+                            <td>
+                                @if ($this->isPlayed($question->id))
+                                    <svg class="text-success" xmlns="http://www.w3.org/2000/svg" width="24"
+                                        height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                        class="lucide lucide-book-open-check">
+                                        <path d="M12 5v16" />
+                                        <path d="m16 12 2 2 4-4" />
+                                        <path
+                                            d="M22 6V5a2 2 0 00-1.999-2L16 3.002A5 5 0 0012 5a5 5 0 00-4-2H4a2 2 0 00-2 2v12a2 2 0 001.999 2H8a5 5 0 014 2 5 5 0 014-2h4.001A2 2 0 0022 17v-1.344" />
+                                    </svg>
+                                @else
+                                    <svg class="text-danger" xmlns="http://www.w3.org/2000/svg" width="24"
+                                        height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                        class="lucide lucide-book-open-x">
+
+                                        <path d="M12 5v16" />
+
+                                        <g transform="translate(0 -4)">
+                                            <path d="m16 12 6 6" />
+                                            <path d="m22 12-6 6" />
+                                        </g>
+
+                                        <path
+                                            d="M22 6V5a2 2 0 00-1.999-2L16 3.002A5 5 0 0012 5a5 5 0 00-4-2H4a2 2 0 00-2 2v12a2 2 0 001.999 2H8a5 5 0 014 2 5 5 0 014-2h4.001A2 2 0 0022 17v-1.344" />
+                                    </svg>
+                                @endif
+                            </td>
 
                             <div class="modal fade" id="staticBackdrop" data-bs-backdrop="static"
                                 data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel"
@@ -755,14 +824,17 @@ new class extends Component {
                                                 aria-label="Close"></button>
                                         </div>
                                         <div class="modal-body">
-                                            <x-forms.input name="quizName" x-model="quizName" label="Quiz Name"></x-forms.input>
+                                            <x-forms.input name="quizName" wire:model="quizName"
+                                                label="Quiz Name"></x-forms.input>
 
                                             <p>Quiz Name Will be saved on your profile </p>
                                         </div>
                                         <div class="modal-footer">
                                             <div class="d-flex justify-content-between  gap-3">
-                                                <button type="button" class="btn btn-success" wire:click='learningQuiz'>Learning Quiz</button>
-                                                <button class="btn btn-warning" wire:click='examQuiz'>Exam Mode </button>
+                                                <button type="button" class="btn btn-success"
+                                                    wire:click='learningQuiz'>Learning Quiz</button>
+                                                <button class="btn btn-warning" wire:click='examQuiz'>Exam Mode
+                                                </button>
                                             </div>
                                             <div class="d-block">
                                                 <p><span class="text-danger my-2">Exam Mode</span> Will affect Your Elo
@@ -779,16 +851,14 @@ new class extends Component {
                             <td class="gambits-actions-cell" data-label="Actions">
                                 <div class="d-flex justify-content-end gap-2 gambits-actions">
 
-                                    <button type="button" data-bs-toggle="modal" data-bs-target="#staticBackdrop"
-                                        wire:click="$dispatch('tryQuestion', {questionId: {{ $question->id }}})"
+                                    <button type="button" 
+                                        wire:click="tryQuestion({{ $question->id }})"
                                         class="btn btn-sm btn-outline-primary">
                                         <i class="icon-base ti tabler-player-play me-1"></i>
                                         Try
                                     </button>
 
-                                    <button type="button" class="btn btn-sm btn-icon btn-text-secondary">
-                                        <i class="icon-base ti tabler-dots-vertical"></i>
-                                    </button>
+
 
                                 </div>
                             </td>
@@ -801,119 +871,7 @@ new class extends Component {
                     @endforelse
 
 
-                    @if (false)
-                        {{-- Question 2 --}}
-                        <tr>
 
-                            <td>
-                                <span class="text-muted">
-                                    #1025
-                                </span>
-                            </td>
-
-                            <td>
-                                <div>
-                                    <h6 class="mb-1">
-                                        Which receptor is primarily responsible for the effects of adrenaline?
-                                    </h6>
-
-                                    <small class="text-muted">
-                                        Pharmacology
-                                    </small>
-                                </div>
-                            </td>
-
-                            <td>
-                                <span class="badge bg-label-success">
-                                    Easy
-                                </span>
-                            </td>
-
-                            <td>
-                                <span class="badge bg-label-success">
-                                    Short
-                                </span>
-                            </td>
-
-                            <td>
-                                <span class="text-muted">
-                                    PassMedicine
-                                </span>
-                            </td>
-
-                            <td>
-                                <div class="d-flex justify-content-end gap-2">
-
-                                    <button type="button" class="btn btn-sm btn-outline-primary">
-                                        <i class="icon-base ti tabler-player-play me-1"></i>
-                                        Try Question
-                                    </button>
-
-                                    <button type="button" class="btn btn-sm btn-icon btn-text-secondary">
-                                        <i class="icon-base ti tabler-dots-vertical"></i>
-                                    </button>
-
-                                </div>
-                            </td>
-
-                        </tr>
-
-                        {{-- Question 3 --}}
-                        <tr>
-
-                            <td>
-                                <span class="text-muted">
-                                    #1026
-                                </span>
-                            </td>
-
-                            <td>
-                                <div>
-                                    <h6 class="mb-1">
-                                        What is the mechanism of action of ACE inhibitors?
-                                    </h6>
-
-                                    <small class="text-muted">
-                                        Pharmacology
-                                    </small>
-                                </div>
-                            </td>
-
-                            <td>
-                                <span class="badge bg-label-danger">
-                                    Hard
-                                </span>
-                            </td>
-
-                            <td>
-                                <span class="badge bg-label-primary">
-                                    Long
-                                </span>
-                            </td>
-
-                            <td>
-                                <span class="text-muted">
-                                    MRCP PasTest
-                                </span>
-                            </td>
-
-                            <td>
-                                <div class="d-flex justify-content-end gap-2">
-
-                                    <button type="button" class="btn btn-sm btn-outline-primary">
-                                        <i class="icon-base ti tabler-player-play me-1"></i>
-                                        Try Question
-                                    </button>
-
-                                    <button type="button" class="btn btn-sm btn-icon btn-text-secondary">
-                                        <i class="icon-base ti tabler-dots-vertical"></i>
-                                    </button>
-
-                                </div>
-                            </td>
-
-                        </tr>
-                    @endif
 
                 </tbody>
 

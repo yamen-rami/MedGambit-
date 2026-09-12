@@ -195,7 +195,7 @@ class QuizService
         ];
     }
 
-    public function detectedQuiz(Collection $questions,?string $name = null , $length, $count, $difficulty, ?int $duration)
+    public function detectedQuiz(Collection $questions,?string $name = null , $length = null, $count = null, $difficulty = null, ?int $duration = null)
     {
         // Start A Quiz
         // give the quiz type detected
