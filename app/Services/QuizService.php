@@ -195,16 +195,16 @@ class QuizService
         ];
     }
 
-    public function detectedQuiz(Collection $questions, $length, $count, $difficulty, ?int $duration)
+    public function detectedQuiz(Collection $questions,?string $name = null , $length, $count, $difficulty, ?int $duration)
     {
         // Start A Quiz
         // give the quiz type detected
         // Start A Quiz
         $quiz = Quiz::create([
-            'name' => 'Detected Topic',
+            'name' => $name ?? 'Detected Topic',
             'topic' => 'Detected Topic',
             'type' => 'detected',
-            'duration' => $duration ?? null,
+            'duration' => $duration ? $duration : null,
             'difficulty' => $difficulty ? $difficulty : "easy",
             'length' => $length ? $length : "short",
             'questions_number' => $count ?? 3,
@@ -223,10 +223,10 @@ class QuizService
         return $quiz;
     }
 
-    public function learningQuiz(Collection $questions, $length = 'short', $count = 3, $difficulty = 'easy')
+    public function learningQuiz(Collection $questions, ?string $name = null , $length = 'short', $count = 3, $difficulty = 'easy')
     {
         $quiz = Quiz::create([
-            'name' => 'Detected Learning Quiz ',
+            'name' => $name ?? 'Detected Learning Quiz ',
             'topic' => 'Detected Learning Quiz ',
             'type' => 'learning',
             'duration' => null,

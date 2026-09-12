@@ -16,9 +16,9 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // BranchOfMedicine::factory(100)->create();
-        // Specialty::factory(100)->create();
-        // SkillsForQuestion::factory(100)->create();
+        BranchOfMedicine::factory(100)->create();
+        Specialty::factory(100)->create();
+        SkillsForQuestion::factory(100)->create();
 
         Questions::factory(1000)->create();
         User::factory()->create([

@@ -1,7 +1,7 @@
 <?php
 
 use Livewire\Component;
-use Livewire\Attributes\Computed;
+use Livewire\Attributes\{Computed, On};
 use Livewire\WithPagination;
 use App\Models\Questions;
 new class extends Component {
@@ -10,12 +10,14 @@ new class extends Component {
     protected string $paginationTheme = 'bootstrap';
 
     public string $search = '';
+    public string $quizName = '';
     public string $length = '';
     public array $references = [];
     public string $difficulty = '';
     public array $branches = [];
     public array $sp = [];
     public array $skills = [];
+    public array $selectedQuestions = [];
     public string $direction = 'desc';
     public string $sort = 'created_at';
     public int $count = 20;
@@ -35,25 +37,16 @@ new class extends Component {
         $sortColumn = $allowedSorts[$this->sort] ?? 'created_at';
 
         return Questions::query()
-            ->with(['branches', 'skills', 'specialties', 'reference'])
+            ->with(['branches', 'skills', 'specialties', 'reference', 'playedCount'])
             ->when($this->search !== '', function ($query) {
                 $query->whereFullText(['name', 'content', 'topic'], $this->search);
             })
-            ->when($this->length !== '', fn ($query) => $query->where('length', $this->length))
-            ->when($this->difficulty !== '', fn ($query) => $query->where('difficulty', $this->difficulty))
-            ->when($this->sp, fn ($query) => $query->whereHas(
-                'specialties',
-                fn ($query) => $query->whereIn('specialties.id', $this->sp)
-            ))
-            ->when($this->branches, fn ($query) => $query->whereHas(
-                'branches',
-                fn ($query) => $query->whereIn('branch_of_medicines.id', $this->branches)
-            ))
-            ->when($this->skills, fn ($query) => $query->whereHas(
-                'skills',
-                fn ($query) => $query->whereIn('skills_for_questions.id', $this->skills)
-            ))
-            ->when($this->references, fn ($query) => $query->whereIn('reference_id', $this->references))
+            ->when($this->length !== '', fn($query) => $query->where('length', $this->length))
+            ->when($this->difficulty !== '', fn($query) => $query->where('difficulty', $this->difficulty))
+            ->when($this->sp, fn($query) => $query->whereHas('specialties', fn($query) => $query->whereIn('specialties.id', $this->sp)))
+            ->when($this->branches, fn($query) => $query->whereHas('branches', fn($query) => $query->whereIn('branch_of_medicines.id', $this->branches)))
+            ->when($this->skills, fn($query) => $query->whereHas('skills', fn($query) => $query->whereIn('skills_for_questions.id', $this->skills)))
+            ->when($this->references, fn($query) => $query->whereIn('reference_id', $this->references))
             ->orderBy($sortColumn, $direction)
             ->orderBy('id', $direction)
             ->paginate($this->count);
@@ -78,68 +71,229 @@ new class extends Component {
         $this->dispatch('gambits-filters-cleared');
     }
 
-    public function tryQuestion(int $questionId): void
+    public function setLength(string $length): void
     {
+        $this->length = in_array($length, ['', 'short', 'medium', 'long'], true) ? $length : '';
+        $this->resetPage();
+    }
+
+    public function setDifficulty(string $difficulty): void
+    {
+        $this->difficulty = in_array($difficulty, ['', 'easy', 'medium', 'hard', 'nerd'], true) ? $difficulty : '';
+        $this->resetPage();
+    }
+
+    public function updatedSelectedQuestions($value): void
+    {
+        $this->selectedQuestions = $this->normalizeIds($value);
+    }
+
+    public function toggleSelectAllVisible(): void
+    {
+        $visibleIds = $this->visibleQuestionIds();
+        $selectedIds = $this->normalizeIds($this->selectedQuestions);
+
+        if (count(array_intersect($visibleIds, $selectedIds)) === count($visibleIds)) {
+            $this->selectedQuestions = array_values(array_diff($selectedIds, $visibleIds));
+            return;
+        }
+
+        $this->selectedQuestions = array_values(array_unique([...$selectedIds, ...$visibleIds]));
+    }
+
+    public function allVisibleQuestionsSelected(): bool
+    {
+        $visibleIds = $this->visibleQuestionIds();
+
+        return $visibleIds !== [] && count(array_intersect($visibleIds, $this->selectedQuestions)) === count($visibleIds);
+    }
+
+    private function visibleQuestionIds(): array
+    {
+        return $this->questions->pluck('id')->map(fn($id) => (int) $id)->all();
+    }
+
+    private function normalizeIds($value): array
+    {
+        return array_values(array_filter(array_map('intval', is_array($value) ? $value : []), fn(int $id) => $id > 0));
+    }
+
+    public function tryQuestion(int $questionId)
+    {
+        $this->validate([
+            'selectedQuestions' => ['required'],
+        ]);
+        $questions = Questions::whereIn('id', $this->selectedQuestions)->get();
+        $service = new App\Services\QuizService();
+        $quiz = $service->learningQuiz(
+            questions: $questions ,
+        );
+        return redirect()->route('start.learning.quiz', $quiz);
+    }
+    public $questionId;
+
+    public function validateQuiz()
+    {
+        $this->validate([
+            'quizName' => ['required', 'string', 'min:2', 'max:50'],
+            "selectedQuestions" => ['required', 'array' , "max:20"],
+        ]);
+    }
+    public function learningQuiz()
+    {
+        // $this->validateQuiz();
+        $this->validate([
+            'quizName' => ['required', 'string', 'min:2', 'max:50'],
+            "selectedQuestions" => ['required'],
+        ]);
         dd("here");
+        $questions = Questions::whereIn('id', $this->selectedQuestions)->get();
+        $service = new App\Services\QuizService();
+        $quiz = $service->learningQuiz(questions: $questions, name:$this->quizName);
+        return redirect()->route('start.learning.quiz', $quiz);
+    }
+    public function examQuiz()
+    {
+        $this->validateQuiz();
+        $questions = Questions::whereIn('id', $this->selectedQuestions)->get();
+        $service = new App\Services\QuizService();
+        $quiz = $service->detectedQuiz(questions: $questions, name:$this->quizName);
+
+        return redirect()->route('start.detecated.quiz', $quiz);
     }
 };
 ?>
 
 <div>
+    @push('style')
+        <style>
+            .gambits-filter-dropdown.position-absolute {
+                position: absolute !important;
+                /* top: 6rem; */
+                /* right: 1rem; */
+                left: -53% !important;
+                width: min(406px, calc(100vw - 2rem));
+                max-width: calc(100vw - 2rem);
+                z-index: 1050;
+            }
+
+            .gambits-filter-dropdown .gambits-select2,
+            .gambits-filter-dropdown .select2-container {
+                width: 100% !important;
+            }
+
+            .gambits-select2-dropdown {
+                z-index: 1060;
+            }
+
+            .gambits-selection-checkbox {
+                width: 1.1rem;
+                height: 1.1rem;
+                cursor: pointer;
+            }
+
+            .gambits-select2-wrapper {
+                position: relative;
+            }
+
+            @media (max-width: 991.98px) {
+                .card-footer nav {
+                    width: 100%;
+                    max-width: 100%;
+                    overflow-x: auto;
+                }
+
+                .card-footer .pagination {
+                    flex-wrap: wrap;
+                }
+            }
+
+            @media (max-width: 767.98px) {
+                .gambits-filter-dropdown {
+                    position: fixed !important;
+                    top: 4.5rem;
+                    left: 0.5rem !important;
+                    right: 0.5rem !important;
+                    width: auto;
+                    max-width: none;
+                }
+
+                .gambits-filter-dropdown .d-flex.gap-2 {
+                    flex-direction: column;
+                }
+
+                .gambits-table thead {
+                    display: none;
+                }
+
+                .gambits-table,
+                .gambits-table tbody,
+                .gambits-table tr,
+                .gambits-table td {
+                    display: block;
+                    width: 100%;
+                }
+
+                .gambits-table tr {
+                    padding: 0.75rem 1rem;
+                    border-bottom: 1px solid var(--bs-border-color);
+                }
+
+                .gambits-table td {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    gap: 1rem;
+                    padding: 0.5rem 0;
+                    border: 0;
+                    text-align: end;
+                }
+
+                .gambits-table td::before {
+                    content: attr(data-label);
+                    color: var(--bs-secondary-color);
+                    font-size: 0.75rem;
+                    font-weight: 600;
+                    text-align: start;
+                    text-transform: uppercase;
+                    letter-spacing: 0.04em;
+                }
+
+                .gambits-table td.gambits-question-cell {
+                    display: block;
+                    text-align: start;
+                }
+
+                .gambits-table td.gambits-question-cell::before {
+                    display: block;
+                    margin-bottom: 0.25rem;
+                }
+
+                .gambits-table td.gambits-actions-cell {
+                    justify-content: flex-end;
+                }
+
+                .gambits-table td.gambits-actions-cell::before {
+                    margin-right: auto;
+                }
+
+                .gambits-table .gambits-actions {
+                    flex-wrap: wrap;
+                    justify-content: flex-end;
+                }
+            }
+        </style>
+    @endpush
+
     <div class="card shadow-sm border-0">
 
         {{-- Header --}}
         <div class="card-header border-bottom">
-            <div class="d-flex flex-column flex-xl-row justify-content-between align-items-xl-center gap-5">
+            <div class="d-flex flex-column flex-xl-row justify-content-center align-items-xl-center gap-5">
 
                 {{-- Title --}}
-                <div>
-                    <h5 class="mb-1">Questions</h5>
 
-                    <p class="text-muted mb-0">
-                        Manage and review your medical questions.
-                    </p>
-                </div>
 
-                @script
-                <script>
-                    const initializeGambitsSelect = (selector, url, placeholder, property) => {
-                        const select = $(selector);
-
-                        if (!select.length) {
-                            return;
-                        }
-
-                        if (select.hasClass('select2-hidden-accessible')) {
-                            select.select2('destroy');
-                        }
-
-                        select.select2({
-                            width: '100%',
-                            placeholder,
-                            ajax: {
-                                url,
-                                delay: 250,
-                                data: (params) => ({ search: params.term }),
-                                processResults: (data) => ({
-                                    results: data.map((item) => ({ id: item.id, text: item.name })),
-                                }),
-                            },
-                        }).off('change.gambits').on('change.gambits', function () {
-                            $wire.set(property, $(this).val() ?? []);
-                        });
-                    };
-
-                    initializeGambitsSelect('#gambits-branches', @js(route('getBranches')), 'Search for branches', 'branches');
-                    initializeGambitsSelect('#gambits-specialities', @js(route('getSpeciality')), 'Search for specialities', 'sp');
-                    initializeGambitsSelect('#gambits-skills', @js(route('getSkills')), 'Search for skills', 'skills');
-                    initializeGambitsSelect('#gambits-references', @js(route('getReferences')), 'Search for references', 'references');
-
-                    $wire.on('gambits-filters-cleared', () => {
-                        $('.gambits-select2').val(null).trigger('change');
-                    });
-                </script>
-                @endscript
 
                 {{-- Actions --}}
                 <div class="d-flex align-items-center gap-2">
@@ -172,13 +326,8 @@ new class extends Component {
 
 
                         {{-- Filter dropdown --}}
-                        <div x-show="open"
-                            class="position-absolute end-0 mt-2 bg-card border rounded-3 shadow-lg overflow-hidden"
-                            style="
-            width: 760px;
-            max-width: calc(100vw - 32px);
-            z-index: 1050;
-        ">
+                        <div x-show="open" x-cloak
+                            class="position-absolute end-0 mt-2 bg-card border rounded-3 shadow-lg overflow-hidden gambits-filter-dropdown">
 
                             {{-- Header --}}
                             <div class="px-4 py-3 border-bottom">
@@ -225,7 +374,8 @@ new class extends Component {
 
                                         <button type="button" wire:click="toggleDirection"
                                             class="btn btn-outline-secondary px-3" aria-label="Toggle sort direction">
-                                            <i class="icon-base ti tabler-sort-{{ $direction === 'asc' ? 'ascending' : 'descending' }}"></i>
+                                            <i
+                                                class="icon-base ti tabler-sort-{{ $direction === 'asc' ? 'ascending' : 'descending' }}"></i>
                                         </button>
 
                                     </div>
@@ -242,29 +392,29 @@ new class extends Component {
 
                                     <div class="d-flex flex-wrap gap-2">
 
-                                        <button type="button" wire:click="$set('difficulty', '')"
+                                        <button type="button" wire:click="setDifficulty('')"
                                             class="btn btn-sm {{ $difficulty == '' ? 'btn-primary' : 'btn-outline-secondary' }}">
                                             All
                                         </button>
 
-                                        <button
-                                            class="btn btn-sm {{ $difficulty == 'easy' ? 'btn-primary' : 'btn-outline-secondary' }}"
-                                            wire:click="$set('difficulty' , 'easy')">
+                                        <button type="button"
+                                            class="btn btn-sm {{ $difficulty == 'easy' ? 'btn-success' : 'btn-outline-success' }}"
+                                            wire:click="setDifficulty('easy')">
                                             Easy
                                         </button>
 
-                                        <button wire:click="$set('difficulty' , 'medium')"
-                                            class="btn btn-sm {{ $difficulty == 'medium' ? 'btn-primary' : 'btn-outline-secondary' }}">
+                                        <button type="button" wire:click="setDifficulty('medium')"
+                                            class="btn btn-sm {{ $difficulty == 'medium' ? 'btn-warning' : 'btn-outline-warning' }}">
                                             Medium
                                         </button>
 
-                                        <button wire:click="$set('difficulty' , 'hard')"
-                                            class="btn btn-sm {{ $difficulty == 'hard' ? 'btn-primary' : 'btn-outline-secondary' }}">
+                                        <button type="button" wire:click="setDifficulty('hard')"
+                                            class="btn btn-sm {{ $difficulty == 'hard' ? 'btn-danger' : 'btn-outline-danger' }}">
                                             Hard
                                         </button>
 
-                                        <button wire:click="$set('difficulty' , 'nerd')"
-                                            class="btn btn-sm {{ $difficulty == 'nerd' ? 'btn-primary' : 'btn-outline-secondary' }}">
+                                        <button type="button" wire:click="setDifficulty('nerd')"
+                                            class="btn btn-sm {{ $difficulty == 'nerd' ? 'btn-dark' : 'btn-outline-dark' }}">
                                             Nerd
                                         </button>
 
@@ -282,24 +432,23 @@ new class extends Component {
 
                                     <div class="d-flex flex-wrap gap-2">
 
-                                        <button wire:click="$set('length' , '')"
+                                        <button type="button" wire:click="setLength('')"
                                             class="btn btn-sm {{ $length == '' ? 'btn-primary' : 'btn-outline-secondary' }}">
                                             All
                                         </button>
 
-                                        <button wire:click="$set('length' , 'short')"
-                                            class="btn btn-sm {{ $length == 'short' ? 'btn-primary' : 'btn-outline-secondary' }}"
-                                            class="btn btn-sm btn-outline-secondary">
+                                        <button type="button" wire:click="setLength('short')"
+                                            class="btn btn-sm {{ $length == 'short' ? 'btn-success' : 'btn-outline-success' }}">
                                             Short
                                         </button>
 
-                                        <button wire:click="$set('length', 'medium')"
-                                            class="btn btn-sm {{ $length == 'medium' ? 'btn-primary' : 'btn-outline-secondary' }}">
+                                        <button type="button" wire:click="setLength('medium')"
+                                            class="btn btn-sm {{ $length == 'medium' ? 'btn-warning' : 'btn-outline-warning' }}">
                                             Medium
                                         </button>
 
-                                        <button wire:click="$set('length' , 'long')"
-                                            class="btn btn-sm {{ $length == 'long' ? 'btn-primary' : 'btn-outline-secondary' }}">
+                                        <button type="button" wire:click="setLength('long')"
+                                            class="btn btn-sm {{ $length == 'long' ? 'btn-danger' : 'btn-outline-danger' }}">
                                             Long
                                         </button>
 
@@ -317,9 +466,10 @@ new class extends Component {
                                             Branches
                                         </label>
 
-                                        <select id="gambits-branches" class="form-select gambits-select2" multiple
-                                            wire:ignore>
-                                        </select>
+                                        <div wire:ignore class="gambits-select2-wrapper">
+                                            <select id="gambits-branches" class="form-select gambits-select2"
+                                                multiple></select>
+                                        </div>
 
                                     </div>
 
@@ -330,9 +480,10 @@ new class extends Component {
                                             Specialties
                                         </label>
 
-                                        <select id="gambits-specialities" class="form-select gambits-select2" multiple
-                                            wire:ignore>
-                                        </select>
+                                        <div wire:ignore class="gambits-select2-wrapper">
+                                            <select id="gambits-specialities" class="form-select gambits-select2"
+                                                multiple></select>
+                                        </div>
 
                                     </div>
 
@@ -343,9 +494,10 @@ new class extends Component {
                                             Skills
                                         </label>
 
-                                        <select id="gambits-skills" class="form-select gambits-select2" multiple
-                                            wire:ignore>
-                                        </select>
+                                        <div wire:ignore class="gambits-select2-wrapper">
+                                            <select id="gambits-skills" class="form-select gambits-select2"
+                                                multiple></select>
+                                        </div>
 
                                     </div>
 
@@ -356,9 +508,10 @@ new class extends Component {
                                             References
                                         </label>
 
-                                        <select id="gambits-references" class="form-select gambits-select2" multiple
-                                            wire:ignore>
-                                        </select>
+                                        <div wire:ignore class="gambits-select2-wrapper">
+                                            <select id="gambits-references" class="form-select gambits-select2"
+                                                multiple></select>
+                                        </div>
 
                                     </div>
 
@@ -367,31 +520,18 @@ new class extends Component {
                             </div>
 
 
-                            {{-- Footer --}}
-                            <div class="px-4 py-3 border-top bg-body-tertiary">
-
-                                <div class="d-flex align-items-center justify-content-between">
-
-                                    <button type="button" wire:click="clearFilters" class="btn btn-sm btn-text-secondary">
-                                        Clear all
-                                    </button>
-
-                                    <button type="button" class="btn btn-sm btn-primary">
-                                        Done
-                                    </button>
-
-                                </div>
-
+                            <div class="px-4 py-3 border-top d-flex justify-content-end">
+                                <button type="button" wire:click="clearFilters"
+                                    class="btn btn-sm btn-outline-secondary">
+                                    Clear all
+                                </button>
                             </div>
 
                         </div>
 
                     </div>
                     {{-- Create Question --}}
-                    <button type="button" class="btn btn-primary">
-                        <i class="icon-base ti tabler-plus me-1"></i>
-                        Create Question
-                    </button>
+
 
                 </div>
 
@@ -421,8 +561,7 @@ new class extends Component {
                         <span class="badge bg-label-warning d-flex align-items-center gap-1">
                             Difficulty: {{ ucfirst($difficulty) }}
 
-                            <button type="button" wire:click="$set('difficulty', '')"
-                                class="btn btn-sm p-0 text-reset">
+                            <button type="button" wire:click="setDifficulty('')" class="btn btn-sm p-0 text-reset">
                                 <i class="icon-base ti tabler-x"></i>
                             </button>
                         </span>
@@ -433,7 +572,7 @@ new class extends Component {
                         <span class="badge bg-label-info d-flex align-items-center gap-1">
                             Length: {{ ucfirst($length) }}
 
-                            <button type="button" wire:click="$set('length', '')" class="btn btn-sm p-0 text-reset">
+                            <button type="button" wire:click="setLength('')" class="btn btn-sm p-0 text-reset">
                                 <i class="icon-base ti tabler-x"></i>
                             </button>
                         </span>
@@ -491,16 +630,43 @@ new class extends Component {
 
         {{-- Table --}}
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
+            @if (count($selectedQuestions))
+                <div class="d-flex justify-content-between align-items-center">
+
+                    <div class="px-4 py-2  text-primary fw-semibold">
+                        <span class="gambits-selected-count">{{ count($selectedQuestions) }} selected</span>
+                    </div>
+                    <div class="px-4 py-2 ">
+
+                        <button type="button" data-bs-toggle="modal" data-bs-target="#staticBackdrop"
+                            class="btn btn-sm btn-outline-primary">
+                            <i class="icon-base ti tabler-player-play me-1"></i>
+                            Start A Quiz 
+                        </button>
+                    </div>
+                </div>
+            @endif
+            <table class="table table-hover align-middle mb-0 gambits-table">
 
                 <thead>
                     <tr>
-                        <th style="width: 70px;">ID</th>
+                        <th style="width: 52px;" class="text-center">
+                            <input type="checkbox" class="form-check-input gambits-selection-checkbox"
+                                wire:click="toggleSelectAllVisible" @checked($this->allVisibleQuestionsSelected())
+                                aria-label="Select all visible questions">
+                        </th>
+
 
                         <th>
                             Question
                         </th>
+                        <th>
+                            Reference
+                        </th>
 
+                        <th>
+                            Speciality
+                        </th>
                         <th>
                             Difficulty
                         </th>
@@ -508,10 +674,7 @@ new class extends Component {
                         <th>
                             Length
                         </th>
-
-                        <th>
-                            Reference
-                        </th>
+                        <th>Played Count</th>
 
                         <th class="text-start">
                             Actions
@@ -522,180 +685,234 @@ new class extends Component {
                 <tbody>
 
                     @forelse($this->questions as $question)
-                    <tr>
+                        <tr>
+                            <td class="text-center" data-label="Select">
+                                <input type="checkbox" class="form-check-input gambits-selection-checkbox"
+                                    wire:model.live="selectedQuestions" value="{{ $question->id }}"
+                                    wire:key="selected-question-{{ $question->id }}"
+                                    aria-label="Select question {{ $question->id }}">
+                            </td>
 
-                        <td>
-                            <span class="text-muted">
-                                #{{ $question->id }}
-                            </span>
-                        </td>
 
-                        <td>
-                            <div>
-                                <h6 class="mb-1">
-                                   {{ $question->name }}
-                                </h6>
+                            <td class="gambits-question-cell" data-label="Question">
+                                <div>
+                                    <h6 class="mb-1">
+                                        {{ $question->name }}
+                                    </h6>
 
-                                <small class="text-muted">
+                                </div>
+                            </td>
+                            <td data-label="Reference">
+                                <span class="text-muted">
                                     {{ $question->reference?->name }}
-                                </small>
+                                </span>
+                            </td>
+                            <td data-label="Reference">
+                                <span class="text-muted">
+                                    @forelse($question->specialties as $sp)
+                                        {{ $sp->name }}
+                                    @empty
+                                        No Speciaility Found
+                                    @endforelse
+                                </span>
+                            </td>
+                            <td data-label="Difficulty">
+                                <span
+                                    class="badge {{ match ($question->difficulty) {
+                                        'easy' => 'bg-label-success',
+                                        'medium' => 'bg-label-warning',
+                                        'hard' => 'bg-label-danger',
+                                        default => 'bg-label-dark',
+                                    } }}">
+                                    {{ ucfirst($question->difficulty) }}
+                                </span>
+                            </td>
+
+                            <td data-label="Length">
+                                <span
+                                    class="badge {{ match ($question->length) {
+                                        'short' => 'bg-label-success',
+                                        'medium' => 'bg-label-warning',
+                                        'long' => 'bg-label-danger',
+                                        default => 'bg-label-secondary',
+                                    } }}">
+                                    {{ ucfirst($question->length) }}
+                                </span>
+                            </td>
+                            <td>
+                                {{ $question->playedCount?->count ?? 0 }}
+                            </td>
+
+
+                            <div class="modal fade" id="staticBackdrop" data-bs-backdrop="static"
+                                data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel"
+                                aria-hidden="true">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h1 class="modal-title fs-5" id="staticBackdropLabel">Quiz Info</h1>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                                aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <x-forms.input name="quizName" x-model="quizName" label="Quiz Name"></x-forms.input>
+
+                                            <p>Quiz Name Will be saved on your profile </p>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <div class="d-flex justify-content-between  gap-3">
+                                                <button type="button" class="btn btn-success" wire:click='learningQuiz'>Learning Quiz</button>
+                                                <button class="btn btn-warning" wire:click='examQuiz'>Exam Mode </button>
+                                            </div>
+                                            <div class="d-block">
+                                                <p><span class="text-danger my-2">Exam Mode</span> Will affect Your Elo
+                                                </p>
+                                            </div>
+
+
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                        </td>
 
-                        <td>
-                            <span class="badge bg-label-warning">
-                                {{ ucfirst($question->difficulty) }}
-                            </span>
-                        </td>
 
-                        <td>
-                            <span class="badge bg-label-info">
-                                {{ ucfirst($question->length) }}
-                            </span>
-                        </td>
+                            <td class="gambits-actions-cell" data-label="Actions">
+                                <div class="d-flex justify-content-end gap-2 gambits-actions">
 
-                        <td>
-                            <span class="text-muted">
-                                {{ $question->reference?->name }}
-                            </span>
-                        </td>
+                                    <button type="button" data-bs-toggle="modal" data-bs-target="#staticBackdrop"
+                                        wire:click="$dispatch('tryQuestion', {questionId: {{ $question->id }}})"
+                                        class="btn btn-sm btn-outline-primary">
+                                        <i class="icon-base ti tabler-player-play me-1"></i>
+                                        Try
+                                    </button>
 
-                        <td>
-                            <div class="d-flex justify-content-end gap-2">
+                                    <button type="button" class="btn btn-sm btn-icon btn-text-secondary">
+                                        <i class="icon-base ti tabler-dots-vertical"></i>
+                                    </button>
 
-                                <button type="button" wire:click="tryQuestion({{ $question->id }})"
-                                    class="btn btn-sm btn-outline-primary">
-                                    <i class="icon-base ti tabler-player-play me-1"></i>
-                                    Try 
-                                </button>
+                                </div>
+                            </td>
 
-                                <button type="button" class="btn btn-sm btn-icon btn-text-secondary">
-                                    <i class="icon-base ti tabler-dots-vertical"></i>
-                                </button>
-
-                            </div>
-                        </td>
-
-                    </tr>
+                        </tr>
                     @empty
-                    <tr>
-                        <td colspan="6" class="text-center text-muted py-4">No questions found.</td>
-                    </tr>
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-4">No questions found.</td>
+                        </tr>
                     @endforelse
 
 
                     @if (false)
-                    {{-- Question 2 --}}
-                    <tr>
+                        {{-- Question 2 --}}
+                        <tr>
 
-                        <td>
-                            <span class="text-muted">
-                                #1025
-                            </span>
-                        </td>
+                            <td>
+                                <span class="text-muted">
+                                    #1025
+                                </span>
+                            </td>
 
-                        <td>
-                            <div>
-                                <h6 class="mb-1">
-                                    Which receptor is primarily responsible for the effects of adrenaline?
-                                </h6>
+                            <td>
+                                <div>
+                                    <h6 class="mb-1">
+                                        Which receptor is primarily responsible for the effects of adrenaline?
+                                    </h6>
 
-                                <small class="text-muted">
-                                    Pharmacology
-                                </small>
-                            </div>
-                        </td>
+                                    <small class="text-muted">
+                                        Pharmacology
+                                    </small>
+                                </div>
+                            </td>
 
-                        <td>
-                            <span class="badge bg-label-success">
-                                Easy
-                            </span>
-                        </td>
+                            <td>
+                                <span class="badge bg-label-success">
+                                    Easy
+                                </span>
+                            </td>
 
-                        <td>
-                            <span class="badge bg-label-success">
-                                Short
-                            </span>
-                        </td>
+                            <td>
+                                <span class="badge bg-label-success">
+                                    Short
+                                </span>
+                            </td>
 
-                        <td>
-                            <span class="text-muted">
-                                PassMedicine
-                            </span>
-                        </td>
+                            <td>
+                                <span class="text-muted">
+                                    PassMedicine
+                                </span>
+                            </td>
 
-                        <td>
-                            <div class="d-flex justify-content-end gap-2">
+                            <td>
+                                <div class="d-flex justify-content-end gap-2">
 
-                                <button type="button" class="btn btn-sm btn-outline-primary">
-                                    <i class="icon-base ti tabler-player-play me-1"></i>
-                                    Try Question
-                                </button>
+                                    <button type="button" class="btn btn-sm btn-outline-primary">
+                                        <i class="icon-base ti tabler-player-play me-1"></i>
+                                        Try Question
+                                    </button>
 
-                                <button type="button" class="btn btn-sm btn-icon btn-text-secondary">
-                                    <i class="icon-base ti tabler-dots-vertical"></i>
-                                </button>
+                                    <button type="button" class="btn btn-sm btn-icon btn-text-secondary">
+                                        <i class="icon-base ti tabler-dots-vertical"></i>
+                                    </button>
 
-                            </div>
-                        </td>
+                                </div>
+                            </td>
 
-                    </tr>
+                        </tr>
 
-                    {{-- Question 3 --}}
-                    <tr>
+                        {{-- Question 3 --}}
+                        <tr>
 
-                        <td>
-                            <span class="text-muted">
-                                #1026
-                            </span>
-                        </td>
+                            <td>
+                                <span class="text-muted">
+                                    #1026
+                                </span>
+                            </td>
 
-                        <td>
-                            <div>
-                                <h6 class="mb-1">
-                                    What is the mechanism of action of ACE inhibitors?
-                                </h6>
+                            <td>
+                                <div>
+                                    <h6 class="mb-1">
+                                        What is the mechanism of action of ACE inhibitors?
+                                    </h6>
 
-                                <small class="text-muted">
-                                    Pharmacology
-                                </small>
-                            </div>
-                        </td>
+                                    <small class="text-muted">
+                                        Pharmacology
+                                    </small>
+                                </div>
+                            </td>
 
-                        <td>
-                            <span class="badge bg-label-danger">
-                                Hard
-                            </span>
-                        </td>
+                            <td>
+                                <span class="badge bg-label-danger">
+                                    Hard
+                                </span>
+                            </td>
 
-                        <td>
-                            <span class="badge bg-label-primary">
-                                Long
-                            </span>
-                        </td>
+                            <td>
+                                <span class="badge bg-label-primary">
+                                    Long
+                                </span>
+                            </td>
 
-                        <td>
-                            <span class="text-muted">
-                                MRCP PasTest
-                            </span>
-                        </td>
+                            <td>
+                                <span class="text-muted">
+                                    MRCP PasTest
+                                </span>
+                            </td>
 
-                        <td>
-                            <div class="d-flex justify-content-end gap-2">
+                            <td>
+                                <div class="d-flex justify-content-end gap-2">
 
-                                <button type="button" class="btn btn-sm btn-outline-primary">
-                                    <i class="icon-base ti tabler-player-play me-1"></i>
-                                    Try Question
-                                </button>
+                                    <button type="button" class="btn btn-sm btn-outline-primary">
+                                        <i class="icon-base ti tabler-player-play me-1"></i>
+                                        Try Question
+                                    </button>
 
-                                <button type="button" class="btn btn-sm btn-icon btn-text-secondary">
-                                    <i class="icon-base ti tabler-dots-vertical"></i>
-                                </button>
+                                    <button type="button" class="btn btn-sm btn-icon btn-text-secondary">
+                                        <i class="icon-base ti tabler-dots-vertical"></i>
+                                    </button>
 
-                            </div>
-                        </td>
+                                </div>
+                            </td>
 
-                    </tr>
+                        </tr>
                     @endif
 
                 </tbody>
@@ -725,4 +942,90 @@ new class extends Component {
         </div>
 
     </div>
+    @script
+        <script>
+            let syncingGambitsSelect = false;
+            let gambitsSelectsInitialized = false;
+
+            const initializeGambitsSelect = (selector, url, placeholder, property) => {
+                const select = $(selector);
+
+                if (!select.length || typeof $.fn.select2 !== 'function') {
+                    return false;
+                }
+
+                if (select.data('gambits-select2-initialized') && select.hasClass('select2-hidden-accessible')) {
+                    return true;
+                }
+
+                select.select2({
+                    width: '100%',
+                    placeholder,
+                    allowClear: true,
+                    dropdownCssClass: 'gambits-select2-dropdown',
+                    ajax: {
+                        url,
+                        delay: 250,
+                        data: (params) => ({
+                            search: params.term || ''
+                        }),
+                        processResults: (data) => ({
+                            results: (Array.isArray(data) ? data : []).map((item) => ({
+                                id: item.id,
+                                text: item.name
+                            })),
+                        }),
+                    },
+                }).off('change.gambits').on('change.gambits', function() {
+                    if (!syncingGambitsSelect) {
+                        $wire.set(property, ($(this).val() || []).map(Number));
+                    }
+                });
+                select.data('gambits-select2-initialized', true);
+
+                return true;
+            };
+
+            const initializeGambitsSelects = () => {
+                if (gambitsSelectsInitialized || typeof $.fn.select2 !== 'function') {
+                    return;
+                }
+
+                const initialized = [
+                    initializeGambitsSelect('#gambits-branches', @js(route('getBranches')), 'Search for branches',
+                        'branches'),
+                    initializeGambitsSelect('#gambits-specialities', @js(route('getSpeciality')),
+                        'Search for specialities', 'sp'),
+                    initializeGambitsSelect('#gambits-skills', @js(route('getSkills')), 'Search for skills',
+                        'skills'),
+                    initializeGambitsSelect('#gambits-references', @js(route('getReferences')),
+                        'Search for references', 'references'),
+                ];
+
+                gambitsSelectsInitialized = initialized.every(Boolean);
+            };
+
+            const initializeWhenReady = () => {
+                initializeGambitsSelects();
+
+                if (!gambitsSelectsInitialized) {
+                    window.setTimeout(initializeWhenReady, 50);
+                }
+            };
+
+            if (document.readyState === 'complete') {
+                initializeWhenReady();
+            } else {
+                $(window).off('load.gambits').on('load.gambits', initializeWhenReady);
+            }
+
+            $wire.on('gambits-filters-cleared', () => {
+                syncingGambitsSelect = true;
+                $('.gambits-select2').each(function() {
+                    $(this).val(null).trigger('change.select2');
+                });
+                syncingGambitsSelect = false;
+            });
+        </script>
+    @endscript
 </div>
