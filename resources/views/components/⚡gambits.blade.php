@@ -1,66 +1,86 @@
 <?php
 
 use Livewire\Component;
-use Livewire\Attributes\{Computed, On};
+use Livewire\Attributes\Computed;
+use Livewire\WithPagination;
 use App\Models\Questions;
 new class extends Component {
-    public $search = '';
-    public $length = '';
+    use WithPagination;
+
+    protected string $paginationTheme = 'bootstrap';
+
+    public string $search = '';
+    public string $length = '';
     public array $references = [];
-    public $difficulty = '';
+    public string $difficulty = '';
     public array $branches = [];
     public array $sp = [];
     public array $skills = [];
-    public $direction;
-    public $sort;
-    public $count = 20;
+    public string $direction = 'desc';
+    public string $sort = 'created_at';
+    public int $count = 20;
+
     #[Computed]
     public function questions()
     {
         $allowedSorts = [
-            'content' => 'content',
-            'topic' => 'topic',
             'difficulty' => 'difficulty',
-            'reference' => 'reference',
             'length' => 'length',
+            'name' => 'name',
+            'created_at' => 'created_at',
+            'updated_at' => 'updated_at',
         ];
+
         $direction = in_array($this->direction, ['asc', 'desc']) ? $this->direction : 'desc';
         $sortColumn = $allowedSorts[$this->sort] ?? 'created_at';
-        // year
-        $questions = Questions::query()
-            ->with(['branches', 'skills', 'specialties' , "reference" , "playedCount"])
-            ->when($this->search != '', function ($query) {
-                $query->whereFullText('name');
+
+        return Questions::query()
+            ->with(['branches', 'skills', 'specialties', 'reference'])
+            ->when($this->search !== '', function ($query) {
+                $query->whereFullText(['name', 'content', 'topic'], $this->search);
             })
-            ->when($this->length != '', function ($query) {
-                $query->where('length', $this->length);
-            })
-            ->when($this->difficulty != '', function ($query) {
-                $query->where('difficulty', $this->difficulty);
-            })
-            ->when($this->sp, function ($query) {
-                $query->whereHas('specialties', function ($query) {
-                    $query->whereIn('specialties.id', $this->sp);
-                });
-            })
-            ->when($this->branches, function ($query) {
-                $query->whereHas('branches', function ($query) {
-                    $query->whereIn('branch_of_medicines.id', $this->branches);
-                });
-            })
-            ->when($this->skills, function ($query) {
-                $query->whereHas('skills', function ($query) {
-                    $query->whereIn('skills_for_questions.id', $this->skills);
-                });
-            })
-            ->when($this->references, function ($query) {
-                $query->whereHas('reference', function ($query) {
-                    $query->whereIn('references.id', $this->references);
-                });
-            })
+            ->when($this->length !== '', fn ($query) => $query->where('length', $this->length))
+            ->when($this->difficulty !== '', fn ($query) => $query->where('difficulty', $this->difficulty))
+            ->when($this->sp, fn ($query) => $query->whereHas(
+                'specialties',
+                fn ($query) => $query->whereIn('specialties.id', $this->sp)
+            ))
+            ->when($this->branches, fn ($query) => $query->whereHas(
+                'branches',
+                fn ($query) => $query->whereIn('branch_of_medicines.id', $this->branches)
+            ))
+            ->when($this->skills, fn ($query) => $query->whereHas(
+                'skills',
+                fn ($query) => $query->whereIn('skills_for_questions.id', $this->skills)
+            ))
+            ->when($this->references, fn ($query) => $query->whereIn('reference_id', $this->references))
             ->orderBy($sortColumn, $direction)
-            ->simplePaginate($this->count);
-        return $questions;
+            ->orderBy('id', $direction)
+            ->paginate($this->count);
+    }
+
+    public function updated($property): void
+    {
+        if (in_array($property, ['search', 'length', 'difficulty', 'sp', 'branches', 'skills', 'references', 'sort', 'direction'], true)) {
+            $this->resetPage();
+        }
+    }
+
+    public function toggleDirection(): void
+    {
+        $this->direction = $this->direction === 'asc' ? 'desc' : 'asc';
+    }
+
+    public function clearFilters(): void
+    {
+        $this->reset(['length', 'difficulty', 'branches', 'sp', 'skills', 'references']);
+        $this->resetPage();
+        $this->dispatch('gambits-filters-cleared');
+    }
+
+    public function tryQuestion(int $questionId): void
+    {
+        dd("here");
     }
 };
 ?>
@@ -80,6 +100,46 @@ new class extends Component {
                         Manage and review your medical questions.
                     </p>
                 </div>
+
+                @script
+                <script>
+                    const initializeGambitsSelect = (selector, url, placeholder, property) => {
+                        const select = $(selector);
+
+                        if (!select.length) {
+                            return;
+                        }
+
+                        if (select.hasClass('select2-hidden-accessible')) {
+                            select.select2('destroy');
+                        }
+
+                        select.select2({
+                            width: '100%',
+                            placeholder,
+                            ajax: {
+                                url,
+                                delay: 250,
+                                data: (params) => ({ search: params.term }),
+                                processResults: (data) => ({
+                                    results: data.map((item) => ({ id: item.id, text: item.name })),
+                                }),
+                            },
+                        }).off('change.gambits').on('change.gambits', function () {
+                            $wire.set(property, $(this).val() ?? []);
+                        });
+                    };
+
+                    initializeGambitsSelect('#gambits-branches', @js(route('getBranches')), 'Search for branches', 'branches');
+                    initializeGambitsSelect('#gambits-specialities', @js(route('getSpeciality')), 'Search for specialities', 'sp');
+                    initializeGambitsSelect('#gambits-skills', @js(route('getSkills')), 'Search for skills', 'skills');
+                    initializeGambitsSelect('#gambits-references', @js(route('getReferences')), 'Search for references', 'references');
+
+                    $wire.on('gambits-filters-cleared', () => {
+                        $('.gambits-select2').val(null).trigger('change');
+                    });
+                </script>
+                @endscript
 
                 {{-- Actions --}}
                 <div class="d-flex align-items-center gap-2">
@@ -155,16 +215,17 @@ new class extends Component {
 
                                     <div class="d-flex gap-2">
 
-                                        <select class="form-select" wire:model.live='sort'>
+                                        <select class="form-select" wire:model.live="sort">
                                             <option value="created_at">Created at</option>
                                             <option value="updated_at">Updated at</option>
-                                            <option value="name">name</option>
+                                            <option value="name">Name</option>
                                             <option value="difficulty">Difficulty</option>
                                             <option value="length">Length</option>
                                         </select>
 
-                                        <button type="button" class="btn btn-outline-secondary px-3">
-                                            <i class="icon-base ti tabler-sort-descending"></i>
+                                        <button type="button" wire:click="toggleDirection"
+                                            class="btn btn-outline-secondary px-3" aria-label="Toggle sort direction">
+                                            <i class="icon-base ti tabler-sort-{{ $direction === 'asc' ? 'ascending' : 'descending' }}"></i>
                                         </button>
 
                                     </div>
@@ -256,11 +317,8 @@ new class extends Component {
                                             Branches
                                         </label>
 
-                                        <select class="form-select" multiple size="3">
-                                            <option>Cardiology</option>
-                                            <option>Neurology</option>
-                                            <option>Gastroenterology</option>
-                                            <option>Endocrinology</option>
+                                        <select id="gambits-branches" class="form-select gambits-select2" multiple
+                                            wire:ignore>
                                         </select>
 
                                     </div>
@@ -272,11 +330,8 @@ new class extends Component {
                                             Specialties
                                         </label>
 
-                                        <select class="form-select" multiple size="3">
-                                            <option>Internal Medicine</option>
-                                            <option>Emergency Medicine</option>
-                                            <option>Family Medicine</option>
-                                            <option>Pediatrics</option>
+                                        <select id="gambits-specialities" class="form-select gambits-select2" multiple
+                                            wire:ignore>
                                         </select>
 
                                     </div>
@@ -288,11 +343,8 @@ new class extends Component {
                                             Skills
                                         </label>
 
-                                        <select class="form-select" multiple size="3">
-                                            <option>Diagnosis</option>
-                                            <option>Clinical reasoning</option>
-                                            <option>Pharmacology</option>
-                                            <option>Interpretation</option>
+                                        <select id="gambits-skills" class="form-select gambits-select2" multiple
+                                            wire:ignore>
                                         </select>
 
                                     </div>
@@ -304,11 +356,8 @@ new class extends Component {
                                             References
                                         </label>
 
-                                        <select class="form-select" multiple size="3">
-                                            <option>UWORLD Step 1</option>
-                                            <option>UWORLD Step 2</option>
-                                            <option>PassMedicine</option>
-                                            <option>BMJ OnExamination</option>
+                                        <select id="gambits-references" class="form-select gambits-select2" multiple
+                                            wire:ignore>
                                         </select>
 
                                     </div>
@@ -323,7 +372,7 @@ new class extends Component {
 
                                 <div class="d-flex align-items-center justify-content-between">
 
-                                    <button type="button" class="btn btn-sm btn-text-secondary">
+                                    <button type="button" wire:click="clearFilters" class="btn btn-sm btn-text-secondary">
                                         Clear all
                                     </button>
 
@@ -472,8 +521,7 @@ new class extends Component {
 
                 <tbody>
 
-                    {{-- Question 1 --}}
-                    @foreach($this->questions as $question)
+                    @forelse($this->questions as $question)
                     <tr>
 
                         <td>
@@ -489,38 +537,34 @@ new class extends Component {
                                 </h6>
 
                                 <small class="text-muted">
-                                    {{ $question->reference }}
+                                    {{ $question->reference?->name }}
                                 </small>
                             </div>
                         </td>
 
                         <td>
-                            <span class="badge bg-label-warning" @class(
-                                [
-                                    "badge" , 
-                                    "bg-label-warning" => $
-                                ]
-                            )>
-                                Medium
+                            <span class="badge bg-label-warning">
+                                {{ ucfirst($question->difficulty) }}
                             </span>
                         </td>
 
                         <td>
                             <span class="badge bg-label-info">
-                                Medium
+                                {{ ucfirst($question->length) }}
                             </span>
                         </td>
 
                         <td>
                             <span class="text-muted">
-                                UWorld Step 1
+                                {{ $question->reference?->name }}
                             </span>
                         </td>
 
                         <td>
                             <div class="d-flex justify-content-end gap-2">
 
-                                <button type="button" class="btn btn-sm btn-outline-primary">
+                                <button type="button" wire:click="tryQuestion({{ $question->id }})"
+                                    class="btn btn-sm btn-outline-primary">
                                     <i class="icon-base ti tabler-player-play me-1"></i>
                                     Try 
                                 </button>
@@ -533,9 +577,14 @@ new class extends Component {
                         </td>
 
                     </tr>
-                    @endforeach
+                    @empty
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-4">No questions found.</td>
+                    </tr>
+                    @endforelse
 
 
+                    @if (false)
                     {{-- Question 2 --}}
                     <tr>
 
@@ -647,6 +696,7 @@ new class extends Component {
                         </td>
 
                     </tr>
+                    @endif
 
                 </tbody>
 
@@ -659,48 +709,16 @@ new class extends Component {
 
                 <div class="text-muted small">
                     Showing
-                    <strong>1</strong>
+                    <strong>{{ $this->questions->firstItem() ?? 0 }}</strong>
                     to
-                    <strong>3</strong>
+                    <strong>{{ $this->questions->lastItem() ?? 0 }}</strong>
                     of
-                    <strong>3</strong>
+                    <strong>{{ $this->questions->total() }}</strong>
                     questions
                 </div>
 
                 <nav>
-                    <ul class="pagination pagination-sm mb-0">
-
-                        <li class="page-item disabled">
-                            <a class="page-link" href="#">
-                                <i class="icon-base ti tabler-chevron-left"></i>
-                            </a>
-                        </li>
-
-                        <li class="page-item active">
-                            <a class="page-link" href="#">
-                                1
-                            </a>
-                        </li>
-
-                        <li class="page-item">
-                            <a class="page-link" href="#">
-                                2
-                            </a>
-                        </li>
-
-                        <li class="page-item">
-                            <a class="page-link" href="#">
-                                3
-                            </a>
-                        </li>
-
-                        <li class="page-item">
-                            <a class="page-link" href="#">
-                                <i class="icon-base ti tabler-chevron-right"></i>
-                            </a>
-                        </li>
-
-                    </ul>
+                    {{ $this->questions->links() }}
                 </nav>
 
             </div>
