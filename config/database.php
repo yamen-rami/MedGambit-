@@ -3,6 +3,28 @@
 use Illuminate\Support\Str;
 use Pdo\Mysql;
 
+$redisUrl = trim((string) env('REDIS_URL', ''));
+$redisUrlParts = $redisUrl !== '' ? parse_url($redisUrl) : [];
+$redisUrlParts = is_array($redisUrlParts) ? $redisUrlParts : [];
+
+// PhpRedis does not consume the `url` config value itself. Parse Railway's
+// REDIS_URL into the fields expected by PhpRedis, while retaining the local
+// REDIS_HOST / REDIS_PORT defaults when no URL is configured.
+$redisHost = $redisUrlParts['host'] ?? null;
+$redisHost = $redisHost ?: (env('REDISHOST') ?: env('REDIS_HOST', '127.0.0.1'));
+$redisPort = $redisUrlParts['port'] ?? null;
+$redisPort = $redisPort ?: (env('REDISPORT') ?: env('REDIS_PORT', '6379'));
+$redisUsername = array_key_exists('user', $redisUrlParts)
+    ? rawurldecode((string) $redisUrlParts['user'])
+    : env('REDISUSER', env('REDIS_USERNAME'));
+$redisPassword = array_key_exists('pass', $redisUrlParts)
+    ? rawurldecode((string) $redisUrlParts['pass'])
+    : env('REDISPASSWORD', env('REDIS_PASSWORD'));
+$redisDatabase = isset($redisUrlParts['path']) && trim($redisUrlParts['path'], '/') !== ''
+    ? trim($redisUrlParts['path'], '/')
+    : env('REDIS_DB', '0');
+$redisScheme = ($redisUrlParts['scheme'] ?? null) === 'rediss' ? 'tls' : null;
+
 return [
 
     /*
@@ -154,12 +176,13 @@ return [
         ],
 
         'default' => [
-            'url' => env('REDIS_URL'),
-            'host' => env('REDIS_HOST', '127.0.0.1'),
-            'username' => env('REDIS_USERNAME'),
-            'password' => env('REDIS_PASSWORD'),
-            'port' => env('REDIS_PORT', '6379'),
-            'database' => env('REDIS_DB', '0'),
+            'url' => $redisUrl !== '' ? $redisUrl : null,
+            'host' => $redisHost,
+            'username' => $redisUsername,
+            'password' => $redisPassword,
+            'port' => $redisPort,
+            'database' => $redisDatabase,
+            'scheme' => $redisScheme,
             'max_retries' => env('REDIS_MAX_RETRIES', 3),
             'backoff_algorithm' => env('REDIS_BACKOFF_ALGORITHM', 'decorrelated_jitter'),
             'backoff_base' => env('REDIS_BACKOFF_BASE', 100),
@@ -167,11 +190,12 @@ return [
         ],
 
         'cache' => [
-            'url' => env('REDIS_URL'),
-            'host' => env('REDIS_HOST', '127.0.0.1'),
-            'username' => env('REDIS_USERNAME'),
-            'password' => env('REDIS_PASSWORD'),
-            'port' => env('REDIS_PORT', '6379'),
+            'url' => $redisUrl !== '' ? $redisUrl : null,
+            'host' => $redisHost,
+            'username' => $redisUsername,
+            'password' => $redisPassword,
+            'port' => $redisPort,
+            'scheme' => $redisScheme,
             'database' => env('REDIS_CACHE_DB', '1'),
             'max_retries' => env('REDIS_MAX_RETRIES', 3),
             'backoff_algorithm' => env('REDIS_BACKOFF_ALGORITHM', 'decorrelated_jitter'),
