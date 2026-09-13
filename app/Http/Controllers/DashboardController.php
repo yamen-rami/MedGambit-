@@ -18,7 +18,7 @@ class DashboardController extends Controller
                 'branches' => BranchOfMedicine::count(),
                 'specialities' => Specialty::count(),
                 'skills' => SkillsForQuestion::count(),
-                "onlineUsers" => $activeUsers = User::query()->pluck('id')->filter(fn ($id) => Cache::has('user-online-' . $id))->count()
+                
             ],
             'dashboardUsers' => User::latest()->limit(5)->get(['id', 'name', 'email', 'created_at']),
             'dashboardQuestions' => Questions::latest()->limit(5)->get(['id', 'name', 'content', 'difficulty', 'created_at']),

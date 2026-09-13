@@ -36,17 +36,32 @@
                 <p class="text-body-secondary mb-1">Overview</p>
                 <h1 class="h3 mb-0">Welcome back, {{ auth()->user()->name ?? 'Admin' }} 👋</h1>
             </div>
-            <span class="text-body-secondary small">MedGambit administration</span>
+            <span class="text-body-secondary small">MedGambit Administration</span>
         </div>
-
+{{-- ['Online', $counts['onlineUsers'], ''], --}}
         <div class="row g-4 mb-4">
-            @foreach ([['Online', $counts['onlineUsers'], 'tabler-wifi'], ['Users', $counts['users'], 'tabler-users'], ['Questions', $counts['questions'], 'tabler-help-circle'], ['Quizzes', $counts['quizzes'], 'tabler-clipboard-list'], ['Branches', $counts['branches'], 'tabler-git-branch'], ['Specialities', $counts['specialities'], 'tabler-school'], ['Skills', $counts['skills'], 'tabler-bulb']] as [$label, $count, $icon])
+            <div class="col-sm-6 col-xl-4">
+                    <div class="card h-100">
+                        <div class="card-body d-flex justify-content-between align-items-start">
+                            <div>
+                                <p class="text-body-secondary mb-2">Total Online Players</p>
+                                <h2 class="mb-0">
+                                        <x-online-users></x-online-users>
+                                </h2>
+                            </div>
+                            <span class="stat-icon"><i class="icon-base ti tabler-wifi fs-4"></i></span>
+                        </div>
+                    </div>
+                </div>
+            @foreach ([ ['Users', $counts['users'], 'tabler-users'], ['Questions', $counts['questions'], 'tabler-help-circle'], ['Quizzes', $counts['quizzes'], 'tabler-clipboard-list'], ['Branches', $counts['branches'], 'tabler-git-branch'], ['Specialities', $counts['specialities'], 'tabler-school'], ['Skills', $counts['skills'], 'tabler-bulb']] as [$label, $count, $icon])
                 <div class="col-sm-6 col-xl-4">
                     <div class="card h-100">
                         <div class="card-body d-flex justify-content-between align-items-start">
                             <div>
                                 <p class="text-body-secondary mb-2">Total {{ $label }}</p>
-                                <h2 class="mb-0">{{ number_format($count) }}</h2>
+                                <h2 class="mb-0">
+                                        {{ number_format($count) }}
+                                </h2>
                             </div>
                             <span class="stat-icon"><i class="icon-base ti {{ $icon }} fs-4"></i></span>
                         </div>

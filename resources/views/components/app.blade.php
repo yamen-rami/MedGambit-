@@ -31,6 +31,7 @@
     <link rel="stylesheet" href="{{ asset('assets/css/highlight.css') }}" />
     <link rel="stylesheet" href="{{ asset('assets/css/katex.css') }}" />
     <link rel="stylesheet" href="{{ asset('assets/css/editor.css') }}" />
+    @vite(['resources/js/app.js'])
     <link
         href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@500;600;700&display=swap"
         rel="stylesheet" />

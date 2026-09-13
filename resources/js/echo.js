@@ -13,3 +13,6 @@ window.Echo = new Echo({
     enabledTransports: ["ws", "wss"],
 });
 
+window.dispatchEvent(new CustomEvent("echo:ready", {
+    detail: window.Echo,
+}));

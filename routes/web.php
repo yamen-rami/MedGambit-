@@ -6,9 +6,9 @@ use App\Http\Controllers\{ApiController, BranchOfMedicineController, DashboardCo
 use App\Http\Middleware\{SuperAdmin, TrackUsers, admin};
 use App\Models\Game;
 
-Route::view('/', 'home')->name('home');
+Route::view('/', 'home')->name('home')->middleware(TrackUsers::class);
 
-Route::middleware(['auth', 'verified', admin::class])->group(function () {
+Route::middleware(['auth', 'verified', admin::class, TrackUsers::class])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 });
 Route::middleware(['auth', SuperAdmin::class, TrackUsers::class])->group(function () {
