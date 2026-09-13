@@ -14,13 +14,23 @@ class QuizController extends Controller
     
     public function index(Request $request)
     {
-        $query = Quiz::query()->with(['questions', 'questions.options']);
-        if ($request->has('search')) {
-            $query->where('name', 'LIKE', "%{$request->search}%");
-        }
-        $quizez = $query->orderBy('id', $request->sort ?? 'desc')->paginate(30);
-        $quizez->append($request->all());
-        $sort = $request->sort ?? 'desc';
+        $filters = $request->validate([
+            'search' => ['nullable', 'string', 'max:100'],
+            'difficulty' => ['nullable', 'in:easy,medium,hard,nerd'],
+            'length' => ['nullable', 'in:short,medium,long'],
+            'sort' => ['nullable', 'in:asc,desc'],
+        ]);
+
+        $sort = $filters['sort'] ?? 'desc';
+        $query = Quiz::query()->withCount('questions')
+            ->when($filters['search'] ?? null, fn ($q, $search) => $q->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('topic', 'like', "%{$search}%");
+            }))
+            ->when($filters['difficulty'] ?? null, fn ($q, $value) => $q->where('difficulty', $value))
+            ->when($filters['length'] ?? null, fn ($q, $value) => $q->where('length', $value));
+
+        $quizez = $query->orderBy('id', $sort)->paginate(30)->withQueryString();
 
         return view('quiz.index', compact('quizez', 'sort'));
     }

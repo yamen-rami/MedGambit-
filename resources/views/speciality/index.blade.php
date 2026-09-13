@@ -7,30 +7,7 @@
             <div class="d-grid">
                 <div class="row align-items-center py-4">
                     <div class="col-lg-4 text-center">
-                        <div class="dropdown-center text-center">
-                            <button type="button" class="btn dropdown-toggle hide-arrow p-0" data-bs-toggle="dropdown">
-                                <div class="">
-                                    <img src="{{ asset("assets/images/filter.svg") }}" alt="" />
-                                </div>
-                            </button>
-                            <div class="dropdown-menu dropdown-">
-                                <a class="dropdown-item">
-                                    <div class="text-center">
-                                        <form action="{{ route("speciality.index") }}">
-                                            <input type="hidden" name="sort" value="{{ $sort ?? "desc" }}" />
-                                            <input type="hidden" name="search" value="{{ request('search') }}" />
-                                            <button class="btn text-start" type="submit">
-                                                <img
-                                                    src="{{ asset($sort ?? "desc" === "desc" ? "assets/images/arrow_down.svg" : "assets/images/arrow_top.svg") }}"
-                                                    alt="Arrows "
-                                                />
-                                            </button>
-                                        </form>
-                                        <hr />
-                                    </div>
-                                </a>
-                            </div>
-                        </div>
+                        
                     </div>
                     <div class="col-lg-4 col-md-4">
                         <form class="form" action="{{ route("speciality.index") }}">

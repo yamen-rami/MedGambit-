@@ -2,22 +2,22 @@
 
 use Illuminate\Support\Facades\Route;
 
-use App\Http\Controllers\{ApiController, BranchOfMedicineController, GameController, OptionsController, QuestionsController, QuizController, ReferenceController, SkillsForQuestionController, SpecialtyController, UserController};
-use App\Http\Middleware\{SuperAdmin, admin};
+use App\Http\Controllers\{ApiController, BranchOfMedicineController, DashboardController, GameController, OptionsController, QuestionsController, QuizController, ReferenceController, SkillsForQuestionController, SpecialtyController, UserController};
+use App\Http\Middleware\{SuperAdmin, TrackUsers, admin};
 use App\Models\Game;
 
 Route::view('/', 'home')->name('home');
 
 Route::middleware(['auth', 'verified', admin::class])->group(function () {
-    Route::view('dashboard', 'dashboard')->name('dashboard');
+    Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 });
-Route::middleware(["auth", SuperAdmin::class]) -> group(function (){
+Route::middleware(['auth', SuperAdmin::class, TrackUsers::class])->group(function () {
     Route::get('users', function () {
         return view('user.users');
     })->name('users');
 });
 // ? Admin Dashboard
-Route::middleware([admin::class, 'auth'])->group(function () {
+Route::middleware([admin::class, 'auth', TrackUsers::class])->group(function () {
     Route::resource('questions', QuestionsController::class);
     Route::get('options/{option}/edit', [OptionsController::class, 'edit'])->name('options.edit');
     Route::patch('options/update/{option}', [OptionsController::class, 'update'])->name('options.update');
@@ -26,13 +26,13 @@ Route::middleware([admin::class, 'auth'])->group(function () {
     Route::resource('branch', BranchOfMedicineController::class);
     Route::resource('skills', SkillsForQuestionController::class);
     Route::resource('references', ReferenceController::class);
-    
+
     Route::get('option/create/{id}', [OptionsController::class, 'create'])->name('option.create');
     Route::post('option/store/{id}', [OptionsController::class, 'store'])->name('option.store');
     Route::delete('option/destory/{optionId}/questionId/{questionId}', [OptionsController::class, 'destroy'])->name('option.destroy');
 });
 // ? User Dashboard
-Route::middleware('auth')->group(function () {
+Route::middleware('auth', TrackUsers::class)->group(function () {
     Route::get('start/quiz', [QuizController::class, 'startQuiz'])->name('start.quiz');
     Route::get('show/quizResult/{quiz}', [QuizController::class, 'quizResult'])->name('quizResult');
 
@@ -56,9 +56,9 @@ Route::middleware('auth')->group(function () {
 
     Route::get('config/game', [GameController::class, 'config'])->name('config.game');
     Route::get('waiting/{game}', [GameController::class, 'waiting'])->name('waiting');
-    Route::get("gambits", function(){
-        return view("gambits.main");
-    })->name("gambits");
+    Route::get('gambits', function () {
+        return view('gambits.main');
+    })->name('gambits');
 });
 Route::get('user/profile/{user}', [UserController::class, 'profile'])->name('user.profile');
 Route::get('get/branches', [ApiController::class, 'branches'])

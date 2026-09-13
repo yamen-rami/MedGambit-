@@ -4,20 +4,52 @@
     <!-- DataTable with Buttons -->
     <div class="card">
         <div style="overflow-x: hidden" class="card-datatable table-responsive pt-0">
-            <div class="d-grid">
-                <div class="row align-items-center py-4">
-                    <div class="col-lg-4 text-center">
-                        <div class="dropdown">
-                            <button type="button" class="btn dropdown-toggle hide-arrow p-0" data-bs-toggle="dropdown">
-                                <div class="">
-                                    <img src="{{ asset("assets/images/filter.svg") }}" alt="" />
-                                </div>
-                            </button>
-                            <div class="dropdown-menu">
+            <div class="d-grid px-3">
+                <form id="quiz-filter-form" class="row g-3 align-items-end py-4" method="get"
+                    action="{{ route('quizez.index') }}">
+                    <div class="col-lg-4">
+                        <label class="form-label" for="quiz-search">Search quizzes</label>
+                        <input id="quiz-search" type="search" name="search" value="{{ request('search') }}"
+                            class="form-control" placeholder="Name or topic">
+                    </div>
+                    <div class="col-md-3 col-lg-2">
+                        <label class="form-label" for="quiz-difficulty">Difficulty</label>
+                        <select id="quiz-difficulty" name="difficulty" class="form-select">
+                            <option value="">All difficulties</option>
+                            @foreach (['easy', 'medium', 'hard', 'nerd'] as $value)
+                                <option value="{{ $value }}" @selected(request('difficulty') === $value)>{{ ucfirst($value) }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-3 col-lg-2">
+                        <label class="form-label" for="quiz-length">Length</label>
+                        <select id="quiz-length" name="length" class="form-select">
+                            <option value="">All lengths</option>
+                            @foreach (['short', 'medium', 'long'] as $value)
+                                <option value="{{ $value }}" @selected(request('length') === $value)>{{ ucfirst($value) }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-3 col-lg-2">
+                        <label class="form-label" for="quiz-sort">Sort</label>
+                        <select id="quiz-sort" name="sort" class="form-select">
+                            <option value="desc" @selected($sort === 'desc')>Newest first</option>
+                            <option value="asc" @selected($sort === 'asc')>Oldest first</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 col-lg-2 d-flex gap-2">
+                        <button class="btn btn-primary" type="submit">Filter</button>
+                        <a class="btn btn-outline-secondary" href="{{ route('quizez.index') }}">Clear</a>
+                    </div>
+                </form>
+                {{-- Sorting is kept in the same query-string form for fast, bookmarkable filtering. --}}
+                <!--
                                 <a class="dropdown-item">
                                     <div class="text-center">
-                                        <form action="{{ route("quizez.index") }}">
-                                            <input type="hidden" name="sort" value="{{ $sort ?? "desc" }}" />
+                                        <form action="{{ route('quizez.index') }}">
+                                            <input type="hidden" name="sort" value="{{ $sort ?? 'desc' }}" />
                                             <input type="hidden" name="search" value="{{ request('search') }}" />
                                             <input
                                                 type="hidden"
@@ -28,7 +60,7 @@
 
                                             <button class="btn text-start" type="submit">
                                                 <img
-                                                    src="{{ asset($sort === "desc" ? "assets/images/arrow_down.svg" : "assets/images/arrow_top.svg") }}"
+                                                    src="{{ asset($sort === 'desc' ? 'assets/images/arrow_down.svg' : 'assets/images/arrow_top.svg') }}"
                                                     alt="Arrows "
                                                 />
                                             </button>
@@ -101,27 +133,12 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-lg-4 col-md-4">
-                        <form class="form" action="{{ route("quizez.index") }}">
-                            <div class="d-flex gap-3">
-                                <input
-                                    type="text"
-                                    name="search"
-                                    class="form-control ps-5"
-                                    placeholder="Search quizez"
-                                />
-                                <button class="btn btn-danger">
-                                    <a class="text-white" href="{{ route("quizez.index") }}">Clear</a>
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                    <div class="col-lg-4 text-center">
+                -->
+                {{-- <div class="col-lg-4 text-center">
                         <a href="{{ route("quizez.create") }}">
                             <button class="btn btn-primary">Create A New Quiz</button>
                         </a>
-                    </div>
-                </div>
+                    </div> --}}
             </div>
             <table class="datatables-basic table">
                 <thead>
@@ -131,7 +148,6 @@
                         <th>Topic</th>
                         <th>difficulty</th>
                         <th>Length</th>
-
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -145,23 +161,20 @@
                             <th>{{ $quiz->length }}</th>
                             <td>
                                 <div class="dropdown">
-                                    <button
-                                        type="button"
-                                        class="btn dropdown-toggle hide-arrow p-0"
-                                        data-bs-toggle="dropdown"
-                                    >
+                                    <button type="button" class="btn dropdown-toggle hide-arrow p-0"
+                                        data-bs-toggle="dropdown">
                                         <i class="icon-base ti tabler-dots-vertical"></i>
                                     </button>
                                     <div class="dropdown-menu">
                                         {{-- Edit tag --}}
                                         <a class="dropdown-item" href="{{ route('quizez.show', $quiz) }}">
-                                            <img src="{{ asset("assets/images/eye.svg") }}" alt="Show quizez" />
+                                            <img src="{{ asset('assets/images/eye.svg') }}" alt="Show quizez" />
                                             Show
                                         </a>
-                                        <a class="dropdown-item" href="{{ route('quizez.edit', $quiz) }}"
-                                            ><i class="icon-base ti tabler-pencil me-1"></i> Edit</a>
+                                        <a class="dropdown-item" href="{{ route('quizez.edit', $quiz) }}"><i
+                                                class="icon-base ti tabler-pencil me-1"></i> Edit</a>
                                         {{-- Delete tag --}}
-                                        <form action="{{ route("quizez.destroy", $quiz->id) }}" method="POST">
+                                        <form action="{{ route('quizez.destroy', $quiz->id) }}" method="POST">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="dropdown-item">

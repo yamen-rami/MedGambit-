@@ -63,7 +63,7 @@ new class extends Component
     #[Computed()]
     public function questions()
     {
-        $query = Questions::query();
+        $query = Questions::query()->with("reference");
         if (! empty($this->search)) {
             $query->where(
                 function ($q) {
@@ -545,7 +545,7 @@ new class extends Component
                             <th>{{ $question->length }}</th>
                             <th>{{ $question->elo_correct }}</th>
                             <th>{{ $question->elo_incorrect }}</th>
-                            <th>{{ Str::limit($question->reference, 10) }}</th>
+                            <th>{{ Str::limit($question->reference->name, 10) }}</th>
                             <td
                                 wire:click='add({{ $question->id }})'
                                 class="{{ array_key_exists($question->id, $this->results) ? "text-success" : "text-white" }}"

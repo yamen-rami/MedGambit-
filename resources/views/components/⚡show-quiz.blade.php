@@ -35,23 +35,30 @@ new class extends Component
 };
 ?>
 
-<div>
-    <div class="card">
+<div class="quiz-show-page">
+    <style>
+        .quiz-show-page .quiz-summary, .quiz-show-page .quiz-question-card { background: var(--bs-tertiary-bg); color: var(--bs-body-color); border: 1px solid var(--bs-border-color); }
+        .quiz-show-page .quiz-summary-value, .quiz-show-page .question-content { color: var(--bs-body-color); }
+        .quiz-show-page .quiz-meta { color: var(--bs-secondary-color); }
+        .quiz-show-page .option { color: var(--bs-body-color); background: var(--bs-body-bg); }
+        .quiz-show-page .option-correct { color: var(--bs-success-text-emphasis) !important; background: var(--bs-success-bg-subtle); }
+    </style>
+    <div class="card quiz-summary">
         <div class="col-lg-9 px-4 text-start">
             <h1 class="fw-1 fs-4 py-4">Show Quiz</h1>
-            <p class="py-3 text-white">{{ $this->quiz->name }}</p>
+            <p class="quiz-summary-value py-3">{{ $this->quiz->name }}</p>
             <hr />
-            <p class="py-3 text-white">{{ $this->quiz->topic }}</p>
+            <p class="quiz-summary-value py-3">{{ $this->quiz->topic }}</p>
             <hr />
-            <p class="py-2 text-white">{{ $this->quiz->difficulty }}</p>
+            <p class="quiz-summary-value py-2">{{ ucfirst($this->quiz->difficulty) }}</p>
             <hr />
-            <p class="py-3 text-white">{{ $this->quiz->length }}</p>
+            <p class="quiz-summary-value py-3">{{ ucfirst($this->quiz->length) }}</p>
         </div>
     </div>
     <div class="py-3">
         <h1 class="fw-1 fs-4 py-4">Quiz Questions</h1>
 
-        <div style="margin: 0 auto" class="d-grid col-lg-8 card quiz px-4 py-4">
+        <div style="margin: 0 auto" class="d-grid col-lg-8 card quiz-question-card px-4 py-4">
             @foreach ($this->questions as $question)
                 <div id="question-{{ $loop->iteration }}" class="{{ $loop->first ? 'show' : "hide" }}">
                     <p class="fw-bold px-5 py-4 text-end">
@@ -71,7 +78,7 @@ new class extends Component
 
                     {{-- ! End Modal --}}
                     <div class="d-flex align-items-center justify-content-between">
-                        <p class="fw-bold py-4 text-start">{{ $question->content }}</p>
+                        <p class="question-content fw-bold py-4 text-start">{{ $question->content }}</p>
                     </div>
                     @foreach ($question->options as $option)
                         <div
