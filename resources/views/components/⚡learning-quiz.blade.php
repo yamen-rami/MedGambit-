@@ -76,7 +76,7 @@ new class extends Component {
         }
 
         $question = $this->currentQuestion;
-        if (!$question || !$question->options->contains('id', $optionId) || !$this->attempt) {
+        if (!$question || (int) $question->id !== (int) $questionId || !$question->options->contains('id', (int) $optionId) || !$this->attempt) {
             return;
         }
 
@@ -138,7 +138,7 @@ new class extends Component {
     public function quitQuiz()
     {
         $quizService = app(QuizService::class);
-        $quizService->updateAttempt(auth()->id(), $this->quiz->id, $this->answers);
+        $quizService->updateAttemptLearning(auth()->id(), $this->quiz->id, $this->answers);
 
         return redirect()->route('quizResult', $this->quiz);
     }

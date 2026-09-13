@@ -2,23 +2,25 @@
 
 namespace App\Services;
 
+use App\Models\Answers;
+use App\Models\Questions;
+use App\Models\Quiz;
+use App\Models\QuizAttempt;
+use Exception;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
-use Exception;
-
-use App\Models\{Answers, Questions, Quiz, QuizAttempt};
 
 class QuizService
 {
     public function randomQuiz(int $count = 20, $difficulty = 'medium', $length = 'short')
     {
-        return DB::transaction(function () use ($count, $difficulty) {
+        return DB::transaction(function () use ($count, $difficulty, $length) {
             $quiz = Quiz::create([
                 'name' => 'random',
                 'topic' => 'Random Topic',
                 'type' => 'random',
-                'difficulty' => $difficulty ?? 'easy',
-                'length' => $length ?? 'short',
+                'difficulty' => $difficulty ? $difficulty : 'easy',
+                'length' => $length ? $length : 'short',
                 'questions_number' => $count ?? 3,
             ]);
 
@@ -65,7 +67,7 @@ class QuizService
             3- update Attempt
             4- create a answers for that attempt with question id
         */
-        // 
+        //
         $quizAttempt = QuizAttempt::where('quiz_id', $quizId)
             ->where('user_id', $userId)
             ->where('status', 'pending')
@@ -80,18 +82,19 @@ class QuizService
         $user = auth()->user();
         $rank = $user->rank;
         $playedQuestionIds = $user->playedQuestions->pluck('id');
-        $questions = Questions::with('correctAnswer', 'playedCount')->whereIn('id', array_keys($answers))->get()->keyBy('id');
-        $questions->each(function ($question) {
-            $question->playedCount()->firstOrCreate(
-                [],
-                [
-                    'count' => 0,
-                ]
-            )->increment('count', 1);
-        });
+        $quiz = Quiz::with('questions')->findOrFail($quizId);
+        $quizQuestionIds = $quiz->questions->pluck('id')->map(fn ($id) => (int) $id)->all();
+        $questions = Questions::with('correctAnswer', 'options', 'playedCount')
+            ->whereIn('id', $quizQuestionIds)
+            ->get()
+            ->keyBy('id');
         foreach ($answers as $questionId => $optionId) {
 
-            $question = $questions[$questionId];
+            $question = $questions->get($questionId);
+            if (! $question || ! $question->options->contains('id', (int) $optionId)) {
+                continue;
+            }
+            $question->playedCount()->firstOrCreate([], ['count' => 0])->increment('count', 1);
             $is_correct = $question->correctAnswer?->id == $optionId;
 
             if ($is_correct) {
@@ -107,7 +110,7 @@ class QuizService
             }
 
         }
-        DB::transaction(function () use ($score, $quizAttempt, $now, $quizId, $rank, $user) {
+        DB::transaction(function () use ($score, $quizAttempt, $now, $quiz, $rank, $user) {
             $quizAttempt->update([
                 'user_id' => $user->id,
                 'finished_at' => $now,
@@ -117,7 +120,6 @@ class QuizService
                 'current_rank' => $user->rank,
                 'new_rank' => $rank,
             ]);
-            $quiz = Quiz::with('questions')->where('id', $quizId)->first();
             $questionsId = $quiz->questions->pluck('id');
             $user->playedQuestions()->syncWithoutDetaching($questionsId);
             $rank = max(0, $rank);
@@ -131,6 +133,7 @@ class QuizService
             'wrong_answers' => $quizAttempt->quiz->questions->count() - $score,
         ];
     }
+
     public function updateAttemptLearning($userId, $quizId, $answers)
     {
         /*
@@ -139,7 +142,7 @@ class QuizService
             3- update Attempt
             4- create a answers for that attempt with question id
         */
-        // 
+        //
         $quizAttempt = QuizAttempt::where('quiz_id', $quizId)
             ->where('user_id', $userId)
             ->where('status', 'pending')
@@ -153,18 +156,19 @@ class QuizService
         $wrongAnswers = 0;
         $user = auth()->user();
         $playedQuestionIds = $user->playedQuestions->pluck('id');
-        $questions = Questions::with('correctAnswer', 'playedCount')->whereIn('id', array_keys($answers))->get()->keyBy('id');
-        $questions->each(function ($question) {
-            $question->playedCount()->firstOrCreate(
-                [],
-                [
-                    'count' => 0,
-                ]
-            )->increment('count', 1);
-        });
+        $quiz = Quiz::with('questions')->findOrFail($quizId);
+        $quizQuestionIds = $quiz->questions->pluck('id')->map(fn ($id) => (int) $id)->all();
+        $questions = Questions::with('correctAnswer', 'options', 'playedCount')
+            ->whereIn('id', $quizQuestionIds)
+            ->get()
+            ->keyBy('id');
         foreach ($answers as $questionId => $optionId) {
 
-            $question = $questions[$questionId];
+            $question = $questions->get($questionId);
+            if (! $question || ! $question->options->contains('id', (int) $optionId)) {
+                continue;
+            }
+            $question->playedCount()->firstOrCreate([], ['count' => 0])->increment('count', 1);
             $is_correct = $question->correctAnswer?->id == $optionId;
 
             if ($is_correct) {
@@ -174,15 +178,14 @@ class QuizService
             }
 
         }
-        DB::transaction(function () use ($score, $quizAttempt, $now, $quizId, $user) {
+        DB::transaction(function () use ($score, $quizAttempt, $now, $quiz, $user) {
             $quizAttempt->update([
                 'user_id' => $user->id,
                 'finished_at' => $now,
                 'time_taken' => $quizAttempt->started_at?->diffInSeconds($now),
                 'score' => $score,
-                'status' => 'finished',    
+                'status' => 'finished',
             ]);
-            $quiz = Quiz::with('questions')->where('id', $quizId)->first();
             $questionsId = $quiz->questions->pluck('id');
             $user->playedQuestions()->syncWithoutDetaching($questionsId);
         });
@@ -195,7 +198,7 @@ class QuizService
         ];
     }
 
-    public function detectedQuiz(Collection $questions,?string $name = null , $length = null, $count = null, $difficulty = null, ?int $duration = null)
+    public function detectedQuiz(Collection $questions, ?string $name = null, $length = null, $count = null, $difficulty = null, ?int $duration = null)
     {
         // Start A Quiz
         // give the quiz type detected
@@ -205,8 +208,8 @@ class QuizService
             'topic' => 'Detected Topic',
             'type' => 'detected',
             'duration' => $duration ? $duration : null,
-            'difficulty' => $difficulty ? $difficulty : "easy",
-            'length' => $length ? $length : "short",
+            'difficulty' => $difficulty ? $difficulty : 'easy',
+            'length' => $length ? $length : 'short',
             'questions_number' => $count ?? 3,
         ]);
         //
@@ -223,15 +226,15 @@ class QuizService
         return $quiz;
     }
 
-    public function learningQuiz(Collection $questions, ?string $name = null , $length = 'short', $count = 3, $difficulty = 'easy')
+    public function learningQuiz(Collection $questions, ?string $name = null, $length = 'short', $count = 3, $difficulty = 'easy')
     {
         $quiz = Quiz::create([
             'name' => $name ?? 'Detected Learning Quiz ',
             'topic' => 'Detected Learning Quiz ',
             'type' => 'learning',
             'duration' => null,
-            'difficulty' => $difficulty ? $difficulty : "easy",
-            'length' => $length ? $length : "easy",
+            'difficulty' => $difficulty ? $difficulty : 'easy',
+            'length' => $length ? $length : 'easy',
             'questions_number' => $count ?? 3,
         ]);
         //

@@ -33,6 +33,7 @@ class GameController extends Controller
     public function gameResults(Game $game)
     {
         //
+        abort_unless($game->players()->where('user_id', auth()->id())->exists(), 403);
         $game->loadMissing('players', 'attempts', 'questions');
         if ($game->status !== 'finished') {
             abort(404, 'Game Status Is Playing');
@@ -66,7 +67,7 @@ class GameController extends Controller
     public function friendGame(string $challenge_token)
     {
         $user = auth()->user() ;
-        $game = Game::where('challenge_token', $challenge_token)->first();
+        $game = Game::where('challenge_token', $challenge_token)->firstOrFail();
         abort_unless(
             $game->players()->count() < $game->max_players,
             403,
@@ -80,10 +81,11 @@ class GameController extends Controller
 
     }
     public function gameRedirect(string $challenge_token){
-        $game = Game::where('challenge_token', $challenge_token)->first();
+        $game = Game::where('challenge_token', $challenge_token)->firstOrFail();
         if($game->status === "finished"){
             abort(401 , "Game Has Finished");
         }
+        abort_unless($game->players()->where('user_id', auth()->id())->exists(), 403);
         $gameId = $game->id ; 
 
         return view('games.startGame' , compact("gameId"));
@@ -99,6 +101,7 @@ class GameController extends Controller
     // Waiting Page For player 1
     public function waiting(Game $game)
     {
+        abort_unless($game->players()->where('user_id', auth()->id())->exists(), 403);
         return view('games.waiting', compact('game'));
     }
 }

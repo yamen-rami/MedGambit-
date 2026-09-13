@@ -6,11 +6,13 @@ use App\Models\Game;
 use App\Models\GameAnswers;
 use App\Models\Option;
 use App\Models\Questions;
+use App\Models\QuestionPlayedTime;
 use App\Services\GameService;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\On;
 use Livewire\Attributes\Session;
 use Livewire\Component;
+use Illuminate\Support\Facades\{Cache, Redis};
 
 new class extends Component {
     public $game = null;
@@ -91,7 +93,21 @@ new class extends Component {
         if (!$questionId) {
             return;
         }
-        $this->currentQuestion = Questions::with('options', 'correctAnswer', 'playedCount')->findOrFail($questionId);
+        $cachedQuestion = Cache::remember("game-question-v2:{$questionId}", now()->addHour(), function () use ($questionId): array {
+            $question = Questions::with('options', 'correctAnswer', 'playedCount')->findOrFail($questionId);
+
+            return [
+                'question' => $question->withoutRelations()->toArray(),
+                'options' => $question->options->toArray(),
+                'correctAnswer' => $question->correctAnswer?->toArray(),
+                'playedCount' => $question->playedCount?->toArray(),
+            ];
+        });
+
+        $this->currentQuestion = Questions::hydrate([$cachedQuestion['question']])->firstOrFail();
+        $this->currentQuestion->setRelation('options', Option::hydrate($cachedQuestion['options']));
+        $this->currentQuestion->setRelation('correctAnswer', $cachedQuestion['correctAnswer'] ? Option::hydrate([$cachedQuestion['correctAnswer']])->first() : null);
+        $this->currentQuestion->setRelation('playedCount', $cachedQuestion['playedCount'] ? QuestionPlayedTime::hydrate([$cachedQuestion['playedCount']])->first() : null);
         if (!$this->currentQuestion) {
             abort(403, 'something went wrong');
         }
@@ -143,6 +159,11 @@ new class extends Component {
         );
 
         $this->answers[$questionId] = $optionId;
+        if (config('cache.default') === 'redis') {
+            $progressKey = "game:{$this->gameId}:attempt:{$this->attempt->id}:answers";
+            Redis::connection('cache')->sadd($progressKey, (string) $questionId);
+            Redis::connection('cache')->expire($progressKey, 86400);
+        }
         if (in_array(count($this->answers), [5, 10, 15])) {
             $service = new GameService();
             $notifications = $service->getMessage($this->game->attempts);
@@ -190,7 +211,7 @@ new class extends Component {
         $this->game->refresh();
 
         $this->disconnected_at = null;
-        PlayerReconnected::dispatch($userId ?? auth()->id(), $this->gameId);
+        PlayerReconnected::dispatch(auth()->id(), $this->gameId);
 
         $this->playersCount = 2;
     }
@@ -232,17 +253,15 @@ new class extends Component {
     #[On('echo-private:game.{gameId},.game.started')]
     public function gameStarted($event)
     {
-        $service = app(GameService::class);
-        $this->loadQuestion();
         $this->game->loadMissing('players');
         $players = $this->game->players()->with('user')->get();
-        $service->gameStarted($this->game, $players);
 
         $this->currentPlayer = $players->where('user_id', auth()->id())->first();
         if (!$this->currentPlayer) {
             return;
         }
         $this->current = $this->currentPlayer->current_question;
+        $this->loadQuestion();
         if ($players->count() > 1) {
             $this->player1 = $players[0]->user;
             $this->player2 = $players[1]->user;
@@ -267,6 +286,16 @@ new class extends Component {
 
         if (!$attempt) {
             return;
+        }
+
+        if (config('cache.default') === 'redis') {
+            $progress = (int) Redis::connection('cache')->scard("game:{$this->gameId}:attempt:{$attempt->id}:answers");
+
+            if ($progress > 0) {
+                $this->progress = $progress;
+
+                return;
+            }
         }
 
         $this->progress = GameAnswers::where('game_attempt_id', $attempt->id)
@@ -339,6 +368,10 @@ new class extends Component {
 
     public function submitAttempt()
     {
+        if (!$this->attempt) {
+            return;
+        }
+
         $game = Game::find($this->gameId);
         if (!$game) {
             return;
@@ -352,9 +385,6 @@ new class extends Component {
         if ($answersCount !== $length) {
             $this->addError('answers', 'Please answer all questions.');
 
-            return;
-        }
-        if (!$this->attempt) {
             return;
         }
         if ($game->status !== 'playing') {
@@ -708,7 +738,7 @@ new class extends Component {
 
                         {{-- TIMER --}}
                         @if ($this->remainingSeconds !== null)
-                            <div class="timer" x-data="{
+                            <div wire:ignore class="timer" x-data="{
                                 seconds: {{ $this->remainingSeconds ?? 0 }},
                                 timer: null,
                             
@@ -853,7 +883,7 @@ new class extends Component {
                         </div>
                     </div>
                     @if ($this->disconnectRemainingSeconds !== null)
-                        <div class="timer text-danger" x-data="{
+                        <div wire:ignore class="timer text-danger" x-data="{
                             seconds: {{ $this->disconnectRemainingSeconds }},
                         
                             timer: null,

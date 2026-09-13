@@ -16,6 +16,7 @@ class Game extends Model
     protected $fillable = ['max_players', 'status', 'challenge_token', 'started_at', 'ended_at', 'length', 'difficulty', 'duration',
         'disconnected_at'];
         protected $casts = [
+            "started_at" => "datetime",
             "ended_at" => "datetime" , 
             "disconnected_at" => "datetime",
         ];

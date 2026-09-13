@@ -67,10 +67,7 @@ class GameService
             );
             $game->questions()->attach($questions->pluck('id'));
 
-            $game->update([
-                'status' => 'playing',
-                'started_at' => now(),
-            ]);
+            $this->startGame($game);
             DB::afterCommit(fn () => GameStarted::dispatch($game));
 
             return $game;
@@ -141,87 +138,84 @@ class GameService
         ]);
     }
 
-    public function gameStarted(Game $game, Collection $players)
+    public function startGame(Game $game): void
     {
+        if ($game->status === 'playing' && $game->started_at) {
+            return;
+        }
+
         $now = now();
         $game->update([
+            'status' => 'playing',
             'started_at' => $now,
             'ended_at' => $game->duration ? $now->addSeconds($game->duration) : null,
         ]);
-        $game->attempts->each(function ($attempt) use ($now) {
-            $attempt->update([
-                'started_at' => $now,
-            ]);
-        });
-        // $players->each(function ($player) use ($now) {
-        //     $player->update([
-        //         'started_at' => $now,
-        //     ]);
-        // });
+
+        $game->attempts()->whereNull('started_at')->update([
+            'started_at' => $now,
+        ]);
     }
 
     public function editAttempt(GameAttempt $attempt, Game $game): void
     {
-        $now = now();
-        $user = User::findOrFail($attempt->user_id);
+        DB::transaction(function () use ($attempt, $game): void {
+            $attempt = GameAttempt::query()->lockForUpdate()->findOrFail($attempt->id);
 
-        $attempt->loadMissing('answers.question');
-        $rank = $user->rank;
-        $playedQuestionIds = $user->playedQuestions->pluck('id');
+            if ($attempt->status === 'finished') {
+                return;
+            }
 
-        $questionIds = [];
-        foreach ($attempt->answers as $answer) {
-            $questionIds[] = $answer->question->id;
-            $question = $answer->question;
-            if ($answer->is_correct) {
+            $now = now();
+            $user = User::query()->lockForUpdate()->findOrFail($attempt->user_id);
+
+            $attempt->load('answers.question');
+            $rank = $user->rank;
+            $playedQuestionIds = $user->playedQuestions->pluck('id');
+
+            $questionIds = [];
+            foreach ($attempt->answers as $answer) {
+                $questionIds[] = $answer->question->id;
+                $question = $answer->question;
                 if (! $playedQuestionIds->contains($question->id)) {
-                    $rank += $answer->question->elo_correct;
-                }
-
-            } else {
-                if (! $playedQuestionIds->contains($question->id)) {
-                    $rank -= $answer->question->elo_incorrect;
+                    $rank += $answer->is_correct
+                        ? $question->elo_correct
+                        : -$question->elo_incorrect;
                 }
             }
-        }
-        $user->playedQuestions()->syncWithoutDetaching($questionIds);
 
-        $correct = $attempt->answers->where('is_correct', true)->count();
-        $wrong = $attempt->answers->where('is_correct', false)->count();
-        $attempt->update([
-            'ended_at' => $now,
-            'status' => 'finished',
-            'time_taken' => $attempt->started_at->diffInSeconds($now),
-            'score' => $correct,
-            'current_rank' => $user->rank,
-            'new_rank' => $rank,
-        ]);
-        $user->update([
-            'rank' => $rank,
-        ]);
+            $user->playedQuestions()->syncWithoutDetaching($questionIds);
 
-        $game->loadMissing('players');
-        $player = $game->players->where('user_id', $attempt->user_id)->first();
+            $correct = $attempt->answers->where('is_correct', true)->count();
+            $wrong = $attempt->answers->where('is_correct', false)->count();
+            $attempt->update([
+                'ended_at' => $now,
+                'status' => 'finished',
+                'time_taken' => $attempt->started_at ? $attempt->started_at->diffInSeconds($now) : 0,
+                'score' => $correct,
+                'current_rank' => $user->rank,
+                'new_rank' => $rank,
+            ]);
+            $user->update(['rank' => $rank]);
 
-        if (! $player) {
-            return;
-        }
-
-        $player->update([
-            'status' => 'finished',
-            'correct_answers' => $correct,
-            'wrong_answers' => $wrong,
-        ]);
+            $player = $game->players()->where('user_id', $attempt->user_id)->first();
+            if ($player) {
+                $player->update([
+                    'status' => 'finished',
+                    'correct_answers' => $correct,
+                    'wrong_answers' => $wrong,
+                ]);
+            }
+        });
     }
 
     public function getWinner(Collection $attempts)
     {
         $winner = $attempts
             ->loadMissing('answers')
-            ->sortBy([
-                fn ($attempt) => $attempt->score,
-                fn ($attempt) => $attempt->time_taken,
-            ])
+            ->sort(function ($first, $second) {
+                return ($second->score <=> $first->score)
+                    ?: ($first->time_taken <=> $second->time_taken);
+            })
             ->first();
 
         return $winner;
@@ -229,16 +223,36 @@ class GameService
 
     public function finishGame(Collection $attempts)
     {
-        $winner = $this->getWinner($attempts);
-        if (! $winner) {
+        if ($attempts->isEmpty()) {
             return;
         }
-        $winner->update([
-            'is_winner' => true,
-        ]);
-        $winner->game()->update([
-            'status' => 'finished',
-        ]);
+
+        DB::transaction(function () use ($attempts): void {
+            $lockedAttempts = GameAttempt::query()
+                ->whereIn('id', $attempts->pluck('id'))
+                ->lockForUpdate()
+                ->get();
+
+            if ($lockedAttempts->isEmpty()) {
+                return;
+            }
+
+            $game = Game::query()
+                ->lockForUpdate()
+                ->find($lockedAttempts->first()->game_id);
+
+            if (! $game || $game->status === 'finished') {
+                return;
+            }
+
+            $winner = $this->getWinner($lockedAttempts);
+            if (! $winner) {
+                return;
+            }
+
+            $winner->update(['is_winner' => true]);
+            $game->update(['status' => 'finished']);
+        });
     }
 
     public function friendGame(
@@ -319,11 +333,7 @@ class GameService
 
             $game->questions()->attach($questions->pluck('id'));
 
-            $this->gameStarted($game, $game->players);
-
-            $game->update([
-                'status' => 'playing',
-            ]);
+            $this->startGame($game);
 
             DB::afterCommit(
                 function () use ($game) {

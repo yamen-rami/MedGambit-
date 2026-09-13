@@ -66,7 +66,7 @@ new class extends Component {
         if (!$question) {
             abort(403);
         }
-        if (!$question->options->contains($optionId)) {
+        if ((int) $question->id !== (int) $questionId || !$question->options->contains('id', (int) $optionId)) {
             return;
         }
         if (!$this->attempt) {
@@ -231,12 +231,12 @@ new class extends Component {
                 </div>
 
                 {{-- QUESTION FOOT --}}
-                <div class="question-foot">
+                <div class="question-foot" >
 
 
                     {{-- TIMER --}}
                     @if ($this->remainingSeconds !== null)
-                        <div class="timer" x-data="{
+                        <div wire:ignore class="timer" x-data="{
                             seconds: {{ $this->remainingSeconds ?? 0 }},
                             timer: null,
                         
