@@ -98,7 +98,7 @@ new class extends Component {
                 <div class="col-md-6 mb-4">
                     <label for="branches" class="form-label">Branches For Medicine</label>
                     <div class="select2-primary" wire:ignore>
-                        <select id="branches" class="select2 form-select branches" multiple></select>
+                        <select id="branches" class="select2 form-select branches" data-livewire-select2 multiple></select>
                     </div>
                     @error('branchesList')
                         <p class="text-danger py-2">{{ $message }}</p>
@@ -107,7 +107,7 @@ new class extends Component {
                 <div class="col-md-6 mb-4">
                     <label for="specialities" class="form-label">Speciality</label>
                     <div class="select2-primary" wire:ignore>
-                        <select id="specialities" class="select2 form-select specialities" multiple></select>
+                        <select id="specialities" class="select2 form-select specialities" data-livewire-select2 multiple></select>
                     </div>
                     @error('specialitiesList')
                         <p class="text-danger py-2">{{ $message }}</p>
@@ -119,7 +119,7 @@ new class extends Component {
                 <div class="col-md-6">
                     <label for="skills" class="form-label">Ideas From </label>
                     <div class="select2-primary" wire:ignore>
-                        <select id="references" class="form-select select2" name="references" multiple>
+                        <select id="references" class="form-select select2" name="references" data-livewire-select2 multiple>
                             <option value=""></option>
                         </select>
                     </div>
@@ -130,7 +130,7 @@ new class extends Component {
                 <div class="col-md-6 mb-4">
                     <label for="skills" class="form-label">Skills For Question</label>
                     <div class="select2-primary" wire:ignore>
-                        <select id="skills" class="select2 form-select" multiple></select>
+                        <select id="skills" class="select2 form-select" data-livewire-select2 multiple></select>
                     </div>
                     @error('skillsList')
                         <p class="text-danger py-2">{{ $message }}</p>
@@ -142,7 +142,7 @@ new class extends Component {
                 <div class="col-md-6 mb-4" wire:ignore>
                     <label for="difficulty" class="form-label">Difficulty</label>
                     <div class="select2-primary">
-                        <select id="difficulty" class="select2 form-select" >
+                        <select id="difficulty" class="select2 form-select" data-livewire-select2>
                             <option value="">Select Difficulty</option>
 
                             <option value="easy">Easy</option>
@@ -159,7 +159,7 @@ new class extends Component {
                 <div class="col-md-6 mb-4" wire:ignore>
                     <label for="length" class="form-label">Length</label>
                     <div class="select2-primary">
-                        <select id="length" class="select2 form-select" >
+                        <select id="length" class="select2 form-select" data-livewire-select2>
                             <option value="">Select Length</option>
                             <option value="short">Short</option>
                             <option value="medium">Medium</option>
@@ -176,7 +176,7 @@ new class extends Component {
                 <div class="col-md-12 mb-4" wire:ignore>
                     <label for="duration" class="form-label">Quiz Timer</label>
                     <div class="select2-primary">
-                        <select id="duration" wire:model.live="duration" class="select2 form-select">
+                        <select id="duration" wire:model.live="duration" class="select2 form-select" data-livewire-select2>
                             <option value="">No duration</option>
                             <option value="{{ 1 * 60 }}">5 Minutes</option>
                             <option value="{{ 10 * 60 }}">10 Minutes</option>
@@ -213,7 +213,7 @@ new class extends Component {
 
 @script
     <script>
-        $(window).on('load', function() {
+        $(function() {
             if ($('#branches').hasClass('select2-hidden-accessible')) {
                 $('#branches').select2('destroy');
             }

@@ -3,7 +3,7 @@
     <!-- Content -->
     <!-- DataTable with Buttons -->
     <div class="card">
-        <div style="overflow-x: hidden" class="card-datatable table-responsive pt-0">
+        <div class="table-responsive pt-0">
             <div class="d-grid px-3">
                 <form id="quiz-filter-form" class="row g-3 align-items-end py-4" method="get"
                     action="{{ route('quizez.index') }}">
@@ -134,13 +134,13 @@
                         </div>
                     </div>
                 -->
-                {{-- <div class="col-lg-4 text-center">
-                        <a href="{{ route("quizez.create") }}">
-                            <button class="btn btn-primary">Create A New Quiz</button>
-                        </a>
-                    </div> --}}
+                <div class="col-12 d-flex justify-content-end">
+                    <a href="{{ route('quizez.create') }}" class="btn btn-primary">
+                        <i class="icon-base ti tabler-plus me-1"></i>Create quiz
+                    </a>
+                </div>
             </div>
-            <table class="datatables-basic table">
+            <table class="table align-middle">
                 <thead>
                     <tr class="ps-3 pe-4">
                         <th>id</th>
@@ -148,6 +148,7 @@
                         <th>Topic</th>
                         <th>difficulty</th>
                         <th>Length</th>
+                        <th>Questions</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -159,29 +160,15 @@
                             <th>{{ Str::limit($quiz->topic, 10) }}</th>
                             <th>{{ $quiz->difficulty }}</th>
                             <th>{{ $quiz->length }}</th>
+                            <td>{{ $quiz->questions_count }}</td>
                             <td>
-                                <div class="dropdown">
-                                    <button type="button" class="btn dropdown-toggle hide-arrow p-0"
-                                        data-bs-toggle="dropdown">
-                                        <i class="icon-base ti tabler-dots-vertical"></i>
-                                    </button>
-                                    <div class="dropdown-menu">
-                                        {{-- Edit tag --}}
-                                        <a class="dropdown-item" href="{{ route('quizez.show', $quiz) }}">
-                                            <img src="{{ asset('assets/images/eye.svg') }}" alt="Show quizez" />
-                                            Show
-                                        </a>
-                                        <a class="dropdown-item" href="{{ route('quizez.edit', $quiz) }}"><i
-                                                class="icon-base ti tabler-pencil me-1"></i> Edit</a>
-                                        {{-- Delete tag --}}
-                                        <form action="{{ route('quizez.destroy', $quiz->id) }}" method="POST">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="dropdown-item">
-                                                <i class="icon-base ti tabler-trash me-1"></i> Delete
-                                            </button>
-                                        </form>
-                                    </div>
+                                <div class="d-flex flex-wrap gap-2">
+                                    <a class="btn btn-sm btn-outline-info" href="{{ route('quizez.show', $quiz) }}"><i class="icon-base ti tabler-eye me-1"></i>Show</a>
+                                    <a class="btn btn-sm btn-outline-primary" href="{{ route('quizez.edit', $quiz) }}"><i class="icon-base ti tabler-pencil me-1"></i>Edit</a>
+                                    <form action="{{ route('quizez.destroy', $quiz) }}" method="POST" onsubmit="return confirm('Delete this quiz?');">
+                                        @csrf @method('DELETE')
+                                        <button type="submit" class="btn btn-sm btn-outline-danger"><i class="icon-base ti tabler-trash me-1"></i>Delete</button>
+                                    </form>
                                 </div>
                             </td>
                         </tr>

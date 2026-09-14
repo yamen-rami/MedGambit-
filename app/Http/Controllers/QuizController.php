@@ -3,8 +3,9 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
-use App\Models\{BranchOfMedicine, Questions, Quiz, SkillsForQuestion, Specialty};
+use App\Models\{Questions, Quiz};
 use App\Services\QuizService;
 
 class QuizController extends Controller
@@ -38,13 +39,25 @@ class QuizController extends Controller
     // Create Fun
     public function create()
     {
-        // Limiting what you want just (id , name);
-        // $questions = Questions::select('id', 'content')->get();
-        $branches = BranchOfMedicine::all();
-        $skills = SkillsForQuestion::all();
-        $speciality = Specialty::all();
+        return view('quiz.create');
+    }
 
-        return view('quiz.create', compact('branches', 'skills', 'speciality'));
+    public function store(Request $request)
+    {
+        $data = $request->validate([
+            'name' => ['required', 'string', 'min:3'],
+            'topic' => ['required', 'string', 'min:3'],
+            'difficulty' => ['required', Rule::in(['easy', 'medium', 'hard', 'nerd'])],
+            'length' => ['required', Rule::in(['short', 'medium', 'long'])],
+            'type' => ['required', Rule::in(['random', 'detected', 'admin', 'learning', 'game'])],
+            'questions_number' => ['required', 'integer', 'min:3', 'max:20'],
+            'duration' => ['nullable', 'integer', 'min:1'],
+        ]);
+
+        Quiz::create($data);
+        flash()->success('Quiz Has Created Successfully');
+
+        return redirect()->route('quizez.index');
     }
 
     public function show(int $id)
@@ -57,11 +70,26 @@ class QuizController extends Controller
     public function edit(int $id)
     {
         $quiz = Quiz::with(['questions'])->findOrFail($id);
-        $branches = BranchOfMedicine::all();
-        $skills = SkillsForQuestion::all();
-        $speciality = Specialty::all();
 
-        return view('quiz.edit', compact('quiz', 'branches', 'skills', 'speciality'));
+        return view('quiz.edit', compact('quiz'));
+    }
+
+    public function update(Request $request, Quiz $quizez)
+    {
+        $data = $request->validate([
+            'name' => ['required', 'string', 'min:3'],
+            'topic' => ['required', 'string', 'min:3'],
+            'difficulty' => ['required', Rule::in(['easy', 'medium', 'hard', 'nerd'])],
+            'length' => ['required', Rule::in(['short', 'medium', 'long'])],
+            'type' => ['required', Rule::in(['random', 'detected', 'admin', 'learning', 'game'])],
+            'questions_number' => ['required', 'integer', 'min:3', 'max:20'],
+            'duration' => ['nullable', 'integer', 'min:1'],
+        ]);
+
+        $quizez->update($data);
+        flash()->info('Quiz Has Updated Successfully');
+
+        return redirect()->route('quizez.index');
     }
 
     // Start Quiz
@@ -149,9 +177,9 @@ class QuizController extends Controller
         ]);
     }
 
-    public function destroy(Quiz $quiz)
+    public function destroy(Quiz $quizez)
     {
-        $quiz->delete();
+        $quizez->delete();
         flash()->success('Quiz Has Deleted');
 
         return redirect()->route('quizez.index');

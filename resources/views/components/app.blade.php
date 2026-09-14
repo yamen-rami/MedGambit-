@@ -31,7 +31,6 @@
     <link rel="stylesheet" href="{{ asset('assets/css/highlight.css') }}" />
     <link rel="stylesheet" href="{{ asset('assets/css/katex.css') }}" />
     <link rel="stylesheet" href="{{ asset('assets/css/editor.css') }}" />
-    @vite(['resources/js/app.js'])
     <link
         href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@500;600;700&display=swap"
         rel="stylesheet" />
@@ -95,19 +94,19 @@
                             <div data-i18n="Page 1">Dashboard</div>
                         </a>
                     </li>
-                    @can("create" , App\Models\User::class)
-                    <li class="menu-item {{ request()->routeIs('users') ? 'active' : '' }}">
-                        <a href="{{ route('users') }}" class="menu-link">
-                            <svg class="menu-icon " xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-user">
-                                <circle cx="12" cy="12" r="10" />
-                                <circle cx="12" cy="10" r="3" />
-                                <path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662" />
-                            </svg>
-                            <div data-i18n="Page 1">Users</div>
-                        </a>
-                    </li>
+                    @can('create', App\Models\User::class)
+                        <li class="menu-item {{ request()->routeIs('users') ? 'active' : '' }}">
+                            <a href="{{ route('users') }}" class="menu-link">
+                                <svg class="menu-icon " xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-user">
+                                    <circle cx="12" cy="12" r="10" />
+                                    <circle cx="12" cy="10" r="3" />
+                                    <path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662" />
+                                </svg>
+                                <div data-i18n="Page 1">Users</div>
+                            </a>
+                        </li>
                     @endcan
 
 
@@ -196,14 +195,14 @@
                                 <ul class="dropdown-menu dropdown-menu-start" aria-labelledby="nav-theme-text">
                                     <li>
                                         <button type="button" class="dropdown-item align-items-center active"
-                                            data-bs-theme-value="light" aria-pressed="false">
+                                            data-bs-theme-value="light" aria-pressed="true">
                                             <span><i class="icon-base ti tabler-sun icon-md me-3"
                                                     data-icon="sun"></i>Light</span>
                                         </button>
                                     </li>
                                     <li>
                                         <button type="button" class="dropdown-item align-items-center"
-                                            data-bs-theme-value="dark" aria-pressed="true">
+                                            data-bs-theme-value="dark" aria-pressed="false">
                                             <span><i class="icon-base ti tabler-moon-stars icon-md me-3"
                                                     data-icon="moon-stars"></i>Dark</span>
                                         </button>
@@ -304,8 +303,10 @@
         <div class="drag-target"></div>
     </div>
     <script src="{{ asset('assets/vendor/libs/jquery/jquery.js') }}"></script>
-    <script src="{{ asset('assets/vendor/libs/select2/select2.js') }}"></script>
 
+    <!-- 2. Select2 JS -->
+
+    <!-- 3. Other Vendor & UI Scripts -->
     <script src="{{ asset('assets/vendor/libs/popper/popper.js') }}"></script>
     <script src="{{ asset('assets/vendor/js/bootstrap.js') }}"></script>
     <script src="{{ asset('assets/vendor/libs/node-waves/node-waves.js') }}"></script>
@@ -313,7 +314,12 @@
     <script src="{{ asset('assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.js') }}"></script>
     <script src="{{ asset('assets/vendor/libs/hammer/hammer.js') }}"></script>
     <script src="{{ asset('assets/vendor/js/menu.js') }}"></script>
+    <script src="{{ asset('assets/vendor/libs/select2/select2.js') }}"></script>
 
+    <!-- 4. Main & Custom Scripts -->
+    {{-- <script src="{{ asset('assets/js/question.js') }}"></script>
+    <script src="{{ asset('assets/js/show.js') }}"></script>
+    <script src="{{ asset('assets/js/edit.js') }}"></script> --}}
     <script src="{{ asset('assets/js/forms-selects.js') }}"></script>
     <script src="{{ asset('assets/vendor/libs/@algolia/autocomplete-js.js') }}"></script>
     <script src="{{ asset('assets/vendor/js/helpers.js') }}"></script>
@@ -321,14 +327,17 @@
     <script src="{{ asset('assets/js/config.js') }}"></script>
     <script src="{{ asset('assets/js/main.js') }}"></script>
     <script src="{{ asset('assets/js/all.js') }}"></script>
-    <script src="resources/views/js/app.js"></script>
+
+
     <script src="{{ asset('assets/js/katex.js') }}"></script>
     <script src="{{ asset('assets/js/highlight.js') }}"></script>
     <script src="{{ asset('assets/js/quill.js') }}"></script>
     <script src="{{ asset('assets/js/editors.js') }}"></script>
 
-
     @stack('scripts')
+
+    @livewireScripts
+
 
     {{-- <script src="{{ asset('assets/js/question.js') }}"></script> --}}
     {{-- <script src="{{ asset('assets/js/show.js') }}"></script> --}}

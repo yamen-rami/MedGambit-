@@ -6,7 +6,8 @@
 
 $(function () {
   const selectPicker = $('.selectpicker'),
-    select2 = $('.select2'),
+    // Livewire components initialize and synchronize these themselves.
+    select2 = $('select.select2').not('[data-livewire-select2]'),
     select2Icons = $('.select2-icons');
 
   // Bootstrap Select

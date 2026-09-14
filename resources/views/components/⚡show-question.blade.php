@@ -44,11 +44,11 @@ new class extends Component
                 {{-- <h1>Hello There {{ dd($this->question) }}</h1> --}}
                 <p class="text-secondary fw-bold">
                 <p class="fw-bold">Content</p>
-                {{ $this->question?->content }} </p>
+                {!!   $this->question?->content !!} </p>
                 <hr />
-                <p>{{ $this->question?->topic }}</p>
+                <p>{!!  $this->question?->topic !!}</p>
                 <hr />
-                <p>{{ $this->question?->main_explanation }}</p>
+                <p>{!!   $this->question?->main_explanation !!}</p>
                 <hr />
 
                 <p>
@@ -61,7 +61,7 @@ new class extends Component
                 </p>
                 <p>
                     <span>Refernce : </span>
-                    <strong> {{ $this->question?->reference }} </strong>
+                    <strong> {{ $this->question?->reference->name }} </strong>
                 </p>
                 <div>
                     @foreach ($this->question->options ?? [] as $option)
