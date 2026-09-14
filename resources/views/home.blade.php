@@ -44,11 +44,12 @@
                                 stroke-linejoin="round" />
                         </svg>
                     </div>
-                    <h3 class="service-title">Medical Quiz Challenges</h3>
-                    <p class="service-text">Structured question sets across medical topics and specialties, built to
-                        reinforce real clinical knowledge one challenge at a time.</p>
+                    <h3 class="service-title">Think Beyond the Textbook</h3>
+                    <p class="service-text">
+                        Practice internationally relevant medical questions inspired by leading Q-banks, covering basic sciences, clinical medicine, and real-world diagnostic reasoning for students.
+                    </p>
                     <div class="tag-row">
-                        <span class="tag">Topics &amp; Specialties</span>
+                        <span class="tag">International</span>
                         <span class="tag">Question Bank</span>
                         <span class="tag">Difficulty Levels</span>
                     </div>
@@ -61,13 +62,16 @@
                             <path d="M13 10V3L4 14h7v7l9-11h-7z" stroke-linecap="round" stroke-linejoin="round" />
                         </svg>
                     </div>
-                    <h3 class="service-title">Real-Time Battle Mode</h3>
-                    <p class="service-text">Go head-to-head against another player live — same questions, same clock,
-                        with results revealed the moment both players finish.</p>
+                    <h3 class="service-title">Master the Core Before the Details</h3>
+                    <p class="service-text">Master the core concepts first, then filter by specialty, topic, skill, difficulty, and length to target exactly what you need.</p>
                     <div class="tag-row">
-                        <span class="tag">1v1 Battles</span>
-                        <span class="tag">Live Status</span>
-                        <span class="tag">Instant Results</span>
+                        <span class="tag">Filter</span>
+                        <span class="tag">Speciality</span>
+                        <span class="tag">Branch of medicine</span>
+                        <span class="tag">General Medical Concept </span>
+                        <span class="tag">Memorization</span>
+
+
                     </div>
                 </div>
 
@@ -80,13 +84,14 @@
                                 stroke-linecap="round" stroke-linejoin="round" />
                         </svg>
                     </div>
-                    <h3 class="service-title">Progress Tracking</h3>
-                    <p class="service-text">See how you're improving over time — strengths, weak spots, and win streaks
-                        tracked as you play and study.</p>
+                    <h3 class="service-title">Put Your Rank on the Line</h3>
+                    <p class="service-text">Build your ELO, challenge students worldwide under the same questions and timer, climb the ranks, and prove your medical knowledge.</p>
                     <div class="tag-row">
-                        <span class="tag">Stats</span>
-                        <span class="tag">Streaks</span>
-                        <span class="tag">Weak Areas</span>
+                        <span class="tag">Elo Rating</span>
+                        <span class="tag">Player Vs Player</span>
+                        <span class="tag">Challenge</span>
+                        <span class="tag">Show Excellence</span>
+
                     </div>
                 </div>
             </div>
@@ -97,9 +102,9 @@
             <div class="section-head">
                 <div>
                     <span class="section-eyebrow"> Team</span>
-                    <h2 class="section-title">Built by Two, Made for Every Med Student</h2>
+                    <h2 class="section-title">Built by Two Brothers, Made for Every Med Student</h2>
                 </div>
-                <p class="section-desc">MedGambit is built and maintained by two people who wanted a better way to study
+                <p class="section-desc">MedGambit is built and maintained by two brothers who wanted a better way to study
                     for exams — together.</p>
             </div>
 
@@ -128,7 +133,7 @@
                     <div class="about-body">
                         <div>
                             <h3 class="about-heading">Two builders, one platform for medical learning.</h3>
-                            <p class="lead">MedGambit is built by Yamen and Mohammed, who set out to make medical
+                            <p class="lead">MedGambit is built by Yamen and Mohammed Abuwarda, who set out to make medical
                                 exam prep feel less like a grind and more like a match — head-to-head quiz battles built
                                 around real clinical questions.</p>
                             <p class="sub">Every feature is shaped around one goal: helping medical students learn

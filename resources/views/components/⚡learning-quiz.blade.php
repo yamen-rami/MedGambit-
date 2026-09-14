@@ -294,7 +294,7 @@ new class extends Component {
              <div class="panel">
                     <div class="panel-title-row" x-data="{ online: navigator.onLine }" x-init="window.addEventListener('online', () => (online = true));
                     window.addEventListener('offline', () => (online = false));">
-                        <span class="panel-title">Battle Status</span>
+                        <span class="panel-title">Question weight</span>
 
                         <span class="live-pill">
                             
