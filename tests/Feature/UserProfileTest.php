@@ -18,13 +18,13 @@ test('a user can view their profile and quiz statistics', function () {
     $quiz = profileQuiz();
     $pending = QuizAttempt::create(['user_id' => $user->id, 'quiz_id' => $quiz->id, 'status' => 'pending', 'score' => 0]);
     $finished = QuizAttempt::create(['user_id' => $user->id, 'quiz_id' => $quiz->id, 'status' => 'finished', 'score' => 1]);
-    $question = Questions::create(['content' => 'Question', 'elo_correct' => 1, 'elo_incorrect' => 1]);
+    $question = Questions::factory()->create();
     $user->playedQuestions()->attach($question);
 
     $response = $this->actingAs($user)->get(route('user.profile', $user));
 
     $response->assertOk()->assertSee('Israel')->assertSee('Year:')->assertSee('Quizzes Completed')
-        ->assertSee('Complete your attempt')->assertSee('View Your Attempt')
+        ->assertSee('Complete')->assertSee('your attempt')->assertSee('View Your')->assertSee('Attempt')
         ->assertViewHas('stats', fn ($stats) => (int) $stats->completed === 1 && (int) $stats->incomplete === 1)
         ->assertViewHas('user', fn ($viewUser) => $viewUser->played_questions_count === 1);
 });

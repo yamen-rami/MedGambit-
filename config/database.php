@@ -23,7 +23,7 @@ $redisPassword = array_key_exists('pass', $redisUrlParts)
 $redisDatabase = isset($redisUrlParts['path']) && trim($redisUrlParts['path'], '/') !== ''
     ? trim($redisUrlParts['path'], '/')
     : env('REDIS_DB', '0');
-$redisScheme = ($redisUrlParts['scheme'] ?? null) === 'rediss' ? 'tls' : null;
+$redisScheme = ($redisUrlParts['scheme'] ?? null) === 'rediss' ? 'tls' : 'tcp';
 
 return [
 

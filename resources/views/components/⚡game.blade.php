@@ -118,7 +118,6 @@ new class extends Component {
     {
         return $this->currentQuestion->elo_incorrect;
     }
-
     public function submit($optionId, $questionId)
     {
         if (!$this->attempt) {

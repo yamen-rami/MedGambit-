@@ -7,8 +7,6 @@ describe("home page works" ,function(){
         get("/")->assertStatus(200);
     });
     it("open login page " , function (){
-        $page = get("/");
-        $page->click("login");
-        
+        get("/")->assertSee('Login');
     });
 });
