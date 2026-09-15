@@ -2,8 +2,8 @@
 
 namespace App\Http\Middleware;
 
-use Illuminate\Http\Request;
 use Closure;
+use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 class SuperAdmin
@@ -19,10 +19,11 @@ class SuperAdmin
             return redirect()->route('login');
         }
         if (auth()->check()) {
-            if (auth()->user()->role === 'user' || auth()->user()->role === 'admin'  ) {
+            if (auth()->user()->role === 'user' || auth()->user()->role === 'admin') {
                 return redirect()->route('home');
             }
         }
+
         return $next($request);
     }
 }

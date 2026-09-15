@@ -2,13 +2,12 @@
 
 namespace App\Events;
 
-use Illuminate\Broadcasting\{Channel, InteractsWithSockets, PresenceChannel, PrivateChannel};
+use App\Models\User;
+use Illuminate\Broadcasting\InteractsWithSockets;
+use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
-use Override;
-
-use App\Models\User;
 
 class GameNotifications implements ShouldBroadcast
 {
@@ -17,7 +16,7 @@ class GameNotifications implements ShouldBroadcast
     public function __construct(
         public User $user,
         public string $message,
-        public bool  $winner ,  
+        public bool $winner,
     ) {}
 
     public function broadcastOn(): array
@@ -31,7 +30,7 @@ class GameNotifications implements ShouldBroadcast
     {
         return [
             'message' => $this->message,
-            'winner' => $this->winner ,
+            'winner' => $this->winner,
         ];
     }
 

@@ -2,12 +2,16 @@
 
 namespace App\Services;
 
+use App\Events\connectedUsers;
+use App\Events\GameStarted;
+use App\Models\Game;
+use App\Models\GameAttempt;
+use App\Models\Players;
+use App\Models\Questions;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-
-use App\Events\{GameStarted, connectedUsers};
-use App\Models\{Game, GameAttempt, Players, Questions, User};
 
 class GameService
 {
@@ -345,44 +349,44 @@ class GameService
     }
 
     public function getMessage(Collection $attempts): array
-{
-    $attempts->loadMissing('answers', 'user');
+    {
+        $attempts->loadMissing('answers', 'user');
 
-    $player1 = $attempts->first();
-    $player2 = $attempts->last();
+        $player1 = $attempts->first();
+        $player2 = $attempts->last();
 
-    $player1Score = $player1->answers
-        ->where('is_correct', true)
-        ->count();
+        $player1Score = $player1->answers
+            ->where('is_correct', true)
+            ->count();
 
-    $player2Score = $player2->answers
-        ->where('is_correct', true)
-        ->count();
+        $player2Score = $player2->answers
+            ->where('is_correct', true)
+            ->count();
 
-    $player1Message = match (true) {
-        $player1Score > $player2Score => 'You Are Winning',
-        $player1Score < $player2Score => 'You Are Losing',
-        default => 'Draw',
-    };
+        $player1Message = match (true) {
+            $player1Score > $player2Score => 'You Are Winning',
+            $player1Score < $player2Score => 'You Are Losing',
+            default => 'Draw',
+        };
 
-    $player2Message = match (true) {
-        $player2Score > $player1Score => 'You Are Winning',
-        $player2Score < $player1Score => 'You Are Losing',
-        default => 'Draw',
-    };
+        $player2Message = match (true) {
+            $player2Score > $player1Score => 'You Are Winning',
+            $player2Score < $player1Score => 'You Are Losing',
+            default => 'Draw',
+        };
 
-    return [
-        'player1' => [
-            'user' => $player1->user,
-            'message' => $player1Message,
-            'winning' => $player1Score > $player2Score,
-        ],
+        return [
+            'player1' => [
+                'user' => $player1->user,
+                'message' => $player1Message,
+                'winning' => $player1Score > $player2Score,
+            ],
 
-        'player2' => [
-            'user' => $player2->user,
-            'message' => $player2Message,
-            'winning' => $player2Score > $player1Score,
-        ],
-    ];
-}
+            'player2' => [
+                'user' => $player2->user,
+                'message' => $player2Message,
+                'winning' => $player2Score > $player1Score,
+            ],
+        ];
+    }
 }

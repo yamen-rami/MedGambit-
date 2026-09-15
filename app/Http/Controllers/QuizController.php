@@ -2,17 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Questions;
+use App\Models\Quiz;
+use App\Services\QuizService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
-use App\Models\{Questions, Quiz};
-use App\Services\QuizService;
-
 class QuizController extends Controller
 {
-    //'
+    // '
     public function __construct(protected QuizService $quizService) {}
-    
+
     public function index(Request $request)
     {
         $filters = $request->validate([
@@ -95,7 +95,7 @@ class QuizController extends Controller
     // Start Quiz
     public function startQuiz()
     {
-        return view('home.quizStart');
+        return view('home.quiz_config');
     }
 
     public function showQuiz(Quiz $quiz)

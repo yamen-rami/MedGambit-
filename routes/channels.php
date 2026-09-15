@@ -1,8 +1,8 @@
 <?php
 
+use App\Models\Game;
+use App\Models\Players;
 use Illuminate\Support\Facades\Broadcast;
-
-use App\Models\{Game, Players};
 
 Broadcast::channel('user.{userId}', function ($user, $userId) {
     return (int) $user->id === (int) $userId;

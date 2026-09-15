@@ -15,29 +15,39 @@
         rel="stylesheet" />
     <link rel="stylesheet" href="{{ asset('assets/css/bootstrap.min.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/css/bootstrap-icons.min.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/css/all.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/css/index.css') }}">
-    {{-- Load after Bootstrap so the CSS variables are the source of truth. --}}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="{{ asset('assets/css/medgambit-theme.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/vendor/libs/select2/select2.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/css/select2-theme.css') }}">
     <script>
         const savedTheme = localStorage.getItem('medgambit-theme');
         if (savedTheme === 'light' || savedTheme === 'dark') {
             document.documentElement.dataset.theme = savedTheme;
         }
     </script>
-
     @stack('styles')
+    @livewireStyles
 </head>
 
 <body>
     <x-navbar />
 
     <main id="main-content">
-        @yield("content")
+        @yield('content')
     </main>
-    
-    <script src="{{ asset('assets/js/bootstrap.bundle.min.js') }}"></script>
-    <script src="{{ asset('assets/js/index.js') }}"></script>
-    @stack('scripts')
+    <x-footer />
+
+        <script src="{{ asset('assets/vendor/libs/jquery/jquery.js') }}"></script>
+        <script src="{{ asset('assets/vendor/libs/select2/select2.js') }}"></script>
+        <script src="{{ asset('assets/js/select2-init.js') }}"></script>
+        <script src="{{ asset('assets/js/bootstrap.bundle.min.js') }}"></script>
+        <script src="{{ asset('assets/js/all.js') }}"></script>
+        <script src="{{ asset('assets/js/index.js') }}"></script>
+        <script src="{{ asset('assets/js/profile-dropdown.js') }}"></script>
+        @stack('scripts')
+        @livewireScripts
 </body>
 
 </html>

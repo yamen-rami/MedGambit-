@@ -2,12 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\BranchOfMedicine;
+use App\Models\Questions;
+use App\Models\Reference;
+use App\Models\SkillsForQuestion;
+use App\Models\Specialty;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\{DB, Storage};
-use Illuminate\Validation\{Rule, ValidationException};
-
-use App\Models\{BranchOfMedicine, Questions, Reference, SkillsForQuestion, Specialty};
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class QuestionsController extends Controller
 {
@@ -81,7 +86,7 @@ class QuestionsController extends Controller
     {
         $rules = [
             'options_number' => ['required', 'integer'],
-            'name' => ['required', 'string' , "max:255"],
+            'name' => ['required', 'string', 'max:255'],
             'content' => ['required', 'string'],
             'speciality' => ['required', 'array'],
             'speciality.*' => ['required', 'exists:specialties,id'],
@@ -130,7 +135,7 @@ class QuestionsController extends Controller
                 $path = $request->file('image')->store('questions', 'public');
             }
             $question = Questions::create([
-                "name" => $questionData["name"],
+                'name' => $questionData['name'],
                 'content' => $questionData['content'],
                 'topic' => $questionData['topic'],
                 'main_explanation' => $questionData['main_explanation'],
@@ -170,8 +175,8 @@ class QuestionsController extends Controller
     {
         $questionData = $request->validate(
             [
-                'name' => ['nullable', 'string' , "max:255"],
-                'content' => ['nullable', 'string' ],
+                'name' => ['nullable', 'string', 'max:255'],
+                'content' => ['nullable', 'string'],
                 'main_explanation' => ['nullable', 'string'],
                 'high_yield' => ['nullable', 'string'],
                 'topic' => ['nullable', 'string'],
@@ -180,7 +185,7 @@ class QuestionsController extends Controller
                 'reference' => ['nullable', 'exists:references,id'],
                 'elo_correct' => ['nullable', Rule::in(['4', '8', '12'])],
                 'elo_incorrect' => ['nullable', Rule::in(['5', '10', '15'])],
-                'image' => ['nullable' , "image"],
+                'image' => ['nullable', 'image'],
                 'speciality' => ['nullable', 'array'],
                 'speciality.*' => ['nullable', 'exists:specialties,id'],
                 'branches' => ['nullable', 'array'],

@@ -26,7 +26,7 @@ return new class extends Migration
             $table->enum('elo_incorrect', [5, 10, 15]);
             $table->foreignId('reference_id')->constrained()->cascadeOnDelete();
             if (Schema::getConnection()->getDriverName() !== 'sqlite') {
-                $table->fullText(['content', 'topic' , "name"]);
+                $table->fullText(['content', 'topic', 'name']);
             }
             $table->timestamps();
         });

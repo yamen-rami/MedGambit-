@@ -47,7 +47,12 @@ new class extends Component {
         return Questions::query()
             ->with(['branches', 'skills', 'specialties', 'reference', 'playedCount'])
             ->when($this->search !== '', function ($query) {
-                $query->whereFullText(['name', 'content', 'topic'], $this->search);
+                $search = '%' . $this->search . '%';
+                $query->where(function ($query) use ($search) {
+                    $query->where('name', 'like', $search)
+                        ->orWhere('content', 'like', $search)
+                        ->orWhere('topic', 'like', $search);
+                });
             })
             ->when($this->length !== '', fn($query) => $query->where('length', $this->length))
             ->when($this->difficulty !== '', fn($query) => $query->where('difficulty', $this->difficulty))
@@ -484,7 +489,7 @@ new class extends Component {
                                         </label>
 
                                         <div wire:ignore class="gambits-select2-wrapper">
-                                            <select id="gambits-branches" class="form-select gambits-select2"
+                                            <select id="branches" class="form-select gambits-select2"
                                                 multiple></select>
                                         </div>
 
@@ -498,7 +503,7 @@ new class extends Component {
                                         </label>
 
                                         <div wire:ignore class="gambits-select2-wrapper">
-                                            <select id="gambits-specialities" class="form-select gambits-select2"
+                                            <select id="sp" class="form-select gambits-select2"
                                                 multiple></select>
                                         </div>
 
@@ -512,7 +517,7 @@ new class extends Component {
                                         </label>
 
                                         <div wire:ignore class="gambits-select2-wrapper">
-                                            <select id="gambits-skills" class="form-select gambits-select2"
+                                            <select id="skills" class="form-select gambits-select2"
                                                 multiple></select>
                                         </div>
 
@@ -526,7 +531,7 @@ new class extends Component {
                                         </label>
 
                                         <div wire:ignore class="gambits-select2-wrapper">
-                                            <select id="gambits-references" class="form-select gambits-select2"
+                                            <select id="references" class="form-select gambits-select2"
                                                 multiple></select>
                                         </div>
 
@@ -557,7 +562,7 @@ new class extends Component {
 
 
         {{-- Active Filters --}}
-        @if ($difficulty || $length || count($branches) || count($sp) || count($skills) || count($references))
+        @if ($search || $difficulty || $length || count($branches) || count($sp) || count($skills) || count($references))
 
             <div class="px-4 py-3 border-bottom">
 
@@ -573,6 +578,12 @@ new class extends Component {
 
                     </div>
 
+
+                    @if ($search)
+                        <span class="badge bg-label-secondary d-flex align-items-center gap-1">
+                            Search: {{ $search }}
+                        </span>
+                    @endif
 
                     @if ($difficulty)
                         <span class="badge bg-label-warning d-flex align-items-center gap-1">
@@ -902,87 +913,39 @@ new class extends Component {
     </div>
     @script
         <script>
-            let syncingGambitsSelect = false;
-            let gambitsSelectsInitialized = false;
-
-            const initializeGambitsSelect = (selector, url, placeholder, property) => {
-                const select = $(selector);
-
-                if (!select.length || typeof $.fn.select2 !== 'function') {
-                    return false;
-                }
-
-                if (select.data('gambits-select2-initialized') && select.hasClass('select2-hidden-accessible')) {
-                    return true;
-                }
-
-                select.select2({
-                    width: '100%',
-                    placeholder,
-                    allowClear: true,
-                    dropdownCssClass: 'gambits-select2-dropdown',
-                    ajax: {
-                        url,
-                        delay: 250,
-                        data: (params) => ({
-                            search: params.term || ''
-                        }),
-                        processResults: (data) => ({
-                            results: (Array.isArray(data) ? data : []).map((item) => ({
-                                id: item.id,
-                                text: item.name
-                            })),
-                        }),
-                    },
-                }).off('change.gambits').on('change.gambits', function() {
-                    if (!syncingGambitsSelect) {
-                        $wire.set(property, ($(this).val() || []).map(Number));
-                    }
-                });
-                select.data('gambits-select2-initialized', true);
-
-                return true;
-            };
-
             const initializeGambitsSelects = () => {
-                if (gambitsSelectsInitialized || typeof $.fn.select2 !== 'function') {
+                const select2 = window.MedGambitSelect2;
+
+                if (!select2) {
                     return;
                 }
 
-                const initialized = [
-                    initializeGambitsSelect('#gambits-branches', @js(route('getBranches')), 'Search for branches',
-                        'branches'),
-                    initializeGambitsSelect('#gambits-specialities', @js(route('getSpeciality')),
-                        'Search for specialities', 'sp'),
-                    initializeGambitsSelect('#gambits-skills', @js(route('getSkills')), 'Search for skills',
-                        'skills'),
-                    initializeGambitsSelect('#gambits-references', @js(route('getReferences')),
-                        'Search for references', 'references'),
+                const selectedIds = (value) => value.map(Number);
+                const selects = [
+                    ['#branches', @js(route('getBranches')), 'Search for branches', 'branches'],
+                    ['#sp', @js(route('getSpeciality')), 'Search for specialties', 'sp'],
+                    ['#skills', @js(route('getSkills')), 'Search for skills', 'skills'],
+                    ['#references', @js(route('getReferences')), 'Search for references', 'references'],
                 ];
 
-                gambitsSelectsInitialized = initialized.every(Boolean);
+                selects.forEach(([selector, ajaxUrl, placeholder, property]) => {
+                    select2.init(selector, {
+                        ajaxUrl,
+                        placeholder,
+                        dropdownCssClass: 'gambits-select2-dropdown',
+                        onChange: (value) => $wire.set(property, selectedIds(value)),
+                    });
+                });
             };
 
-            const initializeWhenReady = () => {
-                initializeGambitsSelects();
-
-                if (!gambitsSelectsInitialized) {
-                    window.setTimeout(initializeWhenReady, 50);
-                }
-            };
-
-            if (document.readyState === 'complete') {
-                initializeWhenReady();
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initializeGambitsSelects, { once: true });
             } else {
-                $(window).off('load.gambits').on('load.gambits', initializeWhenReady);
+                initializeGambitsSelects();
             }
 
             $wire.on('gambits-filters-cleared', () => {
-                syncingGambitsSelect = true;
-                $('.gambits-select2').each(function() {
-                    $(this).val(null).trigger('change.select2');
-                });
-                syncingGambitsSelect = false;
+                $('.gambits-select2').val(null).trigger('change.select2');
             });
         </script>
     @endscript

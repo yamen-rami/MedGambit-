@@ -1,6 +1,9 @@
 <?php
 
-use App\Models\{Questions, Quiz, QuizAttempt, User};
+use App\Models\Questions;
+use App\Models\Quiz;
+use App\Models\QuizAttempt;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);

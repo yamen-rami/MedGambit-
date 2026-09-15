@@ -1,6 +1,10 @@
 <?php
 
-use App\Models\{BranchOfMedicine, Questions, Quiz, SkillsForQuestion, Specialty};
+use App\Models\BranchOfMedicine;
+use App\Models\Questions;
+use App\Models\Quiz;
+use App\Models\SkillsForQuestion;
+use App\Models\Specialty;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;

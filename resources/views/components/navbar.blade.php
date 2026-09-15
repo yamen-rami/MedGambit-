@@ -1,4 +1,3 @@
-
 <header class="topbar">
     <div class="top-left">
         <div class="brand">
@@ -32,32 +31,52 @@
                     href="{{ route('start.quiz') }}">Quizzes</a>
             @endauth
             @guest
-                <a class="nav-link {{ request()->routeIs('login') ? 'active' : '' }}"
-                    href="{{ route('login') }}">Login</a>
-                    <a class="nav-link {{ request()->routeIs('register') ? 'active' : '' }}"
+                <a class="nav-link {{ request()->routeIs('login') ? 'active' : '' }}" href="{{ route('login') }}">Login</a>
+                <a class="nav-link {{ request()->routeIs('register') ? 'active' : '' }}"
                     href="{{ route('register') }}">Register</a>
             @endguest
         </nav>
     </div>
     <div class="top-right">
-        <div class="search">
-            {{-- <span class="material-symbols-outlined">search</span> --}}
-            <input class="form-control" aria-label="Search" placeholder="Search Gambits" />
-        </div>
+        @if (!(request()->routeIs('login') or request()->routeIs("register")))
+            <div class="search">
+                {{-- <span class="material-symbols-outlined">search</span> --}}
+                <input class="form-control" aria-label="Search" placeholder="Search Gambits" />
+            </div>
+        @endif
+
         <button class="theme-toggle icon-btn" id="themeToggle" type="button" aria-label="Switch theme">
             <span class="moon material-symbols-outlined">dark_mode</span>
             <span class="sun material-symbols-outlined">light_mode</span>
         </button>
         @auth
+
             <div class="profile" aria-label="User profile">
-                <div class="avatar"><span class="material-symbols-outlined">person</span></div>
+                <div class="{{ auth()->user()->image ? '' : 'avatar' }}">
+                    @if(auth()->user()->image)
+                    <img     class="avatar" src="{{ asset(auth()->user()->image) }}" alt="">
+                    @else
+                        {{ ucfirst(Str::limit(auth()->user()->name , 1, "")) }}
+                    @endif
+                </div>
                 <div class="profile-info">
-                    <span class="profile-name">Dr. {{ auth()->user()->name }}</span>
-                    <span class="profile-role">{{ auth()->user()->rank }}</span>
+                    <span class="profile-name">Dr. {{ auth()->user()->name }}</span><span class="profile-role">Elo {{ auth()->user()->rank }}</span>
                 </div>
                 <button class="profile-menu" type="button" aria-label="Open profile menu">
                     <i class="bi bi-chevron-down"></i>
                 </button>
+                <div class="profile-dropdown" id="login-profile-dropdown">
+                    <a href="{{ route("user.profile" , auth()->user()) }}"><i class="bi bi-person-circle"></i>Profile settings</a>
+                    <a href="arena-setup.html"><i class="bi bi-sliders2"></i>Match preferences</a>
+                    <hr class="dropdown-divider">
+                    <form action="{{ route('logout') }}" method="post">
+                        @csrf
+                        <button class="btn bg-body text-danger">
+                            Logout
+                            <i class="bi bi-box-arrow-right"></i>
+                        </button>
+                    </form>
+                </div>
             </div>
         @endauth
     </div>

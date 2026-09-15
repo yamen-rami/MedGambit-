@@ -1,10 +1,21 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-
-use App\Http\Controllers\{ApiController, BranchOfMedicineController, DashboardController, GameController, OptionsController, QuestionsController, QuizController, ReferenceController, SkillsForQuestionController, SpecialtyController, UserController};
-use App\Http\Middleware\{SuperAdmin, TrackUsers, admin};
+use App\Http\Controllers\ApiController;
+use App\Http\Controllers\BranchOfMedicineController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\GameController;
+use App\Http\Controllers\OptionsController;
+use App\Http\Controllers\QuestionsController;
+use App\Http\Controllers\QuizController;
+use App\Http\Controllers\ReferenceController;
+use App\Http\Controllers\SkillsForQuestionController;
+use App\Http\Controllers\SpecialtyController;
+use App\Http\Controllers\UserController;
+use App\Http\Middleware\admin;
+use App\Http\Middleware\SuperAdmin;
+use App\Http\Middleware\TrackUsers;
 use App\Models\Game;
+use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'home')->name('home')->middleware(TrackUsers::class);
 

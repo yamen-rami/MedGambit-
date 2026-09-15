@@ -29,6 +29,56 @@ test('a user can open the start quiz page', function () {
         ->assertSee('Configure Exam');
 });
 
+test('a user can answer and navigate the start quiz component', function () {
+    $user = User::factory()->create();
+    $quiz = quizForFlow(['type' => 'detected']);
+    $firstQuestion = Questions::factory()->create([
+        'name' => 'First question',
+        'content' => '<strong>Rich question content</strong>',
+        'topic' => '<em>Rich topic</em>',
+        'main_explanation' => '<p><strong>Rich main explanation</strong></p>',
+        'high_yield' => '<p><em>Rich high yield</em></p>',
+        'elo_correct' => '12',
+        'elo_incorrect' => '10',
+    ]);
+    $secondQuestion = Questions::factory()->create(['name' => 'Second question']);
+    $quiz->questions()->attach([$firstQuestion->id, $secondQuestion->id]);
+    $attempt = QuizAttempt::create([
+        'user_id' => $user->id,
+        'quiz_id' => $quiz->id,
+        'status' => 'pending',
+        'score' => 0,
+        'current' => 1,
+        'finished_at' => now()->addMinutes(20),
+    ]);
+    $option = $firstQuestion->options()->firstOrFail();
+
+    Livewire::actingAs($user)
+        ->test('start-quiz', ['quiz' => $quiz])
+        ->assertSee('First question')
+        ->assertSeeHtml('<strong>Rich question content</strong>')
+        ->assertSeeHtml('<em>Rich topic</em>')
+        ->assertSee('ELO GAIN')
+        ->assertSee('+12')
+        ->assertSee('ELO LOSS')
+        ->assertSee('-10')
+        ->assertSee('Timer')
+        ->call('submit', $option->id, $firstQuestion->id)
+        ->assertSet("answers.{$firstQuestion->id}", $option->id)
+        ->call('next')
+        ->assertSet('current', 2)
+        ->assertSee('Second question')
+        ->assertSee('Submit quiz');
+
+    expect($attempt->fresh()->current)->toBe(2);
+    $this->assertDatabaseHas('answers', [
+        'quiz_attempt_id' => $attempt->id,
+        'question_id' => $firstQuestion->id,
+        'option_id' => $option->id,
+        'status' => 'answered',
+    ]);
+});
+
 test('a user can open a learning quiz and answer a question', function () {
     $user = User::factory()->create();
     $quiz = quizForFlow(['type' => 'learning']);

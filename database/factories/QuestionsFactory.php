@@ -2,9 +2,10 @@
 
 namespace Database\Factories;
 
+use App\Models\Option;
+use App\Models\Questions;
+use App\Models\Reference;
 use Illuminate\Database\Eloquent\Factories\Factory;
-
-use App\Models\{Option, Questions, Reference};
 
 /**
  * @extends Factory<Questions>
@@ -19,7 +20,7 @@ class QuestionsFactory extends Factory
     public function definition(): array
     {
         return [
-            "name" => fake()->name("male"),
+            'name' => fake()->name('male'),
             'content' => fake()->sentence(),
             'topic' => fake()->sentence(),
             'image' => asset('assets/img/avatars/1.png'),

@@ -2,7 +2,9 @@
 
 namespace App\Events;
 
-use Illuminate\Broadcasting\{Channel, InteractsWithSockets, PresenceChannel, PrivateChannel};
+use Illuminate\Broadcasting\Channel;
+use Illuminate\Broadcasting\InteractsWithSockets;
+use Illuminate\Broadcasting\PresenceChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
@@ -14,7 +16,7 @@ class PlayerReconnected implements ShouldBroadcast
     /**
      * Create a new event instance.
      */
-    public function __construct(public int $userId , public int $gameId)
+    public function __construct(public int $userId, public int $gameId)
     {
         //
     }
@@ -30,6 +32,7 @@ class PlayerReconnected implements ShouldBroadcast
             new PresenceChannel("presence-game.{$this->gameId}"),
         ];
     }
+
     public function broadcastAs(): string
     {
         return 'player.connected';

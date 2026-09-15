@@ -2,10 +2,15 @@
 
 namespace Tests\Feature;
 
-use App\Models\{Game, GameAnswers, GameAttempt, Players, Questions, User};
+use App\Models\Game;
+use App\Models\GameAnswers;
+use App\Models\GameAttempt;
+use App\Models\Players;
+use App\Models\Questions;
+use App\Models\User;
 use App\Services\GameService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Database\QueryException;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\TestCase;
 

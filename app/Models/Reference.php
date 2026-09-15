@@ -2,11 +2,11 @@
 
 namespace App\Models;
 
+use Database\Factories\ReferenceFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\{BelongsToMany, HasMany};
-
-use Database\Factories\ReferenceFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Reference extends Model
 {
@@ -19,7 +19,9 @@ class Reference extends Model
     {
         return $this->hasMany(Questions::class);
     }
-        public function game() : BelongsToMany{
-        return $this->belongsToMany(Game::class , "game_references");
+
+    public function game(): BelongsToMany
+    {
+        return $this->belongsToMany(Game::class, 'game_references');
     }
 }

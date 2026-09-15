@@ -2,14 +2,16 @@
 
 namespace App\Providers;
 
+use App\Models\User;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Pagination\Paginator;
-use Illuminate\Support\Facades\{DB, Date, Gate, URL};
+use Illuminate\Support\Facades\Date;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
-use Carbon\CarbonImmutable;
-
-use App\Models\User;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -26,12 +28,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        
+
         if ($this->app->environment('production')) {
             URL::forceScheme('https');
         }
-        Gate::define('is_admin' , function (User $user) {
-            return $user->role == "admin" || $user->role === "super_admin";
+        Gate::define('is_admin', function (User $user) {
+            return $user->role == 'admin' || $user->role === 'super_admin';
         });
         $this->configureDefaults();
         Paginator::useBootstrapFive();

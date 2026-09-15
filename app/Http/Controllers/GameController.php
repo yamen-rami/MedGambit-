@@ -2,7 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\{Game, Players};
+use App\Models\Game;
+use App\Models\Players;
 use App\Services\GameService;
 
 class GameController extends Controller
@@ -66,7 +67,7 @@ class GameController extends Controller
 
     public function friendGame(string $challenge_token)
     {
-        $user = auth()->user() ;
+        $user = auth()->user();
         $game = Game::where('challenge_token', $challenge_token)->firstOrFail();
         abort_unless(
             $game->players()->count() < $game->max_players,
@@ -80,17 +81,18 @@ class GameController extends Controller
         ]);
 
     }
-    public function gameRedirect(string $challenge_token){
+
+    public function gameRedirect(string $challenge_token)
+    {
         $game = Game::where('challenge_token', $challenge_token)->firstOrFail();
-        if($game->status === "finished"){
-            abort(401 , "Game Has Finished");
+        if ($game->status === 'finished') {
+            abort(401, 'Game Has Finished');
         }
         abort_unless($game->players()->where('user_id', auth()->id())->exists(), 403);
-        $gameId = $game->id ; 
+        $gameId = $game->id;
 
-        return view('games.startGame' , compact("gameId"));
-    }   
-
+        return view('games.startGame', compact('gameId'));
+    }
 
     // Config Page
     public function config()
@@ -102,6 +104,7 @@ class GameController extends Controller
     public function waiting(Game $game)
     {
         abort_unless($game->players()->where('user_id', auth()->id())->exists(), 403);
+
         return view('games.waiting', compact('game'));
     }
 }

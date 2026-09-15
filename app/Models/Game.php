@@ -2,11 +2,11 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\{Builder, Model};
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-
 use Database\Factories\GameFactory;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Game extends Model
 {
@@ -15,11 +15,12 @@ class Game extends Model
 
     protected $fillable = ['max_players', 'status', 'challenge_token', 'started_at', 'ended_at', 'length', 'difficulty', 'duration',
         'disconnected_at'];
-        protected $casts = [
-            "started_at" => "datetime",
-            "ended_at" => "datetime" , 
-            "disconnected_at" => "datetime",
-        ];
+
+    protected $casts = [
+        'started_at' => 'datetime',
+        'ended_at' => 'datetime',
+        'disconnected_at' => 'datetime',
+    ];
 
     // TODO Duration
     public function references(): BelongsToMany

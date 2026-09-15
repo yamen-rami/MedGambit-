@@ -1,9 +1,10 @@
 <?php
 
+use App\Models\Questions;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-
-use App\Models\{Questions, User};
 use Livewire\Livewire;
+
 uses(RefreshDatabase::class);
 it('filters gambits by difficulty', function () {
 

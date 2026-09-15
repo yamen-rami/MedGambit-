@@ -105,9 +105,9 @@ new class extends Component {
                     @enderror
                 </div>
                 <div class="col-md-6 mb-4">
-                    <label for="specialities" class="form-label">Speciality</label>
+                    <label for="sp" class="form-label">Speciality</label>
                     <div class="select2-primary" wire:ignore>
-                        <select id="specialities" class="select2 form-select specialities" data-livewire-select2 multiple></select>
+                        <select id="sp" class="select2 form-select specialities" data-livewire-select2 multiple></select>
                     </div>
                     @error('specialitiesList')
                         <p class="text-danger py-2">{{ $message }}</p>
@@ -213,136 +213,56 @@ new class extends Component {
 
 @script
     <script>
-        $(function() {
-            if ($('#branches').hasClass('select2-hidden-accessible')) {
-                $('#branches').select2('destroy');
+        const initializeConfigGameSelects = () => {
+            const select2 = window.MedGambitSelect2;
+
+            if (!select2) {
+                return;
             }
 
-            $('#branches')
-                .select2({
-                    placeholder: 'Search for Branches ', // Your placeholder text
+            const selectedIds = (value) => value.map(Number);
 
-                    ajax: {
-                        url: "{{ route('getBranches') }}",
-                        type: 'GET',
-                        delay: 250,
-                        data: function(params) {
-                            return {
-                                search: params.term,
-                            };
-                        },
-                        processResults: function(data) {
-                            return {
-                                results: data.map((branch) => ({
-                                    id: branch.id,
-                                    text: branch.name,
-                                })),
-                            };
-                        },
-                    },
-                })
-                .on('change', function() {
-                    $wire.set('branchesList', $(this).val());
-                });
-            $('#references')
-                .select2({
-                    placeholder: 'Search for References ',
-                    ajax: {
-                        url: "{{ route('getReferences') }}",
-                        type: 'GET',
-                        delay: 250,
-                        data: function(params) {
-                            return {
-                                search: params.term,
-                            };
-                        },
-                        processResults: function(data) {
-                            return {
-                                results: data.map((ref) => ({
-                                    id: ref.id,
-                                    text: ref.name,
-                                })),
-                            };
-                        },
-                    },
-                })
-                .on('change', function() {
-                    $wire.set('references', $(this).val());
-                });
-            if ($('#specialities').hasClass('select2-hidden-accessible')) {
-                $('#specialities').select2('destroy');
-            }
+            select2.init('#branches', {
+                ajaxUrl: @js(route('getBranches')),
+                placeholder: 'Search branches',
+                onChange: (value) => $wire.set('branchesList', selectedIds(value)),
+            });
+            select2.init('#sp', {
+                ajaxUrl: @js(route('getSpeciality')),
+                placeholder: 'Search specialties',
+                onChange: (value) => $wire.set('specialitiesList', selectedIds(value)),
+            });
+            select2.init('#skills', {
+                ajaxUrl: @js(route('getSkills')),
+                placeholder: 'Search skills',
+                onChange: (value) => $wire.set('skillsList', selectedIds(value)),
+            });
+            select2.init('#references', {
+                ajaxUrl: @js(route('getReferences')),
+                placeholder: 'Search references',
+                onChange: (value) => $wire.set('references', selectedIds(value)),
+            });
+            select2.init('#difficulty', {
+                placeholder: 'Select difficulty',
+                multiple: false,
+                onChange: (value) => $wire.set('difficulty', value),
+            });
+            select2.init('#length', {
+                placeholder: 'Select length',
+                multiple: false,
+                onChange: (value) => $wire.set('length', value),
+            });
+            select2.init('#duration', {
+                placeholder: 'Select quiz timer',
+                multiple: false,
+                onChange: (value) => $wire.set('duration', value),
+            });
+        };
 
-            $('#specialities')
-                .select2({
-                    placeholder: 'Search for Specialities ',
-                    ajax: {
-                        url: "{{ route('getSpeciality') }}",
-                        type: 'GET',
-                        delay: 250,
-                        data: function(params) {
-                            return {
-                                search: params.term,
-                            };
-                        },
-                        processResults: function(data) {
-                            return {
-                                results: data.map((s) => ({
-                                    id: s.id,
-                                    text: s.name,
-                                })),
-                            };
-                        },
-                    },
-                })
-                .on('change', function() {
-                    $wire.set('specialitiesList', $(this).val());
-                });
-            // ! Skills
-            if ($('#skills').hasClass('select2-hidden-accessible')) {
-                $('#skills').select2('destroy');
-            }
-
-            $('#skills')
-                .select2({
-                    placeholder: 'Search for Skills ',
-                    ajax: {
-                        url: "{{ route('getSkills') }}",
-                        type: 'GET',
-                        delay: 250,
-                        data: function(params) {
-                            return {
-                                search: params.term,
-                            };
-                        },
-                        processResults: function(data) {
-                            return {
-                                results: data.map((skill) => ({
-                                    id: skill.id,
-                                    text: skill.name,
-                                })),
-                            };
-                        },
-                    },
-                })
-                .on('change', function() {
-                    $wire.set('skillsList', $(this).val());
-                });
-        });
-        $('#difficulty')
-            .select2()
-            .on('change', function() {
-                $wire.set('difficulty', $(this).val());
-            });
-        $('#length')
-            .select2()
-            .on('change', function() {
-                $wire.set('length', $(this).val());
-            });
-        $('#duration')
-            .select2()
-            .on('change', function() {
-                $wire.set('duration', $(this).val());
-            });
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeConfigGameSelects, { once: true });
+        } else {
+            initializeConfigGameSelects();
+        }
     </script>
 @endscript
