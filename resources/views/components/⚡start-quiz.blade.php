@@ -9,29 +9,22 @@ use Livewire\Component;
 
 new class extends Component {
     public $quiz;
-
     public $current = 1;
-
     public $currentQuestion;
-
     public array $answers = [];
-
     public $attempt;
 
     public function mount($quiz)
     {
         $this->quiz = $quiz->loadMissing('questions');
-
         $this->attempt = QuizAttempt::with('answers')
             ->where('user_id', auth()->id())
             ->where('status', 'pending')
             ->where('quiz_id', $this->quiz->id)
             ->first();
-
         if (!$this->attempt) {
             abort(403, 'Something went wrong.');
         }
-
         $this->current = $this->attempt->current;
         $this->answers = $this->attempt->answers->pluck('option_id', 'question_id')->toArray();
         $this->loadQuestion();
@@ -41,20 +34,16 @@ new class extends Component {
     public function quitQuiz()
     {
         app(QuizService::class)->updateAttempt(auth()->id(), $this->quiz->id, $this->answers);
-
         return redirect()->route('quizResult', $this->quiz);
     }
 
     public function loadQuestion(): void
     {
         $questionId = $this->quiz->questions->get($this->current - 1)?->id;
-
         if (!$questionId) {
             $this->currentQuestion = null;
-
             return;
         }
-
         $this->currentQuestion = Questions::with('options', 'correctAnswer', 'playedCount', 'reference')->findOrFail($questionId);
     }
 
@@ -66,31 +55,14 @@ new class extends Component {
     public function submit($optionId, $questionId): void
     {
         $question = $this->currentQuestion;
-
         if (!$question) {
             abort(403);
         }
-
-        if ((int) $question->id !== (int) $questionId || !$question->options->contains('id', (int) $optionId)) {
+        if ((int) $question->id !== (int) $questionId || !$question->options->contains('id', (int) $optionId) || !$this->attempt) {
             return;
         }
-
-        if (!$this->attempt) {
-            return;
-        }
-
         $question->loadMissing('correctAnswer');
-        $isCorrect = $question->correctAnswer?->id === (int) $optionId;
-
-        $this->attempt->answers()->updateOrCreate(
-            ['question_id' => $questionId],
-            [
-                'status' => 'answered',
-                'is_correct' => $isCorrect,
-                'option_id' => $optionId,
-            ],
-        );
-
+        $this->attempt->answers()->updateOrCreate(['question_id' => $questionId], ['status' => 'answered', 'is_correct' => $question->correctAnswer?->id === (int) $optionId, 'option_id' => $optionId]);
         $this->answers[$questionId] = (int) $optionId;
     }
 
@@ -100,27 +72,22 @@ new class extends Component {
             $this->updateCurrent($this->current + 1);
         }
     }
-
-    public function updateCurrent($current): void
-    {
-        $max = $this->quiz->questions->count();
-
-        if ($current < 1 || $max < $current) {
-            return;
-        }
-
-        $this->current = (int) $current;
-        $this->attempt->current = (int) $current;
-        $this->attempt->save();
-        $this->loadQuestion();
-
-    }
-
     public function previous(): void
     {
         if ($this->current > 1) {
             $this->updateCurrent($this->current - 1);
         }
+    }
+    public function updateCurrent($current): void
+    {
+        $max = $this->quiz->questions->count();
+        if ($current < 1 || $max < $current) {
+            return;
+        }
+        $this->current = (int) $current;
+        $this->attempt->current = (int) $current;
+        $this->attempt->save();
+        $this->loadQuestion();
     }
 
     #[Computed]
@@ -128,51 +95,34 @@ new class extends Component {
     {
         return $this->quiz->questions->count();
     }
-
     #[Computed]
     public function remainingSeconds(): ?int
     {
-        if (!$this->attempt?->finished_at) {
-            return null;
-        }
-
-        return max(0, (int) now()->diffInSeconds($this->attempt->finished_at, false));
+        return $this->attempt?->finished_at ? max(0, (int) now()->diffInSeconds($this->attempt->finished_at, false)) : null;
     }
-
     #[Computed]
     public function currentElo()
     {
         return $this->currentQuestion?->elo_correct ?? 0;
     }
-
     #[Computed]
     public function currentInCorrectElo()
     {
         return $this->currentQuestion?->elo_incorrect ?? 0;
     }
-
     public function finishQuiz()
     {
         return $this->timerEnds();
     }
-
     public function timerEnds()
     {
         app(QuizService::class)->updateAttempt(auth()->id(), $this->quiz->id, $this->answers);
-
         return redirect()->route('quizResult', $this->quiz);
     }
-
     public function submitAttempt()
     {
-        $questionsCount = $this->count;
-
-        $this->validate([
-            'answers' => ['required', 'array', "min:$questionsCount"],
-        ]);
-
+        $this->validate(['answers' => ['required', 'array', 'min:' . $this->count]]);
         app(QuizService::class)->updateAttempt(auth()->id(), $this->quiz->id, $this->answers);
-
         return redirect()->route('quizResult', $this->quiz);
     }
 };
@@ -181,148 +131,156 @@ new class extends Component {
     $question = $this->currentQuestion;
     $questionCount = (int) $this->count;
     $questionNumber = (int) $this->current;
+    $answeredCount = count($answers);
+    $remainingCount = max(0, $questionCount - $answeredCount);
     $answeredOptionId = $question ? $answers[$question->id] ?? null : null;
-    $progress = $questionCount > 1 ? (($questionNumber - 1) / ($questionCount - 1)) * 100 : 0;
+    $progress = $questionCount ? round(($answeredCount / $questionCount) * 100) : 0;
     $topic = $question?->topic ?: ($quiz->topic ?: 'Clinical medicine');
 @endphp
 
-<div class="quiz-shell py-5">
-    <div class="quiz-context px-4">
-        <div>
-            <span
-                class="eyebrow">{{ strtoupper($quiz->name ?? $quiz->type == 'deteceted' ? 'Exam Mode' : 'null' ?? 'QUIZ') }}
-                · {{ $quiz->name }}</span>
-            <h1>{{ $quiz->name ?: 'Medical Quiz' }}</h1>
-        </div>
-        <div class="session-status">
-            <span class="status-dot"></span>
-            Question {{ $questionNumber }} of {{ $questionCount }}
-            <span class="divider">·</span> {{ round($progress) }}% complete
-            @if ($this->remainingSeconds !== null)
-                <span class="divider">·</span>
-                <span class="quiz-timer" wire:ignore x-data="{ seconds: {{ max(0, (int) $this->remainingSeconds) }} }" x-init="const timer = setInterval(() => {
-                    if (seconds <= 1) {
-                        clearInterval(timer);
-                        $wire.finishQuiz();
-                    } else { seconds--; }
-                }, 1000);
-                return () => clearInterval(timer)">
-                    <span class="timer-label">Timer</span>
-                    <span
-                        x-text="String(Math.floor(seconds / 60)).padStart(2, '0') + ':' + String(seconds % 60).padStart(2, '0')"></span>
-                </span>
-            @else
-                <span class="divider">Â·</span>
-                <span class="quiz-timer"><span class="timer-label">Timer</span> No time limit</span>
-            @endif
+<div class="quiz-arena" x-cloak x-data="{
+    drawerOpen: false,
+    toggleDrawer() { this.drawerOpen ? this.closeDrawer() : this.openDrawer() },
+    openDrawer() {
+        this.drawerOpen = true;
+        this.$nextTick(() => {
+            document.body.classList.add('quiz-drawer-open');
+            this.$refs.drawer.focus()
+        })
+    },
+    closeDrawer() {
+        if (!this.drawerOpen) return;
+        this.drawerOpen = false;
+        document.body.classList.remove('quiz-drawer-open');
+        this.$nextTick(() => this.$refs.trigger.focus())
+    },
+}" x-on:keydown.escape.window="closeDrawer()">
+    <button class="quiz-mobile-bar quiz-mobile-trigger my-1" type="button" x-ref="trigger" @click="toggleDrawer()"
+        aria-label="Open questions navigation"><i class="bi bi-list"></i><span>Questions </b></button>
+    <div class="quiz-workspace">
+        <div class="quiz-layout">
+            <aside class="quiz-sidebar" aria-label="Quiz navigation">
+                <div class="quiz-sidebar-header">
+                    <div class="quiz-sidebar-kicker"><span>Quiz
+                            progress</span><span>{{ $quiz->name ?: 'Medical quiz' }}</span></div>
+                    <div class="quiz-sidebar-progress"><strong>Question <b>{{ $questionNumber }}</b> <small>of
+                                {{ $questionCount }}</small></strong><span>{{ $progress }}% complete</span></div>
+                    <div class="quiz-progress-track"><i style="width: {{ $progress }}%"></i></div>
+                    <div class="quiz-sidebar-telemetry"><span>{{ $answeredCount }} answered · {{ $remainingCount }}
+                            remaining</span><b class="gain">+{{ $this->currentElo }} ELO</b><b
+                            class="loss">-{{ $this->currentInCorrectElo }} ELO</b></div>
+                </div>
+                <div class="quiz-question-list">
+                    @foreach ($quiz->questions as $navQuestion)
+                        @php($isCurrent = $questionNumber === $loop->iteration)
+                        @php($isAnswered = array_key_exists($navQuestion->id, $answers))
+                        <button type="button" wire:key="question-nav-{{ $navQuestion->id }}"
+                            wire:click="updateCurrent({{ $loop->iteration }})"
+                            class="quiz-question-row {{ $isCurrent ? 'current' : '' }} {{ $isAnswered ? 'answered' : '' }}"
+                            @if ($isCurrent) aria-current="step" @endif>
+                            <span
+                                class="quiz-question-row-title"><b>{{ str_pad($loop->iteration, 2, '0', STR_PAD_LEFT) }}</b><span>{{ $navQuestion->name ?: strip_tags($navQuestion->topic ?: 'Clinical question') }}</span></span>
+                            @if ($isAnswered)
+                            <i class="bi bi-check-circle-fill"></i>@else<i class="empty"></i>
+                            @endif
+                        </button>
+                    @endforeach
+                </div>
+                <div class="quiz-sidebar-footer"><span>Click any question to
+                        jump</span><span>{{ $answeredCount }}/{{ $questionCount }} done</span></div>
+            </aside>
+
+            <main class="quiz-question-panel">
+                @if ($question)
+                    <header class="quiz-panel-header">
+                        @if ($quiz->name)
+                            <h1 class="quiz-name">{{ $quiz->name }}</h1>
+                        @endif
+                        <div class="quiz-tags"><b>Question {{ $questionNumber }} of
+                                {{ $questionCount }}</b><span>{!! $topic !!}</span><span>{{ strtoupper($question->difficulty ?: $quiz->difficulty ?: 'medium') }}</span>
+                        </div>
+                        <div class="quiz-panel-status">
+                            <b class="gain">+{{ $this->currentElo }} ELO</b>
+                            <b class="text-danger ">-{{ $this->currentInCorrectElo }} ELO</b>
+                            @if ($this->remainingSeconds !== null)
+                                <span class="quiz-timer" wire:ignore x-data="{ seconds: {{ max(0, (int) $this->remainingSeconds) }} }" x-init="const timer = setInterval(() => {
+                                    if (seconds <= 1) {
+                                        clearInterval(timer);
+                                        $wire.finishQuiz();
+                                    } else { seconds--; }
+                                }, 1000);
+                                return () => clearInterval(timer)"><i
+                                        class="bi bi-clock"></i><span>Timer</span><em
+                                        x-text="String(Math.floor(seconds / 60)).padStart(2, '0') + ':' + String(seconds % 60).padStart(2, '0')"></em></span>
+                            @else
+                                <span class="quiz-timer"><i class="bi bi-clock"></i><span>Timer</span> No time
+                                    limit</span>
+                            @endif
+                        </div>
+                    </header>
+                    <section class="quiz-panel-body" wire:key="question-card-{{ $question->id }}">
+                        <div class="quiz-question-heading">
+                            <div><small>{{ $question->name ?: 'Clinical question' }}</small>
+                            </div><span class="text-danger">{{ $question->difficulty }}</span>
+                        </div>
+                        <article class="quiz-vignette">{!! $question->content !!}</article>
+                        <div class="quiz-answer-list" role="radiogroup" aria-label="Answer options">
+                            @foreach ($question->options as $option)
+                                @php($letter = $option->name ?: chr(64 + $loop->iteration))
+                                @php($isSelected = (int) $answeredOptionId === (int) $option->id)
+                                <button type="button"
+                                    wire:key="question-{{ $question->id }}-option-{{ $option->id }}"
+                                    wire:click="submit({{ $option->id }}, {{ $question->id }})"
+                                    class="quiz-answer-row {{ $isSelected ? 'selected' : '' }}"
+                                    aria-checked="{{ $isSelected ? 'true' : 'false' }}"><b>{{ $letter }}</b><span>{{ $option->content }}</span><i><em></em></i></button>
+                            @endforeach
+                        </div>
+                    </section>
+                    <footer class="quiz-panel-footer"><span class="quiz-shortcut"><kbd>A–D</kbd> Select option</span>
+                        <div><button class="quiz-button secondary" type="button" wire:click="previous"
+                                @disabled($questionNumber === 1)><i class="bi bi-arrow-left"></i>Previous</button>
+                            @if ($questionNumber < $questionCount)
+                                <button class="quiz-button primary" type="button" wire:click="next">Next question<i
+                                    class="bi bi-arrow-right"></i></button>@else<button class="quiz-button primary"
+                                    type="button" wire:click="submitAttempt">Submit quiz<i
+                                        class="bi bi-check-lg"></i></button>
+                            @endif
+                        </div>
+                    </footer>
+                    @error('answers')
+                        <div class="quiz-submit-error">Please answer {{ $remainingCount }} remaining question(s).</div>
+                    @enderror
+                @else
+                    <div class="quiz-empty"><i class="bi bi-clipboard-x"></i>
+                        <h1>Quiz unavailable</h1>
+                        <p>No question is available for this quiz.</p>
+                    </div>
+                @endif
+            </main>
         </div>
     </div>
-
-    <div class="question-nav px-4" aria-label="Question navigation">
-        <div class="question-buttons">
+    <div class="quiz-drawer-backdrop" x-show="drawerOpen" x-cloak @click="closeDrawer()"></div>
+    <aside class="quiz-mobile-drawer" x-show="drawerOpen" x-cloak x-transition x-ref="drawer" tabindex="-1"
+        role="dialog" aria-modal="true" aria-label="Question navigation">
+        <header>
+            <div><strong>Quiz navigator</strong><span>Question {{ $questionNumber }} of {{ $questionCount }} ·
+                    {{ $progress }}%</span></div><button type="button" @click="closeDrawer()"
+                aria-label="Close questions"><i class="bi bi-x-lg"></i></button>
+        </header>
+        <div class="quiz-progress-track"><i style="width: {{ $progress }}%"></i></div>
+        <p>{{ $answeredCount }} answered · {{ $remainingCount }} remaining</p>
+        <div>
             @foreach ($quiz->questions as $navQuestion)
-                <button type="button"
-                    class="question-number {{ array_key_exists($navQuestion->id, $answers) ? 'answered' : '' }} {{ $questionNumber === $loop->iteration ? 'current' : '' }}"
-                    wire:key="question-nav-{{ $navQuestion->id }}" wire:click="updateCurrent({{ $loop->iteration }})"
-                    @if ($questionNumber === $loop->iteration) aria-current="step" @endif>
-                    {{ $loop->iteration }}
+                @php($isCurrent = $questionNumber === $loop->iteration) @php($isAnswered = array_key_exists($navQuestion->id, $answers))
+                <button type="button" wire:key="mobile-question-nav-{{ $navQuestion->id }}"
+                    wire:click="updateCurrent({{ $loop->iteration }})" @click="closeDrawer()"
+                    class="{{ $isCurrent ? 'current' : '' }} {{ $isAnswered ? 'answered' : '' }}"><span>{{ str_pad($loop->iteration, 2, '0', STR_PAD_LEFT) }}
+                        {{ $navQuestion->name ?: 'Clinical question' }}</span>
+                    @if ($isAnswered)
+                    <i class="bi bi-check-circle-fill"></i>@else<i></i>
+                    @endif
                 </button>
             @endforeach
         </div>
-        <span class="question-legend"><i class="legend-active"></i> Active
-            <i class="legend-done"></i> Answered</span>
-    </div>
-
-    @if ($question)
-        <section class="case-card" aria-labelledby="caseTitle">
-            <div wire:key="question-card-{{ $question->id }}">
-            <div class="case-header">
-                <div>
-                    <span class="eyebrow">CASE {{ str_pad($questionNumber, 2, '0', STR_PAD_LEFT) }} ·
-                        {!! $topic !!}</span>
-                    <h2 id="caseTitle">{{ $question->name ?: 'Clinical question' }}</h2>
-                </div>
-                <span class="difficulty-badge">DIFFICULTY ·
-                    {{ strtoupper($question->difficulty ?: $quiz->difficulty ?: 'medium') }}</span>
-            </div>
-
-            <div class="question-meta" aria-label="Question details">
-                <span><strong>TOPIC</strong> {!! $topic !!}</span>
-                <span><strong>ELO GAIN</strong>
-                    <span class="text-success">
-                        +{{ $this->currentElo }}
-                    </span>
-                </span>
-                <span><strong>ELO LOSS</strong>
-                    <span class="text-danger">
-                        -{{ $this->currentInCorrectElo }}
-                    </span>
-                </span>
-            </div>
-
-            <div class="vignette">
-                <p>{!! $question->content !!}</p>
-            </div>
-
-
-            <div class="prompt">
-                <span class="eyebrow">SELECT THE BEST ANSWER</span>
-                <p>Choose the option that best answers this clinical question.</p>
-            </div>
-
-            <div class="quiz-options" role="radiogroup" aria-label="Diagnosis options">
-                @foreach ($question->options as $option)
-                    @php
-                        $letter = $option->name ?: chr(64 + $loop->iteration);
-                        $isSelected = (int) $answeredOptionId === (int) $option->id;
-                    @endphp
-                    <button class="quiz-option {{ $isSelected ? 'is-selected' : '' }}" type="button"
-                        data-letter="{{ $letter }}" aria-checked="{{ $isSelected ? 'true' : 'false' }}"
-                        wire:key="question-{{ $question->id }}-option-{{ $option->id }}"
-                        wire:click="submit({{ $option->id }}, {{ $question->id }})">
-                        <span class="letter-badge">{{ $letter }}</span>
-                        <span class="answer-text">{{ $option->content }}</span>
-                        <span class="check-indicator"><i></i></span>
-                    </button>
-                @endforeach
-            </div>
-            </div>
-
-            <div class="quiz-actions">
-                <div class="keyboard-hint">
-                    Choose an answer, then continue when ready.
-                </div>
-                <div class="action-buttons">
-                    <button class="btn btn-outline-secondary" type="button" wire:click="previous"
-                        @disabled($questionNumber === 1)>
-                        <i class="bi bi-arrow-left"></i><span>Previous</span>
-                    </button>
-
-                    @if ($questionNumber < $questionCount)
-                        <button class="btn btn-primary" type="button" wire:click="next">
-                            <span>Next question</span><i class="bi bi-arrow-right"></i>
-                        </button>
-                    @else
-                        <button class="btn btn-primary" type="button" wire:click="submitAttempt">
-                            <span>Submit quiz</span><i class="bi bi-check"></i>
-                        </button>
-                    @endif
-                </div>
-            </div>
-
-            @error('answers')
-                <div class="alert alert-danger mt-3">Please answer {{ $this->count - count($answers) }} remaining
-                    question(s).</div>
-            @enderror
-        </section>
-    @else
-        <section class="case-card" aria-labelledby="caseTitle">
-            <div class="case-header">
-                <div>
-                    <span class="eyebrow">QUIZ UNAVAILABLE</span>
-                    <h2 id="caseTitle">No question is available.</h2>
-                </div>
-            </div>
-        </section>
-    @endif
+    </aside>
 </div>

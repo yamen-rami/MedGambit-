@@ -78,11 +78,11 @@ new class extends Component {
             ->limit($this->count)
             ->get();
 
-        if ($questions->count() < 20) {
+        if ($questions->count() < $this->count) {
             $fallback = $this->applyFilters(Questions::query())
                 ->whereIn('id', $userPlayedQuestion)
                 ->whereNotIn('id', $questions->pluck('id'))
-                ->limit(20 - $questions->count())
+                ->limit($this->count - $questions->count())
                 ->get();
 
             $questions = $questions->merge($fallback);

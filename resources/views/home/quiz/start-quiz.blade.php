@@ -5,6 +5,7 @@
 @extends('layouts.main')
 @push('styles')
     <link rel="stylesheet" href="{{ asset('assets/css/quiz-question.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/css/quiz-sidebar-layout.css') }}">
 @endpush
 @section('title')
     Quiz
