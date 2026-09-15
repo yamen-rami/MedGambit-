@@ -1,174 +1,155 @@
-<x-user-layout>
-    @push('style')
-        <link rel="stylesheet" href="{{ asset("assets/css/home.css") }}">
-    @endpush
-
-    <main>
-
-        <!-- Hero Introduction Section -->
-        <section class="hero-box" id="home">
-            <div class="hero-glow"></div>
-            <div class="hero-content">
-                <div class="hero-badge">
-                    <span class="dot"></span>
-                    Medical Learning Platform
+@extends('layouts.main')
+@push('styles')
+    <link href="{{ asset('assets/css/story.css') }}" rel="stylesheet" />
+@endpush
+@section('content')
+    <section class="story-hero">
+        <div>
+            <div class="story-kicker"><i></i> EDITORIAL PRODUCT STORY · PROTOCOL 2.4</div>
+            <h1>Medicine is hard.<br><span>Practice should be worth the struggle.</span></h1>
+            <p>Train your clinical thinking, challenge others, learn from mistakes, and improve one question at a time.
+            </p>
+            <div class="story-actions"><a class="btn btn-primary btn-lg" href="#practice"><span
+                        class="material-symbols-outlined align-middle me-1">play_circle</span>Start practicing</a><a
+                    class="btn btn-outline-secondary btn-lg" href="#arena"><span
+                        class="material-symbols-outlined align-middle me-1">swords</span>Enter the arena</a></div>
+        </div>
+    </section>
+    <div class="story-shell">
+        <div class="story-spine" id="storySpine">
+            <article class="story-section is-active" id="the-idea">
+                <div class="story-node"></div>
+                <div class="story-label">01 — The idea · Cognitive resonance</div>
+                <h2>What if medical practice felt more like improving at chess?</h2>
+                <p>In chess, losing is part of improving. You make a mistake, find the blunder, understand why it
+                    happened, and play again. Medicine requires that same habit of reflection, with far more important
+                    consequences.</p>
+                <div class="story-card story-quote">“Lose the question. Learn the lesson. Come back stronger.”<div
+                        class="story-label mt-3 mb-0">— The MedGambit principle</div>
                 </div>
-                <h1 class="hero-title">MedGambit — turning medical study into head-to-head challenges.</h1>
-                <p class="hero-sub">MedGambit is a quiz-battle platform built for medical students who want to learn by
-                    competing. Face an opponent in real time, answer clinical questions under pressure, and track your
-                    progress as you climb through topics and specialties.</p>
-                <div class="hero-actions">
-                    <a class="btn-primary" href="#services">Explore the Platform</a>
-                    <a class="btn-secondary" href="#about">Meet the Team</a>
+            </article>
+            <article class="story-section" id="about-us">
+                <div class="story-node"></div>
+                <div class="story-label">02 — Our story · Genesis</div>
+                <h2>Built from medicine, chess, and a love of solving problems.</h2>
+                <p>MedGambit brings competition, rating, reviewing mistakes, and continuous improvement into medical
+                    education. Questions are organized by both specialty and the skill required to solve them.</p>
+                <div class="story-grid">
+                    <div class="story-metric"><strong>Medicine</strong><span>Clinical dilemmas with meaningful
+                            context.</span></div>
+                    <div class="story-metric"><strong>Competition</strong><span>Challenge yourself and another
+                            student.</span></div>
+                    <div class="story-metric"><strong>Reflection</strong><span>Review the reasoning behind every
+                            result.</span></div>
                 </div>
-            </div>
-        </section>
-
-        <!-- What We Do Section -->
-        <section class="section" id="services">
-            <div class="section-head">
-                <div>
-                    <span class="section-eyebrow">Capabilities</span>
-                    <h2 class="section-title">Medical Learning Challenges</h2>
+            </article>
+            <article class="story-section" id="gambits">
+                <div class="story-node"></div>
+                <div class="story-label">03 — Gambits · Targeted slicing</div>
+                <h2>Shape your practice. Find your gambit.</h2>
+                <p>Gambits narrow thousands of questions into exactly the practice you need: difficulty, length, branch,
+                    specialty, skill, and reference.</p>
+                <div class="story-card d-flex flex-wrap align-items-center gap-2"><span
+                        class="badge text-bg-primary">Hard</span><span
+                        class="badge text-bg-secondary">Cardiology</span><span
+                        class="badge text-bg-secondary">Diagnosis</span><span class="badge text-bg-primary">ECG
+                        interpretation</span><span class="ms-auto text-secondary small mono">10 questions · ready</span>
                 </div>
-                <p class="section-desc">A quiz platform built around competition, speed, and real clinical knowledge —
-                    designed to make studying feel like a match, not a chore.</p>
-            </div>
-
-            <div class="services-grid">
-                <!-- Card 1 -->
-                <div class="service-card">
-                    <div class="service-icon indigo">
-                        <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round"
-                                stroke-linejoin="round" />
-                        </svg>
-                    </div>
-                    <h3 class="service-title">Think Beyond the Textbook</h3>
-                    <p class="service-text">
-                        Practice internationally relevant medical questions inspired by leading Q-banks, covering basic sciences, clinical medicine, and real-world diagnostic reasoning for students.
-                    </p>
-                    <div class="tag-row">
-                        <span class="tag">International</span>
-                        <span class="tag">Question Bank</span>
-                        <span class="tag">Difficulty Levels</span>
-                    </div>
-                </div>
-
-                <!-- Card 2 -->
-                <div class="service-card">
-                    <div class="service-icon purple">
-                        <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                            <path d="M13 10V3L4 14h7v7l9-11h-7z" stroke-linecap="round" stroke-linejoin="round" />
-                        </svg>
-                    </div>
-                    <h3 class="service-title">Master the Core Before the Details</h3>
-                    <p class="service-text">Master the core concepts first, then filter by specialty, topic, skill, difficulty, and length to target exactly what you need.</p>
-                    <div class="tag-row">
-                        <span class="tag">Filter</span>
-                        <span class="tag">Speciality</span>
-                        <span class="tag">Branch of medicine</span>
-                        <span class="tag">General Medical Concept </span>
-                        <span class="tag">Memorization</span>
-
-
-                    </div>
-                </div>
-
-                <!-- Card 3 -->
-                <div class="service-card">
-                    <div class="service-icon cyan">
-                        <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                            <path
-                                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm6 0V9a2 2 0 00-2-2h-2a2 2 0 00-2 2v10m10 0v-4a2 2 0 00-2-2h-2a2 2 0 00-2 2v4"
-                                stroke-linecap="round" stroke-linejoin="round" />
-                        </svg>
-                    </div>
-                    <h3 class="service-title">Put Your Rank on the Line</h3>
-                    <p class="service-text">Build your ELO, challenge students worldwide under the same questions and timer, climb the ranks, and prove your medical knowledge.</p>
-                    <div class="tag-row">
-                        <span class="tag">Elo Rating</span>
-                        <span class="tag">Player Vs Player</span>
-                        <span class="tag">Challenge</span>
-                        <span class="tag">Show Excellence</span>
-
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- About Us Section -->
-        <section class="section" id="about" style="padding-bottom:48px;">
-            <div class="section-head">
-                <div>
-                    <span class="section-eyebrow"> Team</span>
-                    <h2 class="section-title">Built by Two Brothers, Made for Every Med Student</h2>
-                </div>
-                <p class="section-desc">MedGambit is built and maintained by two brothers who wanted a better way to study
-                    for exams — together.</p>
-            </div>
-
-            <div class="about-card">
-                <div class="about-grid">
-                    <!-- Founder 1: Yamen -->
-                    <div class="about-portrait">
-                        <img alt="Yamen - Co-Founder"
-                            src="https://lh3.googleusercontent.com/aida/AEtjO1VkO7ZAd9VX-wAaZNvbQ2E-t5Sn_ygl245shrYF3x8VKsA956iJqSrp_2z09R1tx8DK3kWo1DURl959t4ln47K32oKiUjvvZeut_AwVVVAlUWQOwO5aszjWBZy9CU9-4vHoN_gFuLORz_pGeC6_JsIlw-qLweLA7B-QdLLMEhjLV_g7U8QRE3HcsN8IbwX3SFTAV267qupU7XkM5JXwx91kfsjzq9y_taKcyDmWXCKoPYco0lFRfYR3Zyg">
-                        <div class="portrait-tag">
-                            <p class="name">Yamen</p>
-                            <p class="role">Co-Founder</p>
-                        </div>
-                    </div>
-
-                    <!-- Founder 2: Mohammed -->
-                    <div class="about-portrait">
-                        <div class="avatar-initials">M</div>
-                        <div class="portrait-tag">
-                            <p class="name">Mohammed</p>
-                            <p class="role">Co-Founder</p>
-                        </div>
-                    </div>
-
-                    <!-- Story & Stats -->
-                    <div class="about-body">
-                        <div>
-                            <h3 class="about-heading">Two builders, one platform for medical learning.</h3>
-                            <p class="lead">MedGambit is built by Yamen and Mohammed Abuwarda, who set out to make medical
-                                exam prep feel less like a grind and more like a match — head-to-head quiz battles built
-                                around real clinical questions.</p>
-                            <p class="sub">Every feature is shaped around one goal: helping medical students learn
-                                faster by testing themselves against each other, not just against a question bank.</p>
-                        </div>
-
-                        <div class="stats-row">
-                            <div>
-                                <p class="stat-value">2</p>
-                                <div class="stat-label">Founders</div>
-                            </div>
-                            <div>
-                                <p class="stat-value accent">1v1</p>
-                                <div class="stat-label">Battle Mode</div>
-                            </div>
-                            <div>
-                                <p class="stat-value">100%</p>
-                                <div class="stat-label">Built for Med Students</div>
-                            </div>
-                        </div>
-
-                        <div class="about-cta-row">
-                            <a href="{{ route("config.game") }}" class="btn-gradient text-white">Try a Challenge</a>
-                            <span class="about-note">Built by Yamen &amp; Mohammed</span>
+            </article>
+            <article class="story-section" id="arena">
+                <div class="story-node"></div>
+                <div class="story-label">04 — Arena · Live diagnostic duel</div>
+                <h2>Competition turns attention into commitment.</h2>
+                <p>Enter a focused 1v1 clinical scenario. Read quickly, reason carefully, and see how your decisions
+                    compare in real time.</p>
+                <div class="story-card">
+                    <div class="d-flex justify-content-between border-bottom pb-3 mb-3"><span
+                            class="mono text-secondary">RANKED DUEL / LIVE</span><span class="badge text-bg-success">●
+                            Online</span></div>
+                    <div class="row g-3 text-center">
+                        <div class="col"><small class="text-secondary d-block">YOU</small><strong
+                                class="text-primary">14.2s</strong></div>
+                        <div class="col d-flex align-items-center justify-content-center text-secondary">VS</div>
+                        <div class="col"><small class="text-secondary d-block">OPPONENT</small><strong>18.6s</strong>
                         </div>
                     </div>
                 </div>
-            </div>
-        </section>
-
-    </main>
-
-    <!-- Footer -->
-  
-
-  
-
-</x-user-layout>
+            </article>
+            <article class="story-section" id="review">
+                <div class="story-node"></div>
+                <div class="story-label">05 — Review · Post-mortem analysis</div>
+                <h2>A wrong answer should tell you what to do next.</h2>
+                <p>The score tells you how you performed. The review tells you how to improve: correct answers, weak
+                    skills, weak specialties, and the next practice target.</p>
+                <div class="progress mt-4" role="progressbar" aria-label="Review progress">
+                    <div class="progress-bar" style="width: 72%"></div>
+                </div>
+            </article>
+            <article class="story-section" id="practice">
+                <div class="story-node"></div>
+                <div class="story-label">06 — Begin · The diagnostic frontier</div>
+                <h2>Your next question might expose your next weakness.</h2>
+                <p>Find it. Solve it. Learn from it. Then go again.</p><a class="btn btn-primary mt-3"
+                    href="index.html"><span class="material-symbols-outlined align-middle me-1">bolt</span>Start
+                    practicing</a>
+            </article>
+            <article class="story-section" id="precision">
+                <div class="story-node"></div>
+                <div class="story-label">07 — Precision · Cognitive vectors</div>
+                <h2>A question can test more than one thing.</h2>
+                <p>MedGambit considers the skill required to solve each question, making practice more precise than
+                    subject-only question banks.</p>
+                <div class="story-card">
+                    <div class="d-flex flex-wrap gap-2"><span class="badge text-bg-primary">Diagnosis</span><span
+                            class="badge text-bg-primary">Clinical reasoning</span><span class="badge text-bg-primary">ECG
+                            interpretation</span></div>
+                </div>
+            </article>
+            <article class="story-section" id="community">
+                <div class="story-node"></div>
+                <div class="story-label">08 — Community · Collaborative pedagogy</div>
+                <h2>Built with people who understand the exam room.</h2>
+                <p>MedGambit grows with medical students and colleagues who understand education. The goal is useful
+                    questions, clear reasoning, meaningful explanations, and real learning value.</p>
+                <div class="story-grid">
+                    <div class="story-metric"><strong>Clear reasoning</strong><span>Questions framed around clinical
+                            dilemmas.</span></div>
+                    <div class="story-metric"><strong>Good classification</strong><span>Indexed by specialty, skill, and
+                            reference.</span></div>
+                    <div class="story-metric"><strong>Real learning value</strong><span>Designed for clinical
+                            intuition.</span></div>
+                </div>
+            </article>
+            <article class="story-section" id="why">
+                <div class="story-node"></div>
+                <div class="story-label">09 — Why MedGambit · Synthesis</div>
+                <h2>Practice precisely. Learn deeply. Improve continuously.</h2>
+                <div class="story-card p-0 overflow-hidden">
+                    <div class="p-3 border-bottom"><strong>Practice precisely.</strong><span
+                            class="d-block text-secondary small mt-1">Find the questions you actually need.</span></div>
+                    <div class="p-3 border-bottom"><strong>Learn from mistakes.</strong><span
+                            class="d-block text-secondary small mt-1">Understand why your reasoning failed.</span></div>
+                    <div class="p-3"><strong>Compete and improve.</strong><span
+                            class="d-block text-secondary small mt-1">Return stronger than before.</span></div>
+                </div>
+            </article>
+            <article class="story-section" id="final-cta">
+                <div class="story-node"></div>
+                <div class="story-card text-center py-5">
+                    <div class="story-label">10 — The diagnostic frontier</div>
+                    <h2 class="mx-auto">Your next question might expose your next weakness.</h2>
+                    <p class="mx-auto">Find it. Solve it. Learn from it. Then go again.</p><a
+                        class="btn btn-primary btn-lg mt-3" href="index.html"><span
+                            class="material-symbols-outlined align-middle me-1">bolt</span>Start practicing</a>
+                </div>
+            </article>
+        </div>
+    </div>
+    <footer class="story-footer">
+        <div class="container d-flex flex-wrap justify-content-between gap-3"><span>MEDGAMBIT · CLINICAL DIAGNOSTIC
+                ARENA</span><span>4,800+ VIGNETTES ONLINE · DX-NODE-04</span></div>
+    </footer>
+@endsection
+@push('scripts')
+    <script src="{{ asset('assets/js/story.js') }}"></script>
+@endpush
