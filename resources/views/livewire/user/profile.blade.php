@@ -42,8 +42,10 @@
                     <button class="btn btn-outline-secondary" type="button" wire:click="cancelEditing">Cancel</button>
                 </form>
             @else
-                <button class="btn btn-outline-secondary" type="button" wire:click="startEditing"><i
-                        class="bi bi-pencil"></i> Edit profile</button>
+            @if($user->id === auth()->id())
+            <button class="btn btn-outline-secondary" type="button" wire:click="startEditing"><i
+                class="bi bi-pencil"></i> Edit profile</button>
+                @endif
             @endif
             <a class="btn btn-primary" href="{{ route('start.quiz') }}"><i class="bi bi-play-fill"></i> Start quiz</a>
         </div>
@@ -100,7 +102,7 @@
             <div><small>INCOMPLETE QUIZZES</small><strong>{{ $stats->incomplete }}</strong><em>Resumable</em></div>
             <div><small>ACCURACY</small><strong
                     class="green-text">{{ number_format($accuracy, 1) }}%</strong><em>{{ $answerStats->correct }}
-                    correct</em></div>
+                    correct · {{ $answerStats->wrong }} wrong</em></div>
         </div>
     </section>
 
@@ -153,7 +155,7 @@
                             <td>
                                 <a class="btn btn-outline-primary"
                                     href="
-                                                    @if ($attempt['quiz_type'] == 'random') {{ route('start.random.quiz', $attempt['quiz_id']) }}
+                                                    @if ($attempt['quiz_type'] == 'random') {{ route('show.quiz', $attempt['quiz_id']) }}
                                                     @elseif($attempt['quiz_type'] == 'detected')
                                                           {{ route('start.detecated.quiz', $attempt['quiz_id']) }}
                                                     @else {{ route('start.learning.quiz', $attempt['quiz_id']) }} @endif

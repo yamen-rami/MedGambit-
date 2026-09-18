@@ -2,10 +2,11 @@
 
 namespace App\Livewire\User;
 
-use App\Models\User;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
+
+use App\Models\User;
 use Livewire\Component;
 
 class Profile extends Component
@@ -42,11 +43,10 @@ class Profile extends Component
         $this->games = $user->gameAttempts()
             ->with(['game.attempts.user'])
             ->latest()
-            ->get()
+            ->get() 
             ->map(function ($gameAttempt) use ($user): array {
                 $opponent = $gameAttempt->game?->attempts
                     ->first(fn ($opponentAttempt) => $opponentAttempt->user_id !== $user->id)?->user;
-
                 return [
                     'game_id' => $gameAttempt->game_id,
                     'difficulty' => $gameAttempt->game?->difficulty ?? 'standard',
@@ -69,13 +69,8 @@ class Profile extends Component
         if ($search === '') {
             return collect($this->attemptRows);
         }
-
         return $this->user->attempts()
-            ->with('quiz')
-            ->withCount([
-                'answers',
-                'answers as correct_answers_count' => fn ($query) => $query->where('is_correct', true),
-            ])
+            ->with('quiz:id,name,topic,type,questions_number')
             ->whereHas('quiz', function ($query) use ($search): void {
                 $query->where('name', 'like', "%{$search}%");
             })
@@ -107,8 +102,8 @@ class Profile extends Component
                 },
                 'status' => $attempt->status,
                 'score' => $attempt->score ?? 0,
-                'correct_answers' => $attempt->correct_answers_count ?? 0,
-                'answers' => $attempt->answers_count ?? 0,
+                'correct_answers' => (int) ($attempt->score ?? 0),
+                'answers' => (int) ($attempt->quiz?->questions_number ?? 0),
                 'created_at' => $attempt->created_at?->format('M d, Y'),
             ];
         });

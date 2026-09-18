@@ -77,6 +77,38 @@ test('a user can answer and navigate the start quiz component', function () {
     ]);
 });
 
+test('a user can review a finished start quiz attempt without restarting it', function () {
+    $user = User::factory()->create();
+    $quiz = quizForFlow(['type' => 'detected']);
+    $question = Questions::factory()->create();
+    $quiz->questions()->attach($question);
+    $attempt = QuizAttempt::create([
+        'user_id' => $user->id,
+        'quiz_id' => $quiz->id,
+        'status' => 'finished',
+        'score' => 1,
+        'current' => 1,
+        'finished_at' => now()->subMinute(),
+    ]);
+    $option = $question->correctAnswer()->firstOrFail();
+    Answers::create([
+        'quiz_attempt_id' => $attempt->id,
+        'question_id' => $question->id,
+        'option_id' => $option->id,
+        'is_correct' => true,
+        'status' => 'answered',
+    ]);
+
+    Livewire::actingAs($user)
+        ->test('start-quiz', ['quiz' => $quiz])
+        ->assertSet('current', 1)
+        ->assertSet('answers.' . $question->id, $option->id)
+        ->assertSet('remainingSeconds', null)
+        ->call('submit', $option->id, $question->id);
+
+    expect($attempt->fresh()->status)->toBe('finished');
+});
+
 test('a user can open a learning quiz and answer a question', function () {
     $user = User::factory()->create();
     $quiz = quizForFlow(['type' => 'learning']);
@@ -94,6 +126,7 @@ test('a user can open a learning quiz and answer a question', function () {
     Livewire::actingAs($user)
         ->test('learning-quiz', ['quiz' => $quiz])
         ->assertSet('current', 1)
+        ->assertSeeHtml('<button class="answer-choice" type="button"')
         ->call('submit', $correctOption->id, $question->id)
         ->assertSet('correctCount', 1);
 

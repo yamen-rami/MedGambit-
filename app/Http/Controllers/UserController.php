@@ -15,12 +15,7 @@ class UserController extends Controller
         $sort = in_array($sort, ['highest', 'lowest', 'newest', 'oldest'], true) ? $sort : 'newest';
 
         $search = $request->string('search')->trim()->toString();
-        $attemptsQuery = $user->attempts()->with('quiz')
-            ->withCount([
-                'answers',
-                'answers as correct_answers_count' => fn ($query) => $query->where('is_correct', true),
-                'answers as wrong_answers_count' => fn ($query) => $query->where('is_correct', false),
-            ]);
+        $attemptsQuery = $user->attempts()->with('quiz:id,name,topic,type,questions_number');
         if ($search !== '') {
             $attemptsQuery->whereHas('quiz', fn ($query) => $query->where('name', 'like', "%{$search}%"));
         }
@@ -36,14 +31,20 @@ class UserController extends Controller
             default => $attemptsQuery->latest(),
         })->paginate(10)->withQueryString();
 
-        $allAttempts = $user->attempts()->with('answers')->get();
+        $allAttempts = $user->attempts()->with('quiz:id,questions_number')->get();
         $stats = (object) [
             'total' => $allAttempts->count(),
             'completed' => $allAttempts->where('status', 'finished')->count(),
             'incomplete' => $allAttempts->where('status', 'pending')->count(),
         ];
-        $answers = $allAttempts->pluck('answers')->flatten();
-        $answerStats = (object) ['correct' => $answers->where('is_correct', true)->count(), 'answered' => $answers->count()];
+        $finishedAttempts = $allAttempts->where('status', 'finished');
+        $correctAnswers = $finishedAttempts->sum(fn ($attempt) => (int) $attempt->score);
+        $questionCount = $finishedAttempts->sum(fn ($attempt) => (int) ($attempt->quiz?->questions_number ?? 0));
+        $answerStats = (object) [
+            'correct' => $correctAnswers,
+            'wrong' => max(0, $questionCount - $correctAnswers),
+            'answered' => $questionCount,
+        ];
         $rankPosition = User::where('rank', '>', $user->rank)->count() + 1;
         $user->loadCount('playedQuestions');
 

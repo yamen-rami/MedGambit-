@@ -38,12 +38,7 @@
         </nav>
     </div>
     <div class="top-right">
-        @if (!(request()->routeIs('login') or request()->routeIs("register")))
-            <div class="search">
-                {{-- <span class="material-symbols-outlined">search</span> --}}
-                <input class="form-control" aria-label="Search" placeholder="Search Gambits" />
-            </div>
-        @endif
+        
 
         <button class="theme-toggle icon-btn" id="themeToggle" type="button" aria-label="Switch theme">
             <span class="moon material-symbols-outlined">dark_mode</span>
@@ -53,21 +48,23 @@
 
             <div class="profile" aria-label="User profile">
                 <div class="{{ auth()->user()->image ? '' : 'avatar' }}">
-                    @if(auth()->user()->image)
-                    <img     class="avatar" src="{{ asset(auth()->user()->image) }}" alt="">
+                    @if (auth()->user()->image)
+                        <img class="avatar" src="{{ asset(auth()->user()->image) }}" alt="">
                     @else
-                        {{ ucfirst(Str::limit(auth()->user()->name , 1, "")) }}
+                        {{ ucfirst(Str::limit(auth()->user()->name, 1, '')) }}
                     @endif
                 </div>
                 <div class="profile-info">
-                    <span class="profile-name">Dr. {{ auth()->user()->name }}</span><span class="profile-role">Elo {{ auth()->user()->rank }}</span>
+                    <span class="profile-name">Dr. {{ auth()->user()->name }}</span><span class="profile-role">Elo
+                        {{ auth()->user()->rank }}</span>
                 </div>
                 <button class="profile-menu" type="button" aria-label="Open profile menu">
                     <i class="bi bi-chevron-down"></i>
                 </button>
                 <div class="profile-dropdown" id="login-profile-dropdown">
-                    <a href="{{ route("user.profile" , auth()->user()) }}"><i class="bi bi-person-circle"></i>Profile settings</a>
-                    <a href="arena-setup.html"><i class="bi bi-sliders2"></i>Match preferences</a>
+                    <a href="{{ route('user.profile', auth()->user()) }}"><i class="bi bi-person-circle"></i>Profile
+                        settings</a>
+
                     <hr class="dropdown-divider">
                     <form action="{{ route('logout') }}" method="post">
                         @csrf

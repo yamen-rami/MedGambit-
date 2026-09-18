@@ -2,8 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Game;
-use App\Models\Players;
+use App\Models\{Game, Players};
 use App\Services\GameService;
 
 class GameController extends Controller
@@ -40,8 +39,6 @@ class GameController extends Controller
             abort(404, 'Game Status Is Playing');
         }
 
-        // One attempts query, with all data required by the results matrix.
-        // Ordering here guarantees that the first card is always the winner.
         $attempts = $game->attempts()
             ->with(['user', 'answers.option'])
             ->orderByDesc('is_winner')

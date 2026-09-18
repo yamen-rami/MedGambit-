@@ -19,12 +19,10 @@ new class extends Component {
         $this->quiz = $quiz->loadMissing('questions');
         $this->attempt = QuizAttempt::with('answers')
             ->where('user_id', auth()->id())
-            ->where('status', 'pending')
+            
             ->where('quiz_id', $this->quiz->id)
             ->first();
-        if (!$this->attempt) {
-            abort(403, 'Something went wrong.');
-        }
+        
         $this->current = $this->attempt->current;
         $this->answers = $this->attempt->answers->pluck('option_id', 'question_id')->toArray();
         $this->loadQuestion();
@@ -33,6 +31,10 @@ new class extends Component {
     #[On('quit-quiz')]
     public function quitQuiz()
     {
+        if ($this->attempt?->status === 'finished') {
+            return redirect()->route('quizResult', $this->quiz);
+        }
+
         app(QuizService::class)->updateAttempt(auth()->id(), $this->quiz->id, $this->answers);
         return redirect()->route('quizResult', $this->quiz);
     }
@@ -54,6 +56,10 @@ new class extends Component {
 
     public function submit($optionId, $questionId): void
     {
+        if ($this->attempt?->status === 'finished') {
+            return;
+        }
+
         $question = $this->currentQuestion;
         if (!$question) {
             abort(403);
@@ -98,6 +104,10 @@ new class extends Component {
     #[Computed]
     public function remainingSeconds(): ?int
     {
+        if ($this->attempt?->status === 'finished') {
+            return null;
+        }
+
         return $this->attempt?->finished_at ? max(0, (int) now()->diffInSeconds($this->attempt->finished_at, false)) : null;
     }
     #[Computed]
@@ -116,6 +126,10 @@ new class extends Component {
     }
     public function timerEnds()
     {
+        if ($this->attempt?->status === 'finished') {
+            return redirect()->route('quizResult', $this->quiz);
+        }
+
         app(QuizService::class)->updateAttempt(auth()->id(), $this->quiz->id, $this->answers);
         return redirect()->route('quizResult', $this->quiz);
     }
@@ -231,7 +245,7 @@ new class extends Component {
                             @foreach ($question->options as $option)
                                 @php($letter = $option->name ?: chr(64 + $loop->iteration))
                                 @php($isSelected = (int) $answeredOptionId === (int) $option->id)
-                                <button type="button"
+                                <button type="button" @disabled($attempt->status === 'finished')
                                     wire:key="question-{{ $question->id }}-option-{{ $option->id }}"
                                     wire:click="submit({{ $option->id }}, {{ $question->id }})"
                                     class="quiz-answer-row {{ $isSelected ? 'selected' : '' }}"
