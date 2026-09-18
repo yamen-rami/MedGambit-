@@ -221,6 +221,7 @@
                             <td>{{ $gameAttempt['score'] }}</td>
                             <td>{{ ucfirst($gameAttempt['status']) }}</td>
                             <td>{{ $gameAttempt['created_at'] }}</td>
+                            <td><a href="{{ route("game.results", $gameAttempt['game_id']) }}">View Your Results </a></td>
                         </tr>
                     @empty
                         <tr>

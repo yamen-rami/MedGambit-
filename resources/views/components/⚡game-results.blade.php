@@ -102,7 +102,7 @@ new class extends Component {
                     <div class="player-head">
                         <div class="avatar avatar-large">
                             @if ($image)
-                            <img src="{{ asset($image) }}" alt="{{ $player?->name }}">@else<span
+                            <img src="{{ $image }}" alt="{{ $player?->name }}">@else<span
                                     class="material-symbols-outlined">person</span>
                             @endif
                         </div>

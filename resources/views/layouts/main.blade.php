@@ -21,6 +21,7 @@
     <link rel="stylesheet" href="{{ asset('assets/css/medgambit-theme.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/vendor/libs/select2/select2.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/css/select2-theme.css') }}">
+    @vite('resources/js/app.js')
     <script>
         const savedTheme = localStorage.getItem('medgambit-theme');
         if (savedTheme === 'light' || savedTheme === 'dark') {

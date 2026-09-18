@@ -93,7 +93,25 @@
 .avatar-large {
     width: 54px;
     height: 54px;
+    min-width: 54px;
+    max-width: 54px;
+    min-height: 54px;
+    max-height: 54px;
+    flex: 0 0 54px;
+    overflow: hidden;
     font-size: 1.45rem;
+}
+.avatar-large img {
+    position: relative;
+    display: block;
+    width: 54px !important;
+    height: 54px !important;
+    min-width: 54px;
+    min-height: 54px;
+    max-width: 54px !important;
+    max-height: 54px !important;
+    object-fit: cover;
+    border-radius: inherit;
 }
 .player-head {
     justify-content: flex-start;

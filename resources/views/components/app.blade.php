@@ -32,6 +32,7 @@
     <link rel="stylesheet" href="{{ asset('assets/css/highlight.css') }}" />
     <link rel="stylesheet" href="{{ asset('assets/css/katex.css') }}" />
     <link rel="stylesheet" href="{{ asset('assets/css/editor.css') }}" />
+    @vite('resources/js/app.js')
     <link
         href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@500;600;700&display=swap"
         rel="stylesheet" />
@@ -89,6 +90,12 @@
 
                 <ul class="menu-inner py-1">
                     <!-- Page -->
+                    <li class="menu-item">
+                        <a href="{{ route('home') }}" class="menu-link">
+                            <i class="menu-icon icon-base ti tabler-smart-home"></i>
+                            <div data-i18n="Page 1">Home Page</div>
+                        </a>
+                    </li>
                     <li class="menu-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
                         <a href="{{ route('dashboard') }}" class="menu-link">
                             <i class="menu-icon icon-base ti tabler-smart-home"></i>

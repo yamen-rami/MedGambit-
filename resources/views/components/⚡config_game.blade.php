@@ -1,7 +1,7 @@
 <?php
 
 use App\Models\Questions;
-use App\Models\{GameAttempt , Game};
+use App\Models\{GameAttempt, Game};
 use App\Services\GameService;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -90,9 +90,7 @@ new class extends Component {
             throw ValidationException::withMessages(['count' => 'At least 2 questions are required.']);
         }
 
-        $game = app(GameService::class)->friendGame(difficulty: $this->difficulty, length: $this->length, duration: $this->duration, sp: $this->specialitiesList,
-        count:$this->count ,
-        branches: $this->branchesList, skills: $this->skillsList, references: $this->references);
+        $game = app(GameService::class)->friendGame(difficulty: $this->difficulty, length: $this->length, duration: $this->duration, sp: $this->specialitiesList, count: $this->count, branches: $this->branchesList, skills: $this->skillsList, references: $this->references);
         return redirect()->route('friend.game.started', $game->challenge_token);
     }
 };
@@ -125,8 +123,8 @@ new class extends Component {
             </button>
 
             <div class="quiz-card">
-                <div class="quiz-label">Arena match setup · tactical config</div>
-                <h1 class="quiz-title">Configure Game</h1>
+                <h1 class="quiz-title">Friend Game</h1>
+                <div class="quiz-title fs-6 ">Customize you interest then share a link with your friend </div>
 
                 <form id="gameConfigForm" wire:submit.prevent="friendGame">
                     <div class="quiz-field">
@@ -163,17 +161,7 @@ new class extends Component {
                             @enderror
                         </div>
                     @endforeach
-                    <div class="quiz-field">
-                        <label for="count" class="quiz-label">Count of questions</label>
-                        <select id="count" wire:model.live="count" class="form-select">
-                            @foreach ([20, 15, 10, 5] as $questionCount)
-                                <option value="{{ $questionCount }}">{{ $questionCount }}</option>
-                            @endforeach
-                        </select>
-                        @error('count')
-                            <div class="invalid-feedback d-block">{{ $message }}</div>
-                        @enderror
-                    </div>
+
                     <div class="quiz-field">
                         <label for="duration" class="quiz-label">Game timer</label>
                         <div wire:ignore>
@@ -191,14 +179,26 @@ new class extends Component {
                             <div class="invalid-feedback d-block">{{ $message }}</div>
                         @enderror
                     </div>
-
+                    <div class="quiz-field">
+                        <label for="count" class="quiz-label">Count of questions</label>
+                        <select id="count" wire:model.live="count" class="form-select">
+                            @foreach ([20, 15, 10, 5] as $questionCount)
+                                <option value="{{ $questionCount }}">{{ $questionCount }}</option>
+                            @endforeach
+                        </select>
+                        @error('count')
+                            <div class="invalid-feedback d-block">{{ $message }}</div>
+                        @enderror
+                    </div>
                     <div class="quiz-options align-items-center">
                         <span class="quiz-option justify-content-start"><span
-                                class="material-symbols-outlined text-primary me-2">filter_alt</span><span>{{ $this->questionBankCount }}
+                                class="material-symbols-outlined text-primary me-2  ">filter_alt</span><span class="">
+                                    <span class="fs-6 text-primary  ">
+                                        {{ $this->questionBankCount }}
+                                    </span>
                                 matching questions</span></span>
                         <button class="btn btn-primary btn-lg" type="submit" wire:loading.attr="disabled"><span
-                                class="material-symbols-outlined align-middle me-2">sports_esports</span>Find
-                            opponent</button>
+                                class="material-symbols-outlined align-middle me-2">sports_esports</span>Friend Game</button>
                     </div>
                     @error('count')
                         <div class="alert alert-danger mt-3 mb-0">{{ $message }}</div>

@@ -1,7 +1,7 @@
 <header class="topbar">
     <div class="top-left">
         <div class="brand">
-            <span class="brand-mark">MG</span> MEDGAMBIT
+            <span class="brand-mark"></span> MedGambit
             <span class="version">V1</span>
             <button class="nav-toggle" id="navToggle" type="button" aria-label="Open navigation" aria-expanded="false">
                 <svg class="open-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
@@ -25,10 +25,13 @@
             @auth
                 <a class="nav-link {{ request()->routeIs('gambits') ? 'active' : '' }}"
                     href="{{ route('gambits') }}">Gambits</a>
-                <a class="nav-link {{ request()->routeIs('config.game') ? 'active' : '' }}"
-                    href="{{ route('config.game') }}">Arena</a>
                 <a class="nav-link {{ request()->routeIs('start.quiz') ? 'active' : '' }}"
                     href="{{ route('start.quiz') }}">Quizzes</a>
+                <a class="nav-link {{ request()->routeIs('config.game') ? 'active' : '' }}"
+                    href="{{ route('config.game') }}">Antagonise</a>
+                @can('is_admin')
+                    <a class="nav-link" href="{{ route('dashboard') }}">Dashboard</a>
+                @endcan
             @endauth
             @guest
                 <a class="nav-link {{ request()->routeIs('login') ? 'active' : '' }}" href="{{ route('login') }}">Login</a>
@@ -38,7 +41,7 @@
         </nav>
     </div>
     <div class="top-right">
-        
+
 
         <button class="theme-toggle icon-btn" id="themeToggle" type="button" aria-label="Switch theme">
             <span class="moon material-symbols-outlined">dark_mode</span>
@@ -62,7 +65,7 @@
                     <i class="bi bi-chevron-down"></i>
                 </button>
                 <div class="profile-dropdown" id="login-profile-dropdown">
-                    <a href="{{ route('user.profile', auth()->user()) }}"><i class="bi bi-person-circle"></i>Profile
+                    <a class="my-2" href="{{ route('user.profile', auth()->user()) }}"><i class="bi bi-person-circle"></i>Profile
                         settings</a>
 
                     <hr class="dropdown-divider">

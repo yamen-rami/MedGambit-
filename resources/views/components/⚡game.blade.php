@@ -616,8 +616,7 @@ new class extends Component {
                         @endif
                     </div>
                     <div class="quiz-actions">
-                        <div class="keyboard-hint">Answers are saved as you choose them. Finish after all questions are
-                            answered.</div>
+                        <div class="keyboard-hint">Please Answer All The Questions </div>
                         <div class="action-buttons">
                             <button class="btn btn-outline-secondary" type="button" wire:click="previous"
                                 @disabled($current === 1)><i class="bi bi-chevron-left"></i> Previous</button>
