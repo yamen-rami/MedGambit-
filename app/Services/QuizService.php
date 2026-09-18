@@ -79,7 +79,7 @@ class QuizService
 
         $score = 0;
         $wrongAnswers = 0;
-        $user = auth()->user();
+        $user = auth()->user()->loadMissing('playedQuestions');
         $rank = $user->rank;
         $playedQuestionIds = $user->playedQuestions->pluck('id');
         $quiz = Quiz::with('questions')->findOrFail($quizId);
@@ -130,7 +130,7 @@ class QuizService
         return [
             'score' => $score,
             'time_taken' => $quizAttempt->time_taken,
-            'wrong_answers' => $quizAttempt->quiz->questions->count() - $score,
+            'wrong_answers' => $quiz->questions->count() - $score,
         ];
     }
 
@@ -154,7 +154,7 @@ class QuizService
 
         $score = 0;
         $wrongAnswers = 0;
-        $user = auth()->user();
+        $user = auth()->user()->loadMissing('playedQuestions');
         $playedQuestionIds = $user->playedQuestions->pluck('id');
         $quiz = Quiz::with('questions')->findOrFail($quizId);
         $quizQuestionIds = $quiz->questions->pluck('id')->map(fn ($id) => (int) $id)->all();
@@ -194,7 +194,7 @@ class QuizService
         return [
             'score' => $score,
             'time_taken' => $quizAttempt->time_taken,
-            'wrong_answers' => $quizAttempt->quiz->questions->count() - $score,
+            'wrong_answers' => $quiz->questions->count() - $score,
         ];
     }
 

@@ -182,7 +182,10 @@ class GameService
             }
 
             $now = now();
-            $user = User::query()->lockForUpdate()->findOrFail($attempt->user_id);
+            $user = User::query()
+                ->with('playedQuestions')
+                ->lockForUpdate()
+                ->findOrFail($attempt->user_id);
 
             $attempt->load('answers.question');
             $rank = $user->rank;
@@ -303,7 +306,7 @@ class GameService
             $this->editAttempt($attempt, $game);
         }
 
-        return $this->finishGame($game->fresh()->attempts);
+        return $this->finishGame($game->attempts()->get());
     }
 
     public function friendGame(
@@ -345,6 +348,13 @@ class GameService
             $game = Game::query()
                 ->whereKey($gameId)
                 ->where('status', 'pending')
+                ->with([
+                    'players.user',
+                    'specialties',
+                    'branches',
+                    'skills',
+                    'references',
+                ])
                 ->lockForUpdate()
                 ->first();
 
