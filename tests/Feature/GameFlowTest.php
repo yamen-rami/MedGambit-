@@ -22,6 +22,48 @@ test('a player can open a game page', function () {
         ->assertOk();
 });
 
+test('the challenge owner sees a copyable challenge URL', function () {
+    $owner = User::factory()->create();
+    $game = Game::create([
+        'status' => 'pending',
+        'max_players' => 2,
+        'challenge_token' => 'owner-challenge-token',
+        'difficulty' => 'medium',
+        'length' => 'medium',
+    ]);
+    Players::create(['game_id' => $game->id, 'user_id' => $owner->id, 'status' => 'playing']);
+    GameAttempt::create(['game_id' => $game->id, 'user_id' => $owner->id, 'status' => 'playing']);
+
+    $this->actingAs($owner)
+        ->get(route('friend.game.started', $game->challenge_token))
+        ->assertOk()
+        ->assertSee('Copy link')
+        ->assertSee('window.location.href');
+});
+
+test('a second user joins by opening the challenge URL', function () {
+    $owner = User::factory()->create();
+    $opponent = User::factory()->create();
+    $game = Game::create([
+        'status' => 'pending',
+        'max_players' => 2,
+        'challenge_token' => 'join-challenge-token',
+        'difficulty' => 'medium',
+        'length' => 'medium',
+    ]);
+    Players::create(['game_id' => $game->id, 'user_id' => $owner->id, 'status' => 'playing']);
+    GameAttempt::create(['game_id' => $game->id, 'user_id' => $owner->id, 'status' => 'playing']);
+    Questions::factory()->count(2)->create(['difficulty' => 'medium', 'length' => 'medium']);
+
+    $this->actingAs($opponent)
+        ->get(route('friend.game.started', $game->challenge_token))
+        ->assertRedirect(route('gameRedirect', $game->challenge_token));
+
+    $this->assertDatabaseHas('players', ['game_id' => $game->id, 'user_id' => $opponent->id]);
+    $this->assertDatabaseHas('game_attempts', ['game_id' => $game->id, 'user_id' => $opponent->id]);
+    expect($game->fresh()->status)->toBe('playing');
+});
+
 test('the highest scoring player wins a game', function () {
     $first = User::factory()->create();
     $second = User::factory()->create();

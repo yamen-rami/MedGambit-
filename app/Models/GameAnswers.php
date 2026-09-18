@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class GameAnswers extends Model
 {
@@ -17,5 +18,10 @@ class GameAnswers extends Model
     public function question()
     {
         return $this->belongsTo(Questions::class, 'question_id');
+    }
+
+    public function option(): BelongsTo
+    {
+        return $this->belongsTo(Option::class);
     }
 }

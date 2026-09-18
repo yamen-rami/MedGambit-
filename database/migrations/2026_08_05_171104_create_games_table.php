@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('games', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('max_players')->default(2);
+            $table->integer("count")->default(20);
             $table->timestamp('disconnected_at')->nullable();
             $table->text('challenge_token')->unique()->nullable();
             $table->enum('status', ['pending', 'playing', 'finished', 'aborted'])->index();

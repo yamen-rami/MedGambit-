@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Questions;
-use App\Models\Quiz;
-use App\Services\QuizService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+
+use App\Models\{Questions, Quiz};
+use App\Services\QuizService;
 
 class QuizController extends Controller
 {
@@ -127,38 +127,41 @@ class QuizController extends Controller
         $attempt = $quiz->attempts()
             ->where('user_id', auth()->id())
             ->where('status', 'finished')
+            ->with('answers')
             ->latest()
             ->first();
 
         if (! $attempt) {
             abort(403, 'Finish your attempt');
         }
-        // getting answers with questions and options
-
-        $answers = $attempt->answers()
-            ->with([
-                'question.options',
-                'question.correctAnswer',
-            ])
-            ->get();
-
+        $quiz->load(['questions.options', 'questions.correctAnswer']);
+        $answers = $attempt->answers;
+        $answersByQuestion = $answers->keyBy('question_id');
+        $questions = $quiz->questions;
         $correctAnswers = $answers->where('is_correct', true);
         $wrongAnswers = $answers->where('is_correct', false);
-
-        $answeredQuestionIds = $answers->pluck('question_id');
-
-        $unanswered = $quiz->questions()
-            ->whereNotIn('questions.id', $answeredQuestionIds)
-            ->with('options')
-            ->get();
+        $unanswered = $questions->reject(fn ($question) => $answersByQuestion->has($question->id));
+        $questionCount = $questions->count();
+        $answeredCount = $answers->count();
+        $correctCount = $correctAnswers->count();
+        $wrongCount = $wrongAnswers->count();
+        $accuracy = $questionCount > 0 ? round(($correctCount / $questionCount) * 100, 1) : 0;
 
         return view('home.quiz.quizResults', [
             'quiz' => $quiz,
             'attempt' => $attempt,
             'answers' => $answers,
+            'answersByQuestion' => $answersByQuestion,
+            'questions' => $questions,
             'correctAnswers' => $correctAnswers,
             'wrongAnswers' => $wrongAnswers,
             'unanswered' => $unanswered,
+            'questionCount' => $questionCount,
+            'answeredCount' => $answeredCount,
+            'correctCount' => $correctCount,
+            'wrongCount' => $wrongCount,
+            'unansweredCount' => $unanswered->count(),
+            'accuracy' => $accuracy,
         ]);
     }
 

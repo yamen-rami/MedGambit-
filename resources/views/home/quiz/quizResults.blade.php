@@ -1,250 +1,149 @@
-<x-user-layout>
-    <x-slot:title>Quiz Result</x-slot:title>
-    @push('style')
-        <link rel="stylesheet" href="{{ asset('assets/css/quiz-result.css') }}" />
-    @endpush
+@extends('layouts.main')
 
-    <div class="results-page" x-data="{ filter: 'all' }">
-        <!-- Header -->
-        <header class="results-header">
-            <div>
-                <h1>Quiz Type : {{ $quiz->type }}</h1>
-                <p>{{ $quiz->updated_at }}</p>
-            </div>
-            @if ($quiz->type !== 'learning')
-                <div class="header-actions">
-                    <div class="stat-card ">
-                        <p style="color: var(--text)">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24"
-                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                stroke-linejoin="round" class="lucide lucide-brain">
-                                <path d="M12 18V5" />
-                                <path d="M15 13a4.17 4.17 0 0 1-3-4 4.17 4.17 0 0 1-3 4" />
-                                <path d="M17.598 6.5A3 3 0 1 0 12 5a3 3 0 1 0-5.598 1.5" />
-                                <path d="M17.997 5.125a4 4 0 0 1 2.526 5.77" />
-                                <path d="M18 18a4 4 0 0 0 2-7.464" />
-                                <path d="M19.967 17.483A4 4 0 1 1 12 18a4 4 0 1 1-7.967-.517" />
-                                <path d="M6 18a4 4 0 0 1-2-7.464" />
-                                <path d="M6.003 5.125a4 4 0 0 0-2.526 5.77" />
+@section('title', 'Quiz results')
+
+@push('styles')
+    <link rel="stylesheet" href="{{ asset('assets/css/quiz-results.css') }}">
+@endpush
+
+@php
+    $topic = $quiz->topic ?: 'Clinical medicine';
+    $timeTaken = (int) ($attempt->time_taken ?? 0);
+    $minutes = intdiv($timeTaken, 60);
+    $seconds = $timeTaken % 60;
+    $score = $correctCount;
+    $previousRank = $attempt->current_rank;
+    $newRank = $attempt->new_rank;
+    $rankChange = $newRank !== null && $previousRank !== null ? $newRank - $previousRank : null;
+@endphp
+
+@section('content')
+    <div class="results-page results-main">
+        <div class="results-shell">
+            <div class="results-meta"><span><span class="status-dot" aria-hidden="true"></span> Session completed ·
+                    {{ $topic }}</span><span class="results-badge">Quiz results</span></div>
+            <div class="results-context">Quiz Type : {{ $quiz->type }} · Final Score</div>
+            <div class="result-grid">
+                <section class="result-card score-card">
+                    <div class="accuracy-wrap">
+                        <div class="ring-box" aria-label="{{ $accuracy }} percent accuracy">
+                            <svg class="accuracy-ring" viewBox="0 0 120 120" aria-hidden="true">
+                                <circle class="track" cx="60" cy="60" r="52"></circle>
+                                <circle class="value" cx="60" cy="60" r="52"
+                                    style="--accuracy-offset: {{ 326.73 - (326.73 * $accuracy) / 100 }}"></circle>
                             </svg>
-                        </p>
-                        <p class="fs-2" style="color: var(--text)">{{ $attempt->current_rank }}</p>
-                        <span
-                            class="px-2 py-2 fs-6
-                        {{ $attempt->current_rank > $attempt->new_rank ? 'bg-danger bg-opacity-10 text-danger' : 'bg-success bg-opacity-10 text-success' }}">
-                            {{ $attempt->new_rank - $attempt->current_rank }}
-                            @if ($attempt->current_rank > $attempt->new_rank)
-                                <i class="fa-solid fa-arrow-down"></i>
-                            @else
-                                <i class="fa-solid fa-arrow-up"></i>
-                            @endif
-                        </span>
+                            <div class="accuracy-number">{{ $accuracy }}%</div>
+                        </div>
+                        <div class="score-copy">
+                            <div class="result-label">Quiz complete</div>
+                            <h1>{{ $quiz->name ?: 'Medical quiz' }}</h1>
+                            <p><strong>{{ $score }} / {{ $questionCount }}</strong> questions correct · <span
+                                    class="text-success">{{ $accuracy >= 70 ? 'Great performance' : 'Keep practising' }}</span>
+                            </p><button class="btn btn-primary" id="reviewDiagnostics" type="button"><span
+                                    class="material-symbols-outlined align-middle me-1">visibility</span>Review
+                                diagnostics</button>
+                        </div>
                     </div>
-                </div>
-            @endif
-        </header>
-
-        <!-- Stats -->
-        <section class="stats-grid">
-            <div class="score-card">
-                <span class="card-label">Final Score</span>
-                <strong
-                    class="score-value {{ $quiz->questions->count() / 2 <= $attempt->score ? 'text-success' : 'text-danger' }}">{{ $attempt->score }}
-                    <span class="text-white"> / {{ $quiz->questions->count() }}</strong>
-                </span>
-                @if ($quiz->questions->count() / 2 <= $attempt->score)
-                    <span class="score-status">Excellent Work!</span>
-                @else
-                    <span class="score-status">You Have Failed</span>
-                    <span>hard Lock </span>
-                @endif
-            </div>
-
-            <div class="stat-card">
-                <div class="stat-icon green">
-                    <i class="fa-solid fa-circle-check"></i>
-                </div>
-                <div>
-                    <span>Correct Answers</span>
-                    <strong>{{ $correctAnswers->count() }} Questions</strong>
-                </div>
-            </div>
-
-            <div class="stat-card">
-                <div class="stat-icon red">
-                    <i class="fa-solid fa-circle-xmark"></i>
-                </div>
-                <div>
-                    <span>Incorrect</span>
-                    <strong>{{ $wrongAnswers->count() }} Questions</strong>
-                </div>
-            </div>
-
-            <div class="stat-card">
-                <div class="stat-icon purple">
-                    <i class="fa-solid fa-layer-group"></i>
-                </div>
-                <div>
-                    <span>Questions</span>
-                    <strong>{{ $quiz->questions->count() }} Questions </strong>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon blue">
-                    <i class="fa-regular fa-clock"></i>
-                </div>
-                <div>
-                    <span>Time Taken</span>
-                    @php
-                        $result = Number::format($attempt->time_taken / 60, precision: 2);
-                    @endphp
-                    <strong>{{ $result }} Minutes </strong>
-                </div>
-            </div>
-        </section>
-
-        <!-- Questions Header -->
-        <div class="questions-heading">
-            <div>
-                <h2>Question Review</h2>
-                <span>Review your answers and explanations</span>
-            </div>
-
-            <div class="filter-buttons">
-                <button class="filter-btn" :class="{ active: filter === 'all' }" @click="filter = 'all'">
-                    All
-                </button>
-                <button class="filter-btn correct" :class="{ active: filter === 'correct' }"
-                    @click="filter = 'correct'">
-                    Correct
-                </button>
-                <button class="filter-btn incorrect" :class="{ active: filter === 'incorrect' }"
-                    @click="filter = 'incorrect'">
-                    Incorrect
-                </button>
-            </div>
-        </div>
-
-        <!-- Answered questions: ONE loop, filtered client-side by Alpine -->
-        @foreach ($answers as $answer)
-            @php
-                $isCorrect = $answer->question->correctAnswer->id == $answer->option_id;
-            @endphp
-            <article
-                x-show="filter === 'all' || filter === '{{ $isCorrect ? 'correct' : 'incorrect' }}'"
-                class="question-card {{ $isCorrect ? 'correct-question' : 'incorrect-question' }}">
-                <div class="question-top">
-                    <div class="question-number">{{ $loop->iteration }}</div>
-
-                    <div class="question-content">
-                        <p class="question-text">{!! $answer->question->content !!}</p>
+                    <div class="response-bar" aria-label="Answer breakdown"><span
+                            style="width: {{ $questionCount ? ($correctCount / $questionCount) * 100 : 0 }}%"></span><span
+                            style="width: {{ $questionCount ? ($wrongCount / $questionCount) * 100 : 0 }}%"></span><span
+                            style="width: {{ $questionCount ? ($unansweredCount / $questionCount) * 100 : 0 }}%"></span>
                     </div>
-                    @if ($isCorrect)
-                        <span class="result-badge correct-badge">
-                            <i class="fa-solid fa-check"></i>
-                            Correct
-                        </span>
-                    @else
-                        <span class="result-badge incorrect-badge">
-                            <i class="fa-regular fa-circle-xmark"></i>
-                            Wrong
-                        </span>
-                    @endif
+                    <div class="bar-legend"><span><b>{{ $accuracy }}% Correct ({{ $correctCount }})</b></span><span><b
+                                class="danger">{{ $questionCount ? round(($wrongCount / $questionCount) * 100, 1) : 0 }}%
+                                Incorrect
+                                ({{ $wrongCount }})</b></span><span>{{ $questionCount ? round(($unansweredCount / $questionCount) * 100, 1) : 0 }}%
+                            Unanswered ({{ $unansweredCount }})</span></div>
+                </section>
+                <section class="result-card telemetry">
+                    <h2>Attempt summary <span class="results-badge">{{ strtoupper($attempt->status) }}</span></h2>
+                    <div class="telemetry-stat">
+                        <div class="text-secondary small">Final rating</div><strong>{{ $newRank ?? '—' }}</strong>
+                        @if ($rankChange !== null)
+                            <span
+                                class="{{ $rankChange >= 0 ? 'text-success' : 'text-danger' }}">{{ $rankChange >= 0 ? '+' : '' }}{{ $rankChange }}
+                                rating</span>
+                        @endif
+                        <div class="text-secondary small mono">
+                            Previous: {{ $previousRank ?? '—' }}</div>
+                    </div>
+                    <div class="telemetry-list">
+                        <div><span>Answered</span><strong>{{ $answeredCount }} / {{ $questionCount }}</strong></div>
+                        <div><span>Total time</span><strong>{{ sprintf('%02d:%02d', $minutes, $seconds) }}</strong></div>
+                        <div><span>Topic</span><strong>{{ $topic }}</strong></div>
+                    </div>
+                </section>
+            </div>
+            <section class="metric-strip" aria-label="Result statistics">
+                <div class="metric good"><span class="material-symbols-outlined">check</span>
+                    <div><strong>{{ $correctCount }}</strong><small>Correct</small></div>
                 </div>
-
-                <div class="answers">
-                    @foreach ($answer->question->options as $option)
-                        @php
-                            $correct = $answer->question->correctAnswer->id;
-                            $modalId = 'staticBackdrop-' . $answer->id . '-' . $option->id;
-                        @endphp
-                        <div data-bs-toggle="modal" data-bs-target="#{{ $modalId }}"
-                            class="answer selected
-                                @if ($correct == $option->id) correct-answer
-                                @else
-                                    @if ($answer->option_id == $option->id)
-                                        @if ($answer->option_id == $correct)
-                                            correct-answer
-                                        @else
-                                            wrong-answer
-                                        @endif
+                <div class="metric bad"><span class="material-symbols-outlined">close</span>
+                    <div><strong>{{ $wrongCount }}</strong><small>Incorrect</small></div>
+                </div>
+                <div class="metric"><span class="material-symbols-outlined">radio_button_unchecked</span>
+                    <div><strong>{{ $unansweredCount }}</strong><small>Unanswered</small></div>
+                </div>
+                <div class="metric"><span class="material-symbols-outlined">percent</span>
+                    <div><strong>{{ number_format($accuracy, 1) }}%</strong><small>Accuracy</small></div>
+                </div>
+                <div class="metric"><span class="material-symbols-outlined">timer</span>
+                    <div><strong>{{ sprintf('%02d:%02d', $minutes, $seconds) }}</strong><small>Total time</small></div>
+                </div>
+            </section>
+            <section id="questionReview">
+                <div class="review-head">
+                    <div>
+                        <h2>Review questions</h2>
+                        <p>Check your choices and review the explanations.</p>
+                    </div>
+                    <div class="review-filters" role="group" aria-label="Filter questions"><button
+                            class="btn btn-sm active" data-filter="all">All ({{ $questionCount }})</button><button
+                            class="btn btn-sm" data-filter="correct">Correct ({{ $correctCount }})</button><button
+                            class="btn btn-sm" data-filter="incorrect">Incorrect ({{ $wrongCount }})</button><button
+                            class="btn btn-sm" data-filter="unanswered">Unanswered ({{ $unansweredCount }})</button></div>
+                </div>
+                @forelse ($questions as $question)
+                    @php($answer = $answersByQuestion->get($question->id))
+                    @php($selected = $answer ? $question->options->firstWhere('id', $answer->option_id) : null)
+                    @php($correct = $question->correctAnswer)
+                    @php($status = !$answer ? 'unanswered' : ($answer->is_correct ? 'correct' : 'incorrect'))
+                    <article class="review-card {{ $status }} {{ $status === 'incorrect' ? 'open' : '' }}"
+                        data-status="{{ $status }}">
+                        <div class="review-summary" role="button" tabindex="0"
+                            aria-expanded="{{ $status === 'incorrect' ? 'true' : 'false' }}">
+                            <div class="review-title"><span class="review-status"
+                                    aria-hidden="true">{{ $status === 'correct' ? '✓' : ($status === 'incorrect' ? '×' : '○') }}</span><span
+                                    class="mono text-secondary">{{ sprintf('%02d', $loop->iteration) }}</span>{!!   $question->name ?: Str::limit(strip_tags($question->content), 80) !!}
+                            </div>
+                            <div class="review-right"><span
+                                    class="result-badge {{ $status }}">{{ ucfirst($status) }}</span><span
+                                    class="material-symbols-outlined">{{ $status === 'incorrect' ? 'expand_less' : 'expand_more' }}</span>
+                            </div>
+                        </div>
+                        <div class="review-body">
+                            @if ($selected)
+                                <p>Selected: <strong
+                                        class="{{ $status === 'correct' ? 'text-success' : 'text-danger' }}">{{ $selected->name ?: $selected->content }}</strong>
+                            </p>@else<p>Status: <strong>Not answered</strong></p>
+                                @endif @if ($status !== 'correct' && $correct)
+                                    <p>Correct answer: <strong
+                                            class="text-success">{{ $correct->name ?: $correct->content }}</strong></p>
+                                    @endif @if ($question->main_explanation)
+                                        <div class="explanation">{!!   $question->main_explanation !!}</div>
                                     @endif
-                                @endif
-                            ">
-                            <span class="answer-letter">
-                                {{ chr(64 + $loop->iteration) }}
-                            </span>
-
-                            <span class="answer-text"> {{ $option->content }} </span>
-                            @if ($correct == $option->id)
-                                <i class="fa-solid fa-check answer-icon"></i>
-                            @else
-                                <i class="fa-regular fa-circle-xmark text-danger"></i>
-                            @endif
-
-                            <!-- Modal -->
-                            <div class="modal fade modal-lg" id="{{ $modalId }}" data-bs-backdrop="static"
-                                data-bs-keyboard="true" tabindex="-1" aria-labelledby="{{ $modalId }}Label"
-                                aria-hidden="true">
-                                <div class="modal-dialog">
-                                    <div class="modal-content">
-                                        <div class="modal-header">
-                                            <h1 class="modal-title fs-5" id="{{ $modalId }}Label">
-                                                Option Explanation
-                                            </h1>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                                aria-label="Close"></button>
-                                        </div>
-                                        <div class="modal-body">
-                                            <h6>{{ $option->content }}</h6>
-                                            <div class="d-flex align-items-center gap-1">
-                                                <h5>Explanation :</h5>
-                                                <p class="pb-0">{{ $option->explanation }}</p>
-                                            </div>
-                                        </div>
-                                        <div class="modal-footer">
-                                            <button type="button" class="btn btn-secondary"
-                                                data-bs-dismiss="modal">
-                                                Close
-                                            </button>
-                                            <button type="button" class="btn btn-primary">Understood</button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
                         </div>
-                    @endforeach
-                </div>
-            </article>
-        @endforeach
-
-        <!-- Unanswered questions: always shown, independent of the filter (matches original behavior) -->
-        @if ($unanswered->count() != 0)
-            @foreach ($unanswered as $un)
-                <article class="question-card unanswered-question">
-                    <div class="question-top">
-                        <div class="question-number">{{ $loop->iteration }}</div>
-
-                        <div class="question-content">
-                            <p class="question-text">{{ $un->content }}</p>
-                        </div>
-                        <span class="result-badge unanswered-badge">
-                            <i class="fa-regular fa-circle"></i>
-                            Unanswered
-                        </span>
-                    </div>
-                    @foreach ($un->options as $option)
-                        <div class="answers my-3">
-                            <div class="answer disabled-answer">
-                                <span class="answer-letter">
-                                    {{ chr(64 + $loop->iteration) }}
-                                </span>
-                                <span class="answer-text"> {{ $option->content }} </span>
-                            </div>
-                        </div>
-                    @endforeach
-                </article>
-            @endforeach
-        @endif
+                    </article>
+                @empty
+                    <div class="empty-state">No questions were recorded for this quiz.</div>
+                @endforelse
+            </section>
+            <div class="results-actions"><a class="btn btn-primary" href="#questionReview">Review answers</a><a
+                    class="btn btn-outline-secondary" href="{{ route('start.quiz') }}">Back to quizzes</a></div>
+        </div>
     </div>
-</x-user-layout>
+@endsection
+
+@push('scripts')
+    <script src="{{ asset('assets/js/quiz-results.js') }}"></script>
+@endpush

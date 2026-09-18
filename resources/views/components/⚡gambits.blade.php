@@ -1,18 +1,26 @@
 <?php
 
 use Livewire\Component;
-use Livewire\Attributes\{Computed, On};
+use Livewire\Attributes\{Computed, On, Url};
 use Livewire\WithPagination;
 use App\Models\Questions;
+use App\Models\BranchOfMedicine;
+use App\Models\Reference;
+use App\Models\SkillsForQuestion;
+use App\Models\Specialty;
+
 new class extends Component {
     use WithPagination;
 
     protected string $paginationTheme = 'bootstrap';
-
+    #[Url]
     public string $search = '';
     public string $quizName = '';
+    public bool $showQuizModal = false;
+    #[Url]
     public string $length = '';
     public array $references = [];
+    #[Url]
     public string $difficulty = '';
     public array $branches = [];
     public array $sp = [];
@@ -49,9 +57,7 @@ new class extends Component {
             ->when($this->search !== '', function ($query) {
                 $search = '%' . $this->search . '%';
                 $query->where(function ($query) use ($search) {
-                    $query->where('name', 'like', $search)
-                        ->orWhere('content', 'like', $search)
-                        ->orWhere('topic', 'like', $search);
+                    $query->where('name', 'like', $search)->orWhere('content', 'like', $search)->orWhere('topic', 'like', $search);
                 });
             })
             ->when($this->length !== '', fn($query) => $query->where('length', $this->length))
@@ -65,11 +71,72 @@ new class extends Component {
             ->paginate($this->count);
     }
 
+    #[Computed]
+    public function difficultyCounts()
+    {
+        return Questions::query()->selectRaw('difficulty, count(*) as total')->groupBy('difficulty')->pluck('total', 'difficulty');
+    }
+
+    #[Computed]
+    public function lengthCounts()
+    {
+        return Questions::query()->selectRaw('length, count(*) as total')->groupBy('length')->pluck('total', 'length');
+    }
+
+    #[Computed]
+    public function activeSpecialties()
+    {
+        return Specialty::query()
+            ->whereKey($this->normalizeIds($this->sp))
+            ->orderBy('name')
+            ->get();
+    }
+
+    #[Computed]
+    public function activeReferences()
+    {
+        return Reference::query()
+            ->whereKey($this->normalizeIds($this->references))
+            ->orderBy('name')
+            ->get();
+    }
+
+    #[Computed]
+    public function activeBranches()
+    {
+        return BranchOfMedicine::query()
+            ->whereKey($this->normalizeIds($this->branches))
+            ->orderBy('name')
+            ->get();
+    }
+
+    #[Computed]
+    public function activeSkills()
+    {
+        return SkillsForQuestion::query()
+            ->whereKey($this->normalizeIds($this->skills))
+            ->orderBy('name')
+            ->get();
+    }
+
+    #[Computed]
+    public function activeFilterCount(): int
+    {
+        return (int) ($this->difficulty !== '') + (int) ($this->length !== '') + (int) ($this->search !== '') + count($this->sp) + count($this->references) + count($this->branches) + count($this->skills);
+    }
+
     public function updated($property): void
     {
-        if (in_array($property, ['search', 'length', 'difficulty', 'sp', 'branches', 'skills', 'references', 'sort', 'direction'], true)) {
+        if (in_array($property, ['search', 'length', 'difficulty', 'sp', 'branches', 'skills', 'references', 'sort', 'direction', 'count'], true)) {
             $this->resetPage();
+            $this->dispatch('gambits-select2-sync', branches: $this->branches, specialties: $this->sp, skills: $this->skills, references: $this->references);
         }
+    }
+
+    public function updatedCount($value): void
+    {
+        $this->count = in_array((int) $value, [10, 20, 50], true) ? (int) $value : 20;
+        $this->resetPage();
     }
 
     public function toggleDirection(): void
@@ -79,9 +146,10 @@ new class extends Component {
 
     public function clearFilters(): void
     {
-        $this->reset(['length', 'difficulty', 'branches', 'sp', 'skills', 'references']);
+        $this->reset(['search', 'length', 'difficulty', 'branches', 'sp', 'skills', 'references']);
         $this->resetPage();
         $this->dispatch('gambits-filters-cleared');
+        $this->dispatch('gambits-select2-sync', branches: [], specialties: [], skills: [], references: []);
     }
 
     public function setLength(string $length): void
@@ -96,9 +164,71 @@ new class extends Component {
         $this->resetPage();
     }
 
-    public function updatedSelectedQuestions($value): void
+    public function updatedSp($value): void
     {
-        $this->selectedQuestions = $this->normalizeIds($value);
+        $this->sp = $this->normalizeIds($value);
+        $this->resetPage();
+    }
+
+    public function updatedReferences($value): void
+    {
+        $this->references = $this->normalizeIds($value);
+        $this->resetPage();
+    }
+
+    public function updatedBranches($value): void
+    {
+        $this->branches = $this->normalizeIds($value);
+        $this->resetPage();
+    }
+
+    public function updatedSkills($value): void
+    {
+        $this->skills = $this->normalizeIds($value);
+        $this->resetPage();
+    }
+
+    public function removeSpecialty(int $specialtyId): void
+    {
+        $this->sp = array_values(array_diff($this->normalizeIds($this->sp), [$specialtyId]));
+        $this->resetPage();
+        $this->dispatch('gambits-select2-sync', branches: $this->branches, specialties: $this->sp, skills: $this->skills, references: $this->references);
+    }
+
+    public function removeReference(int $referenceId): void
+    {
+        $this->references = array_values(array_diff($this->normalizeIds($this->references), [$referenceId]));
+        $this->resetPage();
+        $this->dispatch('gambits-select2-sync', branches: $this->branches, specialties: $this->sp, skills: $this->skills, references: $this->references);
+    }
+
+    public function removeBranch(int $branchId): void
+    {
+        $this->branches = array_values(array_diff($this->normalizeIds($this->branches), [$branchId]));
+        $this->resetPage();
+        $this->dispatch('gambits-select2-sync', branches: $this->branches, specialties: $this->sp, skills: $this->skills, references: $this->references);
+    }
+
+    public function removeSkill(int $skillId): void
+    {
+        $this->skills = array_values(array_diff($this->normalizeIds($this->skills), [$skillId]));
+        $this->resetPage();
+        $this->dispatch('gambits-select2-sync', branches: $this->branches, specialties: $this->sp, skills: $this->skills, references: $this->references);
+    }
+
+    public function toggleQuestion(int $questionId): void
+    {
+        if (!Questions::whereKey($questionId)->exists()) {
+            return;
+        }
+
+        $selectedIds = $this->normalizeIds($this->selectedQuestions);
+
+        if (in_array($questionId, $selectedIds, true)) {
+            $this->selectedQuestions = array_values(array_diff($selectedIds, [$questionId]));
+            return;
+        }
+        $this->selectedQuestions = [...$selectedIds, $questionId];
     }
 
     public function toggleSelectAllVisible(): void
@@ -133,18 +263,36 @@ new class extends Component {
 
     public function tryQuestion(int $questionId)
     {
-        $question = Questions::where('id' , $questionId)->get();
+        $question = Questions::where('id', $questionId)->get();
         $service = new App\Services\QuizService();
         $quiz = $service->learningQuiz(questions: $question);
         return redirect()->route('start.learning.quiz', $quiz);
+    }
+
+    public function openQuizModal(): void
+    {
+        if ($this->selectedQuestions === []) {
+            $this->addError('selectedQuestions', 'Select at least one question to start a quiz.');
+            return;
+        }
+
+        $this->resetErrorBag();
+        $this->showQuizModal = true;
+    }
+
+    public function closeQuizModal(): void
+    {
+        $this->showQuizModal = false;
+        $this->resetValidation();
     }
     public $questionId;
 
     public function validateQuiz()
     {
         $this->validate([
-            'quizName' => ['required', 'string', 'min:2', 'max:50'],
-            'selectedQuestions' => ['required', 'array', 'max:20'],
+            'quizName' => ['nullable', 'string', 'max:50'],
+            'selectedQuestions' => ['required', 'array', 'min:1', 'max:20'],
+            'selectedQuestions.*' => ['integer', 'exists:questions,id'],
         ]);
     }
     public function learningQuiz()
@@ -152,7 +300,7 @@ new class extends Component {
         $this->validateQuiz();
         $questions = Questions::whereIn('id', $this->selectedQuestions)->get();
         $service = new App\Services\QuizService();
-        $quiz = $service->learningQuiz(questions: $questions, name: $this->quizName);
+        $quiz = $service->learningQuiz(questions: $questions, name: filled($this->quizName) ? $this->quizName : null, count: $questions->count());
         return redirect()->route('start.learning.quiz', $quiz);
     }
     public function examQuiz()
@@ -160,7 +308,7 @@ new class extends Component {
         $this->validateQuiz();
         $questions = Questions::whereIn('id', $this->selectedQuestions)->get();
         $service = new App\Services\QuizService();
-        $quiz = $service->detectedQuiz(questions: $questions, name: $this->quizName);
+        $quiz = $service->detectedQuiz(questions: $questions, name: filled($this->quizName) ? $this->quizName : null, count: $questions->count());
 
         return redirect()->route('start.detecated.quiz', $quiz);
     }
@@ -171,782 +319,374 @@ new class extends Component {
 };
 ?>
 
-<div>
-    @push('style')
-        <style>
-            .quiz-actions-grid {
-                display: grid;
-                grid-template-columns: 1fr;
-                /* stacked by default (mobile) */
-                gap: 1rem;
-            }
+<div class="gambit-page" x-data="{ quizModalOpen: false }" @keydown.escape.window="quizModalOpen = false">
+    <main class="gambit-main py-0">
+        <div class="gambit-container">
+            <section class="gambit-header">
 
-            @media (min-width: 768px) {
-
-                /* Bootstrap's md breakpoint */
-                .quiz-actions-grid {
-                    grid-template-columns: 1fr 1fr;
-                }
-            }
-
-            .gambits-filter-dropdown.position-absolute {
-                position: absolute !important;
-                /* top: 6rem; */
-                /* right: 1rem; */
-                left: -53% !important;
-                width: min(406px, calc(100vw - 2rem));
-                max-width: calc(100vw - 2rem);
-                z-index: 1050;
-            }
-
-            .gambits-filter-dropdown .gambits-select2,
-            .gambits-filter-dropdown .select2-container {
-                width: 100% !important;
-            }
-
-            .gambits-select2-dropdown {
-                z-index: 1060;
-            }
-
-            .gambits-selection-checkbox {
-                width: 1.1rem;
-                height: 1.1rem;
-                cursor: pointer;
-            }
-
-            .gambits-select2-wrapper {
-                position: relative;
-            }
-
-            @media (max-width: 991.98px) {
-                .card-footer nav {
-                    width: 100%;
-                    max-width: 100%;
-                    overflow-x: auto;
-                }
-
-                .card-footer .pagination {
-                    flex-wrap: wrap;
-                }
-            }
-
-            @media (max-width: 767.98px) {
-                .gambits-filter-dropdown {
-                    position: fixed !important;
-                    top: 4.5rem;
-                    left: 0.5rem !important;
-                    right: 0.5rem !important;
-                    width: auto;
-                    max-width: none;
-                }
-
-                .gambits-filter-dropdown .d-flex.gap-2 {
-                    flex-direction: column;
-                }
-
-                .gambits-table thead {
-                    display: none;
-                }
-
-                .gambits-table,
-                .gambits-table tbody,
-                .gambits-table tr,
-                .gambits-table td {
-                    display: block;
-                    width: 100%;
-                }
-
-                .gambits-table tr {
-                    padding: 0.75rem 1rem;
-                    border-bottom: 1px solid var(--bs-border-color);
-                }
-
-                .gambits-table td {
-                    display: flex;
-                    align-items: center;
-                    justify-content: space-between;
-                    gap: 1rem;
-                    padding: 0.5rem 0;
-                    border: 0;
-                    text-align: end;
-                }
-
-                .gambits-table td::before {
-                    content: attr(data-label);
-                    color: var(--bs-secondary-color);
-                    font-size: 0.75rem;
-                    font-weight: 600;
-                    text-align: start;
-                    text-transform: uppercase;
-                    letter-spacing: 0.04em;
-                }
-
-                .gambits-table td.gambits-question-cell {
-                    display: block;
-                    text-align: start;
-                }
-
-                .gambits-table td.gambits-question-cell::before {
-                    display: block;
-                    margin-bottom: 0.25rem;
-                }
-
-                .gambits-table td.gambits-actions-cell {
-                    justify-content: flex-end;
-                }
-
-                .gambits-table td.gambits-actions-cell::before {
-                    margin-right: auto;
-                }
-
-                .gambits-table .gambits-actions {
-                    flex-wrap: wrap;
-                    justify-content: flex-end;
-                }
-            }
-        </style>
-    @endpush
-
-    <div class="card shadow-sm border-0">
-
-        {{-- Header --}}
-        <div class="card-header border-bottom">
-
-
-            <div class="d-flex flex-column flex-xl-row justify-content-center align-items-xl-center gap-5">
-
-                {{-- Title --}}
-
-                {{-- Actions --}}
-                <div class="d-flex align-items-center gap-2">
-
-                    {{-- Search --}}
-                    <div class="input-group input-group-merge" style="width: 280px;">
-                        <span class="input-group-text">
-                            <i class="icon-base ti tabler-search"></i>
-                        </span>
-
-                        <input type="text" class="form-control" placeholder="Search questions..."
-                            wire:model.live.debounce.400ms="search">
+                <div class="row align-items-end g-4 mt-1">
+                    <div class="col">
+                        <h1>Gambits</h1>
+                        <p class="my-2">Shape your practice. Find your gambit.</p>
                     </div>
-
-
-
-
-                    <div class="position-relative" x-data="{ open: false }">
-
-                        {{-- Filter button --}}
-                        <button @click="open = !open " type="button"
-                            class="btn btn-outline-secondary d-flex align-items-center gap-2">
-                            <i class="icon-base ti tabler-adjustments-horizontal"></i>
-                            Filters
-
-
-
-                            <i class="icon-base ti tabler-chevron-down ms-1"></i>
-                        </button>
-
-
-                        {{-- Filter dropdown --}}
-                        <div x-show="open" x-cloak
-                            class="position-absolute end-0 mt-2 bg-card border rounded-3 shadow-lg overflow-hidden gambits-filter-dropdown">
-
-                            {{-- Header --}}
-                            <div class="px-4 py-3 border-bottom">
-                                <div class="d-flex align-items-center justify-content-between">
-
-                                    <div>
-                                        <h6 class="mb-1 fw-semibold">
-                                            Filter questions
-                                        </h6>
-
-                                        <small class="text-body-secondary">
-                                            Refine the questions shown in the table
-                                        </small>
-                                    </div>
-
-                                    <button @click="open = false " type="button"
-                                        class="btn btn-sm btn-icon btn-text-secondary">
-                                        <i class="icon-base ti tabler-x"></i>
-                                    </button>
-
-                                </div>
-                            </div>
-
-
-                            {{-- Content --}}
-                            <div class="p-4" style="max-height: 65vh; overflow-y: auto;">
-
-                                {{-- Sort --}}
-                                <div class="mb-4">
-
-                                    <label class="form-label fw-semibold mb-2">
-                                        Sort
-                                    </label>
-
-                                    <div class="d-flex gap-2">
-
-                                        <select class="form-select" wire:model.live="sort">
-                                            <option value="created_at">Created at</option>
-                                            <option value="updated_at">Updated at</option>
-                                            <option value="name">Name</option>
-                                            <option value="difficulty">Difficulty</option>
-                                            <option value="length">Length</option>
-                                        </select>
-
-                                        <button type="button" wire:click="toggleDirection"
-                                            class="btn btn-outline-secondary px-3" aria-label="Toggle sort direction">
-                                            <i
-                                                class="icon-base ti tabler-sort-{{ $direction === 'asc' ? 'ascending' : 'descending' }}"></i>
-                                        </button>
-
-                                    </div>
-
-                                </div>
-
-
-                                {{-- Difficulty --}}
-                                <div class="mb-4">
-
-                                    <label class="form-label fw-semibold mb-2">
-                                        Difficulty
-                                    </label>
-
-                                    <div class="d-flex flex-wrap gap-2">
-
-                                        <button type="button" wire:click="setDifficulty('')"
-                                            class="btn btn-sm {{ $difficulty == '' ? 'btn-primary' : 'btn-outline-secondary' }}">
-                                            All
-                                        </button>
-
-                                        <button type="button"
-                                            class="btn btn-sm {{ $difficulty == 'easy' ? 'btn-success' : 'btn-outline-success' }}"
-                                            wire:click="setDifficulty('easy')">
-                                            Easy
-                                        </button>
-
-                                        <button type="button" wire:click="setDifficulty('medium')"
-                                            class="btn btn-sm {{ $difficulty == 'medium' ? 'btn-warning' : 'btn-outline-warning' }}">
-                                            Medium
-                                        </button>
-
-                                        <button type="button" wire:click="setDifficulty('hard')"
-                                            class="btn btn-sm {{ $difficulty == 'hard' ? 'btn-danger' : 'btn-outline-danger' }}">
-                                            Hard
-                                        </button>
-
-                                        <button type="button" wire:click="setDifficulty('nerd')"
-                                            class="btn btn-sm {{ $difficulty == 'nerd' ? 'btn-dark' : 'btn-outline-dark' }}">
-                                            Nerd
-                                        </button>
-
-                                    </div>
-
-                                </div>
-
-
-                                {{-- Length --}}
-                                <div class="mb-4">
-
-                                    <label class="form-label fw-semibold mb-2">
-                                        Question length
-                                    </label>
-
-                                    <div class="d-flex flex-wrap gap-2">
-
-                                        <button type="button" wire:click="setLength('')"
-                                            class="btn btn-sm {{ $length == '' ? 'btn-primary' : 'btn-outline-secondary' }}">
-                                            All
-                                        </button>
-
-                                        <button type="button" wire:click="setLength('short')"
-                                            class="btn btn-sm {{ $length == 'short' ? 'btn-success' : 'btn-outline-success' }}">
-                                            Short
-                                        </button>
-
-                                        <button type="button" wire:click="setLength('medium')"
-                                            class="btn btn-sm {{ $length == 'medium' ? 'btn-warning' : 'btn-outline-warning' }}">
-                                            Medium
-                                        </button>
-
-                                        <button type="button" wire:click="setLength('long')"
-                                            class="btn btn-sm {{ $length == 'long' ? 'btn-danger' : 'btn-outline-danger' }}">
-                                            Long
-                                        </button>
-
-                                    </div>
-
-                                </div>
-
-
-                                {{-- Medical classification --}}
-                                <div>
-
-                                    <div class="mb-3">
-
-                                        <label class="form-label fw-semibold">
-                                            Branches
-                                        </label>
-
-                                        <div wire:ignore class="gambits-select2-wrapper">
-                                            <select id="branches" class="form-select gambits-select2"
-                                                multiple></select>
-                                        </div>
-
-                                    </div>
-
-
-                                    <div class="mb-3">
-
-                                        <label class="form-label fw-semibold">
-                                            Specialties
-                                        </label>
-
-                                        <div wire:ignore class="gambits-select2-wrapper">
-                                            <select id="sp" class="form-select gambits-select2"
-                                                multiple></select>
-                                        </div>
-
-                                    </div>
-
-
-                                    <div class="mb-3">
-
-                                        <label class="form-label fw-semibold">
-                                            Skills
-                                        </label>
-
-                                        <div wire:ignore class="gambits-select2-wrapper">
-                                            <select id="skills" class="form-select gambits-select2"
-                                                multiple></select>
-                                        </div>
-
-                                    </div>
-
-
-                                    <div>
-
-                                        <label class="form-label fw-semibold">
-                                            References
-                                        </label>
-
-                                        <div wire:ignore class="gambits-select2-wrapper">
-                                            <select id="references" class="form-select gambits-select2"
-                                                multiple></select>
-                                        </div>
-
-                                    </div>
-
-                                </div>
-
-                            </div>
-
-
-                            <div class="px-4 py-3 border-top d-flex justify-content-end">
-                                <button type="button" wire:click="clearFilters"
-                                    class="btn btn-sm btn-outline-secondary">
-                                    Clear all
-                                </button>
-                            </div>
-
+                    <div class="col-lg-7 d-none">
+                        <div class="gambit-search"><span class="material-symbols-outlined">search</span><input
+                                class="form-control" id="legacyGambitSearch" wire:model.live.debounce.300ms="search"
+                                placeholder="Search 3,840 questions, clinical vignettes, pathologies, or ICD-10 keys...">
+                            <div class="search-shortcuts"><kbd>⌘K</kbd><kbd>/</kbd></div>
                         </div>
-
                     </div>
-                    {{-- Create Question --}}
-
-
                 </div>
-
-            </div>
+            </section>
         </div>
-
-
-        {{-- Active Filters --}}
-        @if ($search || $difficulty || $length || count($branches) || count($sp) || count($skills) || count($references))
-
-            <div class="px-4 py-3 border-bottom">
-
-                <div class="d-flex align-items-center flex-wrap gap-2">
-
-                    <div class="d-flex align-items-center gap-2 me-2">
-
-                        <i class="icon-base ti tabler-filter text-muted"></i>
-
-                        <span class="small fw-semibold">
-                            Active filters
-                        </span>
-
+        <section class="active-strip">
+            <div class="gambit-container container-line">
+                <div class="d-flex flex-wrap align-items-center gap-2">
+                    <div class="active-title ps-4"><span class="material-symbols-outlined">tune</span>Active gambits
+                        <span class="badge text-bg-primary">{{ $this->activeFilterCount }} criteria</span>
                     </div>
-
-
-                    @if ($search)
-                        <span class="badge bg-label-secondary d-flex align-items-center gap-1">
-                            Search: {{ $search }}
+                    @if (count($selectedQuestions) > 0)
+                        <button class="gambit-active-selection" type="button" @click="quizModalOpen = true">
+                            <span class="material-symbols-outlined">checklist</span>
+                            <span>{{ count($selectedQuestions) }} selected</span>
+                        </button>
+                    @endif
+                    @if ($search !== '')
+                        <span class="filter-chip">Search: {{ Str::limit($search, 24) }}
+                            <button type="button" wire:click="$set('search', '')"
+                                aria-label="Remove search filter">&times;</button>
                         </span>
                     @endif
-
-                    @if ($difficulty)
-                        <span class="badge bg-label-warning d-flex align-items-center gap-1">
-                            Difficulty: {{ ucfirst($difficulty) }}
-
-                            <button type="button" wire:click="setDifficulty('')" class="btn btn-sm p-0 text-reset">
-                                <i class="icon-base ti tabler-x"></i>
-                            </button>
+                    @if ($difficulty !== '')
+                        <span class="filter-chip">{{ ucfirst($difficulty) }}
+                            <button type="button" wire:click="setDifficulty('')"
+                                aria-label="Remove difficulty filter">&times;</button>
                         </span>
                     @endif
-
-
-                    @if ($length)
-                        <span class="badge bg-label-info d-flex align-items-center gap-1">
-                            Length: {{ ucfirst($length) }}
-
-                            <button type="button" wire:click="setLength('')" class="btn btn-sm p-0 text-reset">
-                                <i class="icon-base ti tabler-x"></i>
-                            </button>
+                    @if ($length !== '')
+                        <span class="filter-chip">{{ ucfirst($length) }} 
+                            <button type="button" wire:click="setLength('')"
+                                aria-label="Remove length filter">&times;</button>
                         </span>
                     @endif
-
-
-                    @if (count($branches))
-                        <span class="badge bg-label-primary">
-                            {{ count($branches) }} branches
+                    @foreach ($this->activeSpecialties as $specialty)
+                        <span class="filter-chip">{{ $specialty->name }}
+                            <button type="button" wire:click="removeSpecialty({{ $specialty->id }})"
+                                aria-label="Remove {{ $specialty->name }} filter">&times;</button>
                         </span>
-                    @endif
-
-
-                    @if (count($sp))
-                        <span class="badge bg-label-primary">
-                            {{ count($sp) }} specialties
+                    @endforeach
+                    @foreach ($this->activeReferences as $reference)
+                        <span class="filter-chip">{{ $reference->name }}
+                            <button type="button" wire:click="removeReference({{ $reference->id }})"
+                                aria-label="Remove {{ $reference->name }} filter">&times;</button>
                         </span>
-                    @endif
-
-
-                    @if (count($skills))
-                        <span class="badge bg-label-primary">
-                            {{ count($skills) }} skills
+                    @endforeach
+                    @foreach ($this->activeBranches as $branch)
+                        <span class="filter-chip">{{ $branch->name }}
+                            <button type="button" wire:click="removeBranch({{ $branch->id }})"
+                                aria-label="Remove {{ $branch->name }} filter">&times;</button>
                         </span>
-                    @endif
-
-
-                    @if (count($references))
-                        <span class="badge bg-label-secondary">
-                            {{ count($references) }} references
+                    @endforeach
+                    @foreach ($this->activeSkills as $skill)
+                        <span class="filter-chip">{{ $skill->name }}
+                            <button type="button" wire:click="removeSkill({{ $skill->id }})"
+                                aria-label="Remove {{ $skill->name }} filter">&times;</button>
                         </span>
-                    @endif
-
+                    @endforeach
+                   
                 </div>
-
+                <div class="d-flex gap-3 px-4"><button class="btn btn-link btn-sm text-danger pe-4 gambit-clear-filters"
+                        type="button" id="clearFilters" wire:click="clearFilters"><span
+                            class="material-symbols-outlined align-middle">restart_alt</span> Clear</button></div>
             </div>
-        @else
-            <div>
-                <div class="px-4 py-3 border-bottom">
-
-                    <div class="d-flex align-items-center gap-2 text-muted">
-
-                        <i class="icon-base ti tabler-adjustments-horizontal"></i>
-
-                        <small>
-                            No filters applied
-                        </small>
-
+        </section>
+        <div class="gambit-container"><button class="btn btn-outline-secondary mobile-filters" type="button"
+                data-bs-toggle="offcanvas" data-bs-target="#filtersPanel"><span
+                    class="material-symbols-outlined align-middle me-1">filter_alt</span> Refine bank</button>
+            <div class="workspace">
+                <aside class="filter-panel">
+                    <div class="filter-heading"><span><span
+                                class="material-symbols-outlined align-middle me-1">filter_alt</span> Refine
+                            bank</span><small>{{ $this->questions->total() }} found</small></div>
+                    <div class="filter-group"><span class="filter-label">Difficulty profile</span>
+                        <div class="filter-grid">
+                            @foreach (['easy' => 'Easy', 'medium' => 'Med', 'hard' => 'Hard', 'nerd' => 'Nerd'] as $value => $label)
+                                <button class="filter-option {{ $difficulty === $value ? 'active' : '' }}"
+                                    type="button" wire:click="setDifficulty('{{ $value }}')"
+                                    aria-pressed="{{ $difficulty === $value ? 'true' : 'false' }}">
+                                    {{ $label }} <small>{{ $this->difficultyCounts->get($value, 0) }}</small>
+                                </button>
+                            @endforeach
+                        </div>
                     </div>
-
-                </div>
-                <div role="alert" class="alert alert-primary m-0 p-0 py-2 rounded-0 ">
-                    <div>
-
-                        <span class="px-5">
-                            <span>
-                                <i class="menu-icon fa-solid fa-lightbulb"></i>
-                            </span>
-                            Narrow the field. Sharpen your skills.
-                        </span>
+                    <div class="filter-group"><span class="filter-label">Question length</span>
+                        <div class="filter-list">
+                            @foreach (['short' => 'Short (<25 words)', 'medium' => 'Medium (25–45 words)', 'long' => 'Long (>45 words)'] as $value => $label)
+                                <button class="filter-list-option {{ $length === $value ? 'active' : '' }}"
+                                    type="button" wire:click="setLength('{{ $value }}')"
+                                    aria-pressed="{{ $length === $value ? 'true' : 'false' }}">
+                                    <span>{{ $label }}</span><small>{{ $this->lengthCounts->get($value, 0) }}</small>
+                                </button>
+                            @endforeach
+                        </div>
                     </div>
-
-
-                </div>
-        @endif
-
-
-
-        {{-- Table --}}
-        <div class="table-responsive">
-            @if (count($selectedQuestions))
-                <div class="d-flex justify-content-between align-items-center py-2 px-4">
-
-                    <div class="px-4 py-2  text-primary fw-semibold">
-                        <span class="gambits-selected-count">{{ count($selectedQuestions) }} selected</span>
-                    </div>
-                    <div class="quiz-actions-grid">
-                        <button type="button" data-bs-toggle="modal" data-bs-target="#staticBackdrop"
-                            class="btn btn-primary">
-                            <i class="icon-base ti tabler-player-play me-1"></i>
-                            Start A Quiz
-                        </button>
-                        <button class="btn btn-dark" wire:click="clearSelected">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
-                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x">
-                                <path d="M18 6 6 18" />
-                                <path d="m6 6 12 12" />
-                            </svg>
-                            Clear Selected
-                        </button>
-                    </div>
-
-                </div>
-            @endif
-            <table class="table table-hover align-middle mb-0 gambits-table">
-
-                <thead>
-                    <tr>
-                        <th style="width: 52px;" class="text-center">
-                            <input type="checkbox" class="form-check-input gambits-selection-checkbox"
-                                wire:click="toggleSelectAllVisible" @checked($this->allVisibleQuestionsSelected())
-                                aria-label="Select all visible questions">
-                        </th>
-
-
-                        <th>
-                            Question
-                        </th>
-                        <th>
-                            Reference
-                        </th>
-
-                        <th>
-                            Speciality
-                        </th>
-                        <th>
-                            Difficulty
-                        </th>
-
-                        <th>
-                            Length
-                        </th>
-                        <th class="text-start">Played Time</th>
-                        <th class="text-start">Played </th>
-
-                        <th class="text-start">
-                            Actions
-                        </th>
-                    </tr>
-                </thead>
-
-                <tbody>
-
-                    @forelse($this->questions as $question)
-                        <tr>
-                            <td class="text-center" data-label="Select">
-                                <input type="checkbox" class="form-check-input gambits-selection-checkbox"
-                                    wire:model.live="selectedQuestions" value="{{ $question->id }}"
-                                    wire:key="selected-question-{{ $question->id }}"
-                                    aria-label="Select question {{ $question->id }}">
-                            </td>
-
-
-                            <td class="gambits-question-cell" data-label="Question">
-                                <div>
-                                    <h6 class="mb-1">
-                                        {{ $question->name }}
-                                    </h6>
-
+                  
+                </aside>
+                <section class="results">
+                    <div class="results-toolbar">
+                        <div class="results-count">{{ $this->questions->total() }} questions found
+                            <small>Showing
+                                {{ $this->questions->firstItem() ?? 0 }}–{{ $this->questions->lastItem() ?? 0 }}</small>
+                        </div>
+                        <div class="gambit-search gambit-toolbar-search"><span
+                                class="material-symbols-outlined">search</span><input class="form-control"
+                                id="gambitSearch" wire:model.live.debounce.300ms="search"
+                                placeholder="Search questions name or content">
+                        </div>
+                        <div class="gambit-advanced-filter" wire:ignore x-data="{ open: false }">
+                            <button class="gambit-filter-trigger" type="button" @click="open = !open"
+                                :aria-expanded="open.toString()" aria-controls="gambitAdvancedFilters"
+                                aria-label="Open advanced filters">
+                                <span class="material-symbols-outlined">filter_alt</span>
+                                <span class="gambit-filter-trigger-count"
+                                    x-show="{{ $this->activeFilterCount > 0 ? 'true' : 'false' }}">{{ $this->activeFilterCount }}</span>
+                            </button>
+                            <div id="gambitAdvancedFilters" class="gambit-filter-popover" x-cloak x-show="open"
+                                x-transition @click.outside="open = false">
+                                <div class="gambit-filter-popover-heading">
+                                    <span>Advanced filters</span>
+                                    <button type="button" @click="open = false"
+                                        aria-label="Close filters">&times;</button>
                                 </div>
-                            </td>
-                            <td data-label="Reference">
-                                <span class="text-muted">
-                                    {{ $question->reference?->name }}
-                                </span>
-                            </td>
-                            <td data-label="Reference">
-                                <span class="text-muted">
-                                    @forelse($question->specialties as $sp)
-                                        {{ $sp->name }}
-                                    @empty
-                                        No Speciaility Found
-                                    @endforelse
-                                </span>
-                            </td>
-                            <td data-label="Difficulty">
-                                <span
-                                    class="badge {{ match ($question->difficulty) {
-                                        'easy' => 'bg-label-success',
-                                        'medium' => 'bg-label-warning',
-                                        'hard' => 'bg-label-danger',
-                                        default => 'bg-label-dark',
-                                    } }}">
-                                    {{ ucfirst($question->difficulty) }}
-                                </span>
-                            </td>
-
-                            <td data-label="Length">
-                                <span
-                                    class="badge {{ match ($question->length) {
-                                        'short' => 'bg-label-success',
-                                        'medium' => 'bg-label-warning',
-                                        'long' => 'bg-label-danger',
-                                        default => 'bg-label-secondary',
-                                    } }}">
-                                    {{ ucfirst($question->length) }}
-                                </span>
-                            </td>
-                            <td>
-                                {{ $question->playedCount?->count ?? 0 }}
-                            </td>
-
-                            <td>
-                                @if ($this->isPlayed($question->id))
-                                    <svg class="text-success" xmlns="http://www.w3.org/2000/svg" width="24"
-                                        height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                                        class="lucide lucide-book-open-check">
-                                        <path d="M12 5v16" />
-                                        <path d="m16 12 2 2 4-4" />
-                                        <path
-                                            d="M22 6V5a2 2 0 00-1.999-2L16 3.002A5 5 0 0012 5a5 5 0 00-4-2H4a2 2 0 00-2 2v12a2 2 0 001.999 2H8a5 5 0 014 2 5 5 0 014-2h4.001A2 2 0 0022 17v-1.344" />
-                                    </svg>
-                                @else
-                                    <svg class="text-danger" xmlns="http://www.w3.org/2000/svg" width="24"
-                                        height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                                        class="lucide lucide-book-open-x">
-
-                                        <path d="M12 5v16" />
-
-                                        <g transform="translate(0 -4)">
-                                            <path d="m16 12 6 6" />
-                                            <path d="m22 12-6 6" />
-                                        </g>
-
-                                        <path
-                                            d="M22 6V5a2 2 0 00-1.999-2L16 3.002A5 5 0 0012 5a5 5 0 00-4-2H4a2 2 0 00-2 2v12a2 2 0 001.999 2H8a5 5 0 014 2 5 5 0 014-2h4.001A2 2 0 0022 17v-1.344" />
-                                    </svg>
-                                @endif
-                            </td>
-
-                            <div class="modal fade" id="staticBackdrop" data-bs-backdrop="static"
-                                data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel"
-                                aria-hidden="true">
-                                <div class="modal-dialog">
-                                    <div class="modal-content">
-                                        <div class="modal-header">
-                                            <h1 class="modal-title fs-5" id="staticBackdropLabel">Quiz Info</h1>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                                aria-label="Close"></button>
+                                <div class="gambit-select2-field">
+                                    <label for="gambit-filter-specialties">Specialties</label>
+                                    <select id="gambit-filter-specialties" multiple>
+                                        @foreach ($this->activeSpecialties as $specialty)
+                                            <option value="{{ $specialty->id }}" selected>{{ $specialty->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="gambit-select2-field">
+                                    <label for="gambit-filter-branches">Branches</label>
+                                    <select id="gambit-filter-branches" multiple>
+                                        @foreach ($this->activeBranches as $branch)
+                                            <option value="{{ $branch->id }}" selected>{{ $branch->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="gambit-select2-field">
+                                    <label for="gambit-filter-skills">Skills</label>
+                                    <select id="gambit-filter-skills" multiple>
+                                        @foreach ($this->activeSkills as $skill)
+                                            <option value="{{ $skill->id }}" selected>{{ $skill->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="gambit-select2-field">
+                                    <label for="gambit-filter-references">References</label>
+                                    <select id="gambit-filter-references" multiple>
+                                        @foreach ($this->activeReferences as $reference)
+                                            <option value="{{ $reference->id }}" selected>{{ $reference->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <label class="text-secondary small" for="gambitSort">Sort:</label>
+                            <select id="gambitSort" class="form-select form-select-sm w-auto" wire:model.live="sort">
+                                <option value="created_at">Newest cases</option>
+                                <option value="difficulty">Difficulty</option>
+                                <option value="length">Length</option>
+                                <option value="name">Name</option>
+                                <option value="updated_at">Recently updated</option>
+                            </select>
+                            <select class="form-select form-select-sm w-auto" wire:model.live="count"
+                                aria-label="Questions per page">
+                                <option value="10">10</option>
+                                <option value="20">20</option>
+                                <option value="50">50</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="questionList">
+                        @forelse ($this->questions as $question)
+                            <article
+                                class="question-card {{ in_array($question->id, $selectedQuestions, true) ? 'selected' : '' }}">
+                                <div class="d-flex gap-3">
+                                    <input class="form-check-input mt-1" type="checkbox" @checked(in_array($question->id, $selectedQuestions, true))
+                                        wire:click="toggleQuestion({{ $question->id }})" wire:loading.attr="disabled"
+                                        aria-label="Select {{ $question->name }}">
+                                    <div>
+                                        <div class="question-tags">
+                                            @foreach ($question->specialties as $specialty)
+                                                <span class="badge">{{ $specialty->name }}</span>
+                                            @endforeach
+                                            @foreach ($question->branches as $branch)
+                                                <span class="badge">{{ $branch->name }}</span>
+                                            @endforeach
+                                            @foreach ($question->skills as $skill)
+                                                <span class="badge primary">{{ $skill->name }}</span>
+                                            @endforeach
+                                            @if ($question->reference)
+                                                <span class="badge">{{ $question->reference->name }}</span>
+                                            @endif
+                                            <span class="gambit-meta">QID #{{ $question->id }}</span>
                                         </div>
-                                        <div class="modal-body">
-                                            <x-forms.input name="quizName" wire:model="quizName"
-                                                label="Quiz Name"></x-forms.input>
+                                        <h2>{{ $question->name }}</h2>
+                                        <p>{{ Str::limit(strip_tags($question->content), 220) }}</p>
+                                        <div class="question-metrics">
+                                            <span class="{{ $question->difficulty === 'hard' ? 'hard' : '' }}">●
+                                                {{ ucfirst($question->difficulty) }}</span>
+                                            <span>{{ ucfirst($question->length) }} </span>
+                                            <span class="gain">+{{ $question->elo_correct }} ELO</span>
+                                            <span class="text-danger">-{{ $question->elo_incorrect }} Elo </span>
 
-                                            <p>Quiz Name Will be saved on your profile </p>
-                                        </div>
-                                        <div class="modal-footer">
-                                            <div class="d-flex justify-content-between  gap-3">
-                                                <button type="button" class="btn btn-success"
-                                                    wire:click='learningQuiz'>Learning Quiz</button>
-                                                <button class="btn btn-warning" wire:click='examQuiz'>Exam Mode
-                                                </button>
-                                            </div>
-                                            <div class="d-block">
-                                                <p><span class="text-danger my-2">Exam Mode</span> Will affect Your Elo
-                                                </p>
-                                            </div>
-
-
+                                            <span>{{ $question->playedCount?->count ?? 0 }} plays</span>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-
-
-                            <td class="gambits-actions-cell" data-label="Actions">
-                                <div class="d-flex justify-content-end gap-2 gambits-actions">
-
-                                    <button type="button" 
-                                        wire:click="tryQuestion({{ $question->id }})"
-                                        class="btn btn-sm btn-outline-primary">
-                                        <i class="icon-base ti tabler-player-play me-1"></i>
-                                        Try
-                                    </button>
-
-
-
+                                <div class="question-action">
+                                    <button class="btn btn-primary" type="button"
+                                        wire:click="tryQuestion({{ $question->id }})">Try question <span
+                                            class="material-symbols-outlined align-middle ms-1">arrow_forward</span></button>
+                                    <small>Instant turn</small>
                                 </div>
-                            </td>
+                            </article>
+                        @empty
+                            <div class="results-toolbar"><span class="text-secondary">No questions match these
+                                    criteria.</span></div>
+                        @endforelse
+                    </div>
+                    <div class="pagination-wrap">
+                        <span class="gambit-meta">Showing
+                            {{ $this->questions->firstItem() ?? 0 }}–{{ $this->questions->lastItem() ?? 0 }} of
+                            {{ $this->questions->total() }} questions</span>
+                        {{ $this->questions->links('vendor.pagination.medgambit') }}
+                    </div>
 
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="7" class="text-center text-muted py-4">No questions found.</td>
-                        </tr>
-                    @endforelse
-
-
-
-
-                </tbody>
-
-            </table>
-        </div>
-
-        {{-- Footer --}}
-        <div class="card-footer border-top">
-            <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
-
-                <div class="text-muted small">
-                    Showing
-                    <strong>{{ $this->questions->firstItem() ?? 0 }}</strong>
-                    to
-                    <strong>{{ $this->questions->lastItem() ?? 0 }}</strong>
-                    of
-                    <strong>{{ $this->questions->total() }}</strong>
-                    questions
-                </div>
-
-                <nav>
-                    {{ $this->questions->links() }}
-                </nav>
-
+                </section>
             </div>
         </div>
+    </main>
 
+    @if (count($selectedQuestions) > 0)
+        <button class="gambit-start-quiz-button" type="button" @click="quizModalOpen = true">
+            <span class="material-symbols-outlined">bolt</span>
+            <span>Start Quiz</span>
+            <span class="gambit-selected-count">{{ count($selectedQuestions) }}</span>
+        </button>
+    @endif
+
+    <div class="gambit-quiz-modal" x-cloak x-show="quizModalOpen" x-transition role="dialog" aria-modal="true"
+        aria-labelledby="gambitQuizModalTitle" tabindex="-1">
+        <button class="gambit-quiz-modal-backdrop" type="button" aria-label="Close quiz setup"
+            @click="quizModalOpen = false"></button>
+        <div class="gambit-quiz-modal-dialog">
+            <div class="gambit-quiz-modal-content">
+                <div class="gambit-quiz-modal-header">
+                    <div>
+                        <span class="gambit-modal-kicker">Gambit protocol</span>
+                        <h2 id="gambitQuizModalTitle">Start quiz</h2>
+                        <p>{{ count($selectedQuestions) }} question{{ count($selectedQuestions) === 1 ? '' : 's' }}
+                            selected</p>
+                    </div>
+                    <button class="gambit-modal-close" type="button" aria-label="Close quiz setup"
+                        @click="quizModalOpen = false">&times;</button>
+                </div>
+                <div class="gambit-quiz-modal-body">
+                    <label class="form-label" for="gambitQuizName">Quiz name</label>
+                    <input id="gambitQuizName" type="text" class="form-control" wire:model="quizName"
+                        placeholder="e.g. Cardiology review" autofocus>
+                    @error('quizName')
+                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                    @enderror
+                    @error('selectedQuestions')
+                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                    @enderror
+                    <p class="gambit-modal-help">Choose how you want to work through these questions.</p>
+                    <div class="gambit-mode-grid">
+                        <button class="gambit-mode-option" type="button" wire:click="learningQuiz">
+                            <span class="material-symbols-outlined">school</span>
+                            <span><strong>Learning mode</strong><small>Get feedback as you practice.</small></span>
+                            <span class="material-symbols-outlined gambit-mode-arrow">arrow_forward</span>
+                        </button>
+                        <button class="gambit-mode-option" type="button" wire:click="examQuiz">
+                            <span class="material-symbols-outlined">timer</span>
+                            <span><strong>Exam mode</strong><small>Complete the set under exam
+                                    conditions </small><span><small class="text-danger">
+                                        This Mode Will Effect You Elo</small></span></span>
+                            <span class="material-symbols-outlined gambit-mode-arrow">arrow_forward</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="gambit-quiz-modal-footer">
+                    <button class="btn btn-outline-secondary" type="button"
+                        @click="quizModalOpen = false">Cancel</button>
+                </div>
+            </div>
+        </div>
     </div>
-    @script
-        <script>
-            const initializeGambitsSelects = () => {
-                const select2 = window.MedGambitSelect2;
+</div>
 
-                if (!select2) {
-                    return;
-                }
+@script
+    <script>
+        const initializeGambitsSelects = () => {
+            const select2 = window.MedGambitSelect2;
+            const filterPanel = document.getElementById('gambitAdvancedFilters');
 
-                const selectedIds = (value) => value.map(Number);
-                const selects = [
-                    ['#branches', @js(route('getBranches')), 'Search for branches', 'branches'],
-                    ['#sp', @js(route('getSpeciality')), 'Search for specialties', 'sp'],
-                    ['#skills', @js(route('getSkills')), 'Search for skills', 'skills'],
-                    ['#references', @js(route('getReferences')), 'Search for references', 'references'],
-                ];
+            if (!select2 || !filterPanel) {
+                return;
+            }
 
-                selects.forEach(([selector, ajaxUrl, placeholder, property]) => {
-                    select2.init(selector, {
-                        ajaxUrl,
-                        placeholder,
-                        dropdownCssClass: 'gambits-select2-dropdown',
-                        onChange: (value) => $wire.set(property, selectedIds(value)),
-                    });
-                });
+            const selectedIds = (value) => value.map(Number);
+            const controls = {
+                branches: '#gambit-filter-branches',
+                specialties: '#gambit-filter-specialties',
+                skills: '#gambit-filter-skills',
+                references: '#gambit-filter-references',
             };
 
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', initializeGambitsSelects, { once: true });
-            } else {
-                initializeGambitsSelects();
-            }
-
-            $wire.on('gambits-filters-cleared', () => {
-                $('.gambits-select2').val(null).trigger('change.select2');
+            select2.init(controls.specialties, {
+                ajaxUrl: @js(route('getSpeciality')),
+                placeholder: 'Search specialties',
+                dropdownParent: filterPanel,
+                onChange: (value) => $wire.set('sp', selectedIds(value)),
             });
-        </script>
-    @endscript
-</div>
+            select2.init(controls.branches, {
+                ajaxUrl: @js(route('getBranches')),
+                placeholder: 'Search branches',
+                dropdownParent: filterPanel,
+                onChange: (value) => $wire.set('branches', selectedIds(value)),
+            });
+            select2.init(controls.skills, {
+                ajaxUrl: @js(route('getSkills')),
+                placeholder: 'Search skills',
+                dropdownParent: filterPanel,
+                onChange: (value) => $wire.set('skills', selectedIds(value)),
+            });
+            select2.init(controls.references, {
+                ajaxUrl: @js(route('getReferences')),
+                placeholder: 'Search references',
+                dropdownParent: filterPanel,
+                onChange: (value) => $wire.set('references', selectedIds(value)),
+            });
+
+            Livewire.on('gambits-select2-sync', (filters) => {
+                Object.entries(controls).forEach(([filter, selector]) => {
+                    window.jQuery(selector).val(filters[filter] || []).trigger('change.select2');
+                });
+            });
+        };
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeGambitsSelects, {
+                once: true
+            });
+        } else {
+            initializeGambitsSelects();
+        }
+    </script>
+@endscript

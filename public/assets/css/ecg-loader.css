@@ -1,0 +1,124 @@
+/* Reusable centered ECG loader overlay. */
+ecg-loader {
+  --ecg-overlay: transparent;
+  --ecg-primary: #059669;
+  --ecg-secondary: #10b981;
+  --ecg-highlight: #047857;
+  --ecg-trace-start: #334155;
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  background: transparent;
+  color: var(--ecg-primary);
+}
+
+html[data-bs-theme="dark"] ecg-loader,
+html[data-theme="dark"] ecg-loader {
+  --ecg-overlay: transparent;
+  --ecg-primary: #34d399;
+  --ecg-secondary: #10b981;
+  --ecg-highlight: #6ee7b7;
+  --ecg-trace-start: #f8fafc;
+}
+
+@media (prefers-color-scheme: dark) {
+  html:not([data-bs-theme="light"]):not([data-theme="light"]) ecg-loader {
+    --ecg-overlay: transparent;
+    --ecg-primary: #34d399;
+    --ecg-secondary: #10b981;
+    --ecg-highlight: #6ee7b7;
+    --ecg-trace-start: #f8fafc;
+  }
+}
+
+ecg-loader[hidden] {
+  display: none;
+}
+
+ecg-loader .ecg-loader__frame {
+  width: min(100%, 56rem);
+  height: 20rem;
+}
+
+ecg-loader svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+ecg-loader .pulse-drawing-stage {
+  animation: ecg-stage-master 5s cubic-bezier(.4, 0, .2, 1) infinite;
+}
+
+ecg-loader .ecg-drawn-path {
+  stroke-dasharray: 1050;
+  stroke-dashoffset: 1050;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  animation: ecg-pen-draw-path 5s cubic-bezier(.25, .1, .25, 1) infinite;
+}
+
+ecg-loader .pen-head {
+  offset-path: path("M 60 160 L 320 160 C 334 160, 340 152, 348 152 C 356 152, 360 160, 370 160 L 388 160 L 398 170 L 420 54 L 438 196 L 450 160 L 472 160 C 480 160, 488 146, 498 146 C 508 146, 514 160, 524 160 L 840 160");
+  offset-distance: 0%;
+  offset-rotate: 0deg;
+  animation: ecg-pen-head-travel 5s cubic-bezier(.25, .1, .25, 1) infinite;
+}
+
+ecg-loader .pen-tip-glow {
+  animation: ecg-pen-tip-color 5s cubic-bezier(.25, .1, .25, 1) infinite;
+}
+
+@keyframes ecg-stage-master {
+  0%, 100% { opacity: 1; }
+}
+
+@keyframes ecg-pen-draw-path {
+  0%, 4% { stroke-dashoffset: 1050; }
+  44% { stroke-dashoffset: 670; }
+  76%, 100% { stroke-dashoffset: 0; }
+}
+
+@keyframes ecg-pen-head-travel {
+  0%, 3.5% { offset-distance: 0%; opacity: 0; }
+  4%, 44% { opacity: 1; }
+  44% { offset-distance: 36%; }
+  76% { offset-distance: 100%; }
+  78%, 100% { offset-distance: 100%; opacity: 0; }
+}
+
+@keyframes ecg-pen-tip-color {
+  0%, 40% {
+    fill: var(--ecg-trace-start);
+    filter: drop-shadow(0 0 6px color-mix(in srgb, var(--ecg-trace-start) 90%, transparent));
+  }
+  48%, 76% {
+    fill: var(--ecg-highlight);
+    filter: drop-shadow(0 0 8px color-mix(in srgb, var(--ecg-secondary) 90%, transparent));
+  }
+  78%, 100% { fill: var(--ecg-secondary); filter: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ecg-loader .pulse-drawing-stage,
+  ecg-loader .ecg-drawn-path,
+  ecg-loader .pen-head {
+    animation: none !important;
+    stroke-dashoffset: 0 !important;
+    opacity: 1 !important;
+  }
+
+  ecg-loader .pen-head { display: none; }
+}
+
+@media (max-width: 640px) {
+  ecg-loader .ecg-loader__frame {
+    height: 12rem;
+  }
+}

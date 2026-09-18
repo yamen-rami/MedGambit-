@@ -7,16 +7,18 @@ use Livewire\Component;
 new class extends Component
 {
     public Game $game;
+    public int $gameId;
 
-    public function mount($game)
+    public function mount(Game $game): void
     {
         $this->game = $game;
+        $this->gameId = $game->id;
     }
 
     #[On('echo-private:game.{gameId},.game.started')]
-    public function toGame($event)
+    public function toGame(): void
     {
-        return redirect()->route('friend.game.started', [
+        $this->redirectRoute('gameRedirect', [
             'challenge_token' => $this->game->challenge_token,
         ]);
     }

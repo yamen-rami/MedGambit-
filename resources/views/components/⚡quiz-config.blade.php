@@ -23,6 +23,8 @@ new class extends Component {
 
     public $duration;
 
+    private const QUESTION_COUNTS = [5, 10, 15, 20];
+
     #[Computed]
     public function questionBankCount(): int
     {
@@ -33,6 +35,7 @@ new class extends Component {
     public function playedQuestionsCount(): int
     {
         return auth()->user()->playedQuestions()->count();
+        // return
     }
 
     private function applyFilters($query)
@@ -66,6 +69,12 @@ new class extends Component {
         }
     }
 
+    public function updatedCount($count): void
+    {
+        $count = (int) $count;
+        $this->count = in_array($count, self::QUESTION_COUNTS, true) ? $count : 20;
+    }
+
     #[Computed]
     public function questions()
     {
@@ -73,16 +82,17 @@ new class extends Component {
             return null;
         }
 
-        $userPlayedQuestion = auth()->user()->playedQuestions->pluck('id');
+        $questionLimit = min(max((int) $this->count, 2), 20);
+        $userPlayedQuestion = auth()->user()->playedQuestions()->pluck('questions_id');
         $questions = $this->applyFilters(Questions::query()->when($userPlayedQuestion->isNotEmpty(), fn($query) => $query->whereNotIn('id', $userPlayedQuestion)))
-            ->limit($this->count)
+            ->limit($questionLimit)
             ->get();
 
-        if ($questions->count() < $this->count) {
+        if ($questions->count() < $questionLimit) {
             $fallback = $this->applyFilters(Questions::query())
                 ->whereIn('id', $userPlayedQuestion)
                 ->whereNotIn('id', $questions->pluck('id'))
-                ->limit($this->count - $questions->count())
+                ->limit($questionLimit - $questions->count())
                 ->get();
 
             $questions = $questions->merge($fallback);
@@ -94,6 +104,7 @@ new class extends Component {
     private function validationRules(): array
     {
         return [
+            'count' => ['required', 'integer', Rule::in(self::QUESTION_COUNTS)],
             'difficulty' => ['nullable', Rule::in(['easy', 'medium', 'hard', 'nerd'])],
             'length' => ['nullable', Rule::in(['short', 'medium', 'long'])],
             'branchesList' => ['nullable', 'array'],

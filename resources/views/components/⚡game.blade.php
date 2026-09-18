@@ -1,98 +1,131 @@
 <?php
 
 use App\Events\GameFinished;
-use App\Events\{playerAnswered, PlayerReconnected, GameNotifications};
+use App\Events\GameNotifications;
+use App\Events\playerAnswered;
 use App\Models\Game;
 use App\Models\GameAnswers;
 use App\Models\Option;
 use App\Models\Questions;
 use App\Models\QuestionPlayedTime;
 use App\Services\GameService;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Redis;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\On;
-use Livewire\Attributes\Session;
 use Livewire\Component;
-use Illuminate\Support\Facades\{Cache, Redis};
 
 new class extends Component {
-    public $game = null;
-    public bool $winner;
-    public $current;
-
-    public $loading = true;
-
-    public $progress = 0;
-
-    public array $answers = [];
-    public string $message = '';
+    public $game;
     public $attempt;
-
-    public $attempts;
-    public $currentQuestion;
-    public $gameId;
-
-    public $player1;
-    public $playersCount = 0;
-    public $player2;
-
     public $currentPlayer;
+    public $currentQuestion;
+    public int $gameId;
+    public int $userId;
+    public int $current = 1;
+    public int $progress = 0;
+    public array $answers = [];
+    public bool $loading = true;
+    public bool $finished = false;
+    public bool $opponentOnline = false;
+    public string $message = '';
+    public ?bool $winner = null;
+    public string $opponentName = 'Opponent';
+    public string $opponentInitials = '?';
 
-    public $finished = false;
-    public $disconnected_at;
-    public $userId;
-    public function mount($gameId)
+    public function mount(int $gameId): void
     {
-        $this->userId = auth()->id();
         $this->gameId = $gameId;
-        $this->game = Game::find($gameId);
-        if (!$this->game) {
+        $this->userId = (int) auth()->id();
+        $this->refreshState();
+        abort_unless($this->currentPlayer, 403, 'You are not a player in this game.');
+    }
+
+    private function refreshState(): void
+    {
+        $this->game = Game::query()
+            ->with(['questions', 'players.user', 'attempts'])
+            ->findOrFail($this->gameId);
+        $this->currentPlayer = $this->game->players->firstWhere('user_id', auth()->id());
+        $this->attempt = $this->game->attempts->firstWhere('user_id', auth()->id());
+        $opponent = $this->game->players->first(fn($player) => (int) $player->user_id !== (int) auth()->id())?->user;
+        $this->opponentName = $opponent?->name ?? 'Opponent';
+        $this->opponentInitials = strtoupper(substr($this->opponentName, 0, 2));
+        $this->opponentOnline = $opponent !== null && ! $this->game->disconnected_at;
+
+        if (!$this->currentPlayer || !$this->attempt) {
             return;
-        }
-        $this->disconnected_at = $this->game->disconnected_at;
-        $players = $this->game->players()->with('user')->get();
-        $this->currentPlayer = $players->where('user_id', auth()->id())->first();
-        if (!$this->currentPlayer) {
-            abort(403, 'You are not a player in this game.');
         }
 
-        if ($this->currentPlayer) {
-            $this->current = $this->currentPlayer->current_question;
-        }
-        $this->attempt = $this->game->attempts->where('user_id', auth()->id())->first();
-        if (!$this->attempt) {
-            return;
-        }
-        if ($this->attempt->status == 'finished') {
-            $this->finished = true;
-        }
+        $this->current = max(1, min((int) $this->currentPlayer->current_question, max(1, $this->game->questions->count())));
+        $this->finished = $this->attempt->status === 'finished';
         $this->loading = $this->game->status !== 'playing';
-
-        if ($players->count() == 2) {
-            $this->getProgress();
-
-            $this->player1 = $players[0]->user;
-
-            $this->player2 = $players[1]->user;
-        }
-
-        $this->answers = GameAnswers::where('game_attempt_id', $this->attempt->id)
+        $this->answers = GameAnswers::query()
+            ->where('game_attempt_id', $this->attempt->id)
             ->where('player_id', auth()->id())
             ->pluck('option_id', 'question_id')
-            ->toArray();
+            ->mapWithKeys(fn($optionId, $questionId) => [(string) $questionId => (int) $optionId])
+            ->all();
+        $this->getProgress();
         $this->loadQuestion();
     }
+
     #[Computed]
-    public function count()
+    public function count(): int
     {
-        return $this->game->questions->count();
+        return $this->game?->questions->count() ?? 0;
     }
 
-    public function loadQuestion()
+    #[Computed]
+    public function answeredCount(): int
     {
-        $questionId = $this->game->questions->get($this->current - 1)?->id;
+        return count($this->answers);
+    }
+
+    #[Computed]
+    public function accuracy(): int
+    {
+        if (!$this->attempt || $this->answeredCount === 0) {
+            return 0;
+        }
+        $correct = GameAnswers::query()->where('game_attempt_id', $this->attempt->id)->where('is_correct', true)->count();
+
+        return (int) round(($correct / $this->answeredCount) * 100);
+    }
+
+    #[Computed]
+    public function remainingSeconds(): ?int
+    {
+        if (!$this->game?->ended_at) {
+            return null;
+        }
+
+        return max(0, now()->diffInSeconds($this->game->ended_at, false));
+    }
+
+    #[Computed]
+    public function disconnectRemainingSeconds(): ?int
+    {
+        if (! $this->game?->disconnected_at) {
+            return null;
+        }
+
+        $disconnectedAt = $this->game->disconnected_at instanceof \Carbon\Carbon
+            ? $this->game->disconnected_at
+            : \Carbon\Carbon::parse($this->game->disconnected_at);
+
+        return max(0, 120 - (now()->timestamp - $disconnectedAt->timestamp));
+    }
+
+    public function loadQuestion(): void
+    {
+        $questionId = $this->game?->questions->get($this->current - 1)?->id;
         if (!$questionId) {
+            $this->currentQuestion = null;
+
             return;
         }
+
         $cachedQuestion = Cache::remember("game-question-v2:{$questionId}", now()->addHour(), function () use ($questionId): array {
             $question = Questions::with('options', 'correctAnswer', 'playedCount')->findOrFail($questionId);
 
@@ -108,31 +141,12 @@ new class extends Component {
         $this->currentQuestion->setRelation('options', Option::hydrate($cachedQuestion['options']));
         $this->currentQuestion->setRelation('correctAnswer', $cachedQuestion['correctAnswer'] ? Option::hydrate([$cachedQuestion['correctAnswer']])->first() : null);
         $this->currentQuestion->setRelation('playedCount', $cachedQuestion['playedCount'] ? QuestionPlayedTime::hydrate([$cachedQuestion['playedCount']])->first() : null);
-        if (!$this->currentQuestion) {
-            abort(403, 'something went wrong');
-        }
     }
 
-    #[Computed]
-    public function currentInCorrectElo()
+    public function submit(int $optionId, int $questionId): void
     {
-        return $this->currentQuestion->elo_incorrect;
-    }
-    public function submit($optionId, $questionId)
-    {
-        if (!$this->attempt) {
-            abort(403);
-        }
-        if ($this->game->status !== 'playing') {
-            return;
-        }
-        if ($this->currentPlayer->status === 'finished') {
-            return;
-        }
-        if (!$this->game) {
-            return;
-        }
-        if (!$this->game->attempts) {
+        $this->refreshState();
+        if (!$this->attempt || !$this->isPlayable()) {
             return;
         }
 
@@ -140,156 +154,72 @@ new class extends Component {
             ->questions()
             ->with(['correctAnswer', 'options'])
             ->findOrFail($questionId);
-        if (!$question->options->contains('id', $optionId)) {
+        if (!$question->options->contains('id', $optionId) || !$question->correctAnswer) {
             return;
         }
 
-        $isCorrect = $question->correctAnswer->id == $optionId;
+        $this->attempt->answers()->updateOrCreate(['question_id' => $questionId, 'player_id' => auth()->id()], ['option_id' => $optionId, 'is_correct' => $question->correctAnswer->id === $optionId]);
+        $this->answers[(string) $questionId] = $optionId;
 
-        $this->attempt->answers()->updateOrCreate(
-            [
-                'question_id' => $questionId,
-                'player_id' => auth()->id(),
-            ],
-            [
-                'option_id' => $optionId,
-                'is_correct' => $isCorrect,
-            ],
-        );
-
-        $this->answers[$questionId] = $optionId;
         if (config('cache.default') === 'redis') {
-            $progressKey = "game:{$this->gameId}:attempt:{$this->attempt->id}:answers";
-            Redis::connection('cache')->sadd($progressKey, (string) $questionId);
-            Redis::connection('cache')->expire($progressKey, 86400);
+            $key = "game:{$this->gameId}:attempt:{$this->attempt->id}:answers";
+            Redis::connection('cache')->sadd($key, (string) $questionId);
+            Redis::connection('cache')->expire($key, 86400);
         }
-        if (in_array(count($this->answers), [5, 10, 15])) {
-            $service = new GameService();
-            $notifications = $service->getMessage($this->game->attempts);
 
-            GameNotifications::dispatch($notifications['player1']['user'], $notifications['player1']['message'], $notifications['player1']['winning']);
-
-            GameNotifications::dispatch($notifications['player2']['user'], $notifications['player2']['message'], $notifications['player2']['winning']);
+        $milestone = $this->answeredCount;
+        $milestoneKey = "game:{$this->gameId}:notifications:{$milestone}";
+        if (in_array($milestone, [5, 10, 15], true) && Cache::add($milestoneKey, true, now()->addDay())) { 
+            $attempts = $this->game
+                ->attempts()
+                ->with(['answers', 'user'])
+                ->get();
+            if ($attempts->count() === 2) {
+                foreach (app(GameService::class)->getMessage($attempts) as $notification) {
+                    GameNotifications::dispatch($notification['user'], $notification['message'], $notification['winning'], $notification['draw']);
+                }
+            }
         }
 
         playerAnswered::dispatch(auth()->id(), $this->gameId);
     }
-    public function playerDisconnected($userId = null)
+
+    public function updateCurrent(int $current): void
     {
-        if (!$this->game || $this->game->status !== 'playing' || (int) $userId === (int) auth()->id()) {
-            return;
-        }
-        if ($this->game->disconnected_at) {
+        if (!$this->game || $current < 1 || $current > $this->count) {
             return;
         }
 
-        $this->game->update([
-            'disconnected_at' => now(),
-        ]);
-
-        $this->game->refresh();
-
-        $this->disconnected_at = $this->game->disconnected_at;
-
-        $this->playersCount = 1;
+        $this->current = $current;
+        $this->currentPlayer->update(['current_question' => $current]);
+        $this->loadQuestion();
     }
-    public function playerConnected()
+
+    public function next(): void
+    {
+        $this->updateCurrent($this->current + 1);
+    }
+
+    public function previous(): void
+    {
+        $this->updateCurrent($this->current - 1);
+    }
+
+    public function getProgress(): void
     {
         if (!$this->game) {
             return;
         }
 
-        if (!$this->game->disconnected_at) {
-            return;
-        }
+        $opponentAttempt = $this->game->attempts->firstWhere('user_id', '!=', auth()->id());
+        if (!$opponentAttempt) {
+            $this->progress = 0;
 
-        $this->game->update([
-            'disconnected_at' => null,
-        ]);
-
-        $this->game->refresh();
-
-        $this->disconnected_at = null;
-        PlayerReconnected::dispatch(auth()->id(), $this->gameId);
-
-        $this->playersCount = 2;
-    }
-    public function next()
-    {
-        if ($this->current < $this->game->questions->count()) {
-            $this->updateCurrent($this->current + 1);
-        }
-    }
-
-    public function previous()
-    {
-        if ($this->current > 1) {
-            $this->updateCurrent($this->current - 1);
-        }
-    }
-
-    #[Computed]
-    public function remainingSeconds()
-    {
-        if (!$this->game || !$this->game->ended_at) {
-            return;
-        }
-
-        return max(0, (int) now()->diffInSeconds($this->game->ended_at, false));
-    }
-    #[Computed]
-    public function disconnectRemainingSeconds()
-    {
-        if (!$this->disconnected_at) {
-            return null;
-        }
-        $disconnectedAt = \Carbon\Carbon::parse($this->disconnected_at);
-
-        $elapsed = now()->timestamp - $disconnectedAt->timestamp;
-        return max(0, 120 - $elapsed);
-    }
-
-    #[On('echo-private:game.{gameId},.game.started')]
-    public function gameStarted($event)
-    {
-        $this->game->loadMissing('players');
-        $players = $this->game->players()->with('user')->get();
-
-        $this->currentPlayer = $players->where('user_id', auth()->id())->first();
-        if (!$this->currentPlayer) {
-            return;
-        }
-        $this->current = $this->currentPlayer->current_question;
-        $this->loadQuestion();
-        if ($players->count() > 1) {
-            $this->player1 = $players[0]->user;
-            $this->player2 = $players[1]->user;
-        }
-        $this->loading = false;
-    }
-    #[On('echo-private:user.{userId},.user.message')]
-    public function getMessage($event)
-    {
-        $this->winner = $event['winner'];
-        $this->message = $event['message'];
-        $this->dispatch('game-message-received');
-    }
-
-    #[On('echo-private:playerAnswerd.{gameId},.game.progress')]
-    public function getProgress()
-    {
-        $attempt = $this->game
-            ->attempts()
-            ->where('user_id', '!=', auth()->id())
-            ->first();
-
-        if (!$attempt) {
             return;
         }
 
         if (config('cache.default') === 'redis') {
-            $progress = (int) Redis::connection('cache')->scard("game:{$this->gameId}:attempt:{$attempt->id}:answers");
-
+            $progress = (int) Redis::connection('cache')->scard("game:{$this->gameId}:attempt:{$opponentAttempt->id}:answers");
             if ($progress > 0) {
                 $this->progress = $progress;
 
@@ -297,757 +227,498 @@ new class extends Component {
             }
         }
 
-        $this->progress = GameAnswers::where('game_attempt_id', $attempt->id)
-            ->where('player_id', '!=', auth()->id())
-            ->count();
+        $this->progress = GameAnswers::query()->where('game_attempt_id', $opponentAttempt->id)->where('player_id', $opponentAttempt->user_id)->count();
     }
 
-    public function updateCurrent($current)
+    #[On('echo-private:game.{gameId},.game.started')]
+    public function gameStarted(): void
     {
-        if (!$this->game) {
-            return;
-        }
-        $max = $this->game->questions->count();
-        if ($current < 1 || $max < $current) {
-            return;
-        }
-        $this->current = (int) $current;
-
-        $this->currentPlayer->update([
-            'current_question' => $current,
-        ]);
-        $this->loadQuestion();
+        $this->refreshState();
+        $this->dispatch('game-timer-started', seconds: $this->remainingSeconds);
     }
 
-    #[Computed]
-    public function currentElo()
+    #[On('echo-private:playerAnswerd.{gameId},.game.progress')]
+    public function opponentProgressed(): void
     {
-        return $this->currentQuestion->elo_correct;
+        $this->refreshState();
     }
 
-    public function finishGame()
+    #[On('echo-private:user.{userId},.user.message')]
+    public function getMessage(array $event): void
     {
-        if (!$this->game) {
-            return;
-        }
-        if (!$this->attempt) {
-            return;
-        }
-        if ($this->game->status !== 'playing') {
-            return;
-        }
-        if ($this->currentPlayer->status === 'finished') {
-            return;
-        }
-        $player = $this->game->players->where('user_id', auth()->id())->first();
-        if (!$player) {
-            return;
-        }
-        $this->loading = false;
+        $this->winner = $event['winner'] ?? null;
+        $this->message = $event['message'] ?? '';
+        $this->dispatch('game-notification', message: $this->message, winner: $this->winner, draw: $event['draw'] ?? false);
+    }
 
-        $player->update([
-            'status' => 'finished',
-        ]);
-        if ($this->disconnected_at) {
-            $disconnectTime = $this->disconnected_at instanceof \Carbon\Carbon ? $this->disconnected_at : \Carbon\Carbon::parse($this->disconnected_at);
-
-            if (now()->lt($disconnectTime->copy()->addSeconds(120))) {
-                return;
-            }
+    /** Presence callbacks are sent by the Alpine Echo subscription below. */
+    public function syncPresence(array $userIds = []): void
+    {
+        $opponent = $this->game?->players->first(fn($player) => (int) $player->user_id !== (int) auth()->id());
+        if (!$opponent) {
+            return;
         }
-        $this->finished = true;
-        $service = app(GameService::class);
 
-        $service->editAttempt($this->attempt, $this->game);
+        in_array((int) $opponent->user_id, array_map('intval', $userIds), true) ? $this->playerConnected($opponent->user_id) : $this->playerDisconnected($opponent->user_id);
+    }
 
-        if ($this->game->finishedPlayers() === 2) {
-            GameFinished::dispatch($this->game->id);
+    public function playerDisconnected(?int $userId = null): void
+    {
+        if (!$this->isOpponent($userId) || !$this->isPlaying()) {
+            return;
         }
+
+        $this->opponentOnline = false;
+        if (!$this->game->disconnected_at) {
+            $this->game->update(['disconnected_at' => now()]);
+        }
+        $this->dispatch('disconnect-timer-started', seconds: $this->disconnectRemainingSeconds);
+    }
+
+    public function playerConnected(?int $userId = null): void
+    {
+        if (!$this->isOpponent($userId)) {
+            return;
+        }
+
+        $this->opponentOnline = true;
+        if ($this->game->disconnected_at) {
+            $this->game->update(['disconnected_at' => null]);
+        }
+        $this->dispatch('disconnect-timer-stopped');
     }
 
     public function submitAttempt()
     {
-        if (!$this->attempt) {
-            return;
+        $this->refreshState();
+        if (!$this->attempt || $this->answeredCount !== $this->count) {
+            $this->addError('answers', 'Please answer all questions before finishing.');
+
+            return null;
         }
 
-        $game = Game::find($this->gameId);
-        if (!$game) {
-            return;
-        }
-        $length = $game->questions->count();
-        $answersCount = $this->attempt
-            ->answers()
-            ->where('player_id', auth()->id())
-            ->count();
+        $this->finishCurrentAttempt();
 
-        if ($answersCount !== $length) {
-            $this->addError('answers', 'Please answer all questions.');
+        return $this->redirectIfGameFinished();
+    }
 
-            return;
-        }
-        if ($game->status !== 'playing') {
-            return;
+    /** Called by Alpine when the authoritative server end time reaches zero. */
+    public function expireGame()
+    {
+        $this->refreshState();
+        if (!$this->game->ended_at || now()->lt($this->game->ended_at)) {
+            return null;
         }
 
-        if ($this->currentPlayer->status === 'finished') {
-            return;
+        if ($this->game->status !== 'finished' && app(GameService::class)->completeGame($this->game)) {
+            GameFinished::dispatch($this->gameId);
         }
 
-        $player = $game->players->where('user_id', auth()->id())->first();
-        if (!$player) {
-            return;
+        return $this->redirectIfGameFinished();
+    }
+
+    /** Called when the opponent's two-minute reconnect window expires. */
+    public function expireDisconnectedOpponent()
+    {
+        $this->refreshState();
+        if (! $this->game->disconnected_at || $this->disconnectRemainingSeconds > 0) {
+            return null;
         }
-        $this->loading = false;
 
-        $player->update([
-            'status' => 'finished',
-        ]);
-        $this->finished = true;
-        $service = app(GameService::class);
-
-        $service->editAttempt($this->attempt, $this->game);
-
-        if ($game->finishedPlayers() === 2) {
-            GameFinished::dispatch($game->id);
+        if ($this->game->status !== 'finished' && app(GameService::class)->completeGame($this->game)) {
+            GameFinished::dispatch($this->gameId);
         }
+
+        return $this->redirectIfGameFinished();
     }
 
     #[On('echo-private:game.finished.{gameId},.game.finished')]
     public function toResults()
     {
-        if (!$this->game) {
-            return;
-        }
-        if (!$this->currentPlayer) {
-            return;
-        }
-        $service = app(GameService::class);
-        $service->finishGame($this->game->attempts);
-
-        return redirect()->route('game.results', [
-            'game' => $this->game,
-        ]);
+        return $this->redirectIfGameFinished();
     }
 
     #[On('quit-quiz')]
     public function quitGame()
     {
-        if (!$this->game) {
+        $this->refreshState();
+        if ($this->game->status !== 'finished' && app(GameService::class)->completeGame($this->game)) {
+            GameFinished::dispatch($this->gameId);
+        }
+
+        return $this->redirectIfGameFinished();
+    }
+
+    private function finishCurrentAttempt(): void
+    {
+        if (!$this->isPlayable()) {
             return;
         }
-        if (!$this->attempt) {
-            return;
-        }
-        if ($this->game->status !== 'playing') {
-            return;
-        }
-        if ($this->currentPlayer->status === 'finished') {
-            return;
-        }
-        $player = $this->game->players->where('user_id', auth()->id())->first();
-        if (!$player) {
-            return;
-        }
-        $this->loading = false;
-        $player->update([
-            'status' => 'finished',
-        ]);
+
+        $this->currentPlayer->update(['status' => 'finished']);
+        app(GameService::class)->editAttempt($this->attempt, $this->game);
         $this->finished = true;
-        $service = app(GameService::class);
-        $service->editAttempt($this->attempt, $this->game);
-        GameFinished::dispatch($this->game->id);
+        $this->refreshState();
+
+        if ($this->game->players->every(fn($player) => $player->status === 'finished') && app(GameService::class)->finishGame($this->game->attempts)) {
+            GameFinished::dispatch($this->gameId);
+        }
+    }
+
+    private function redirectIfGameFinished()
+    {
+        $this->game->refresh();
+        if ($this->game->status !== 'finished') {
+            return null;
+        }
+
+        return $this->redirectRoute('game.results', ['game' => $this->gameId], navigate: false);
+    }
+
+    private function isPlayable(): bool
+    {
+        return $this->isPlaying() && !$this->finished && !($this->game->ended_at && now()->gte($this->game->ended_at));
+    }
+
+    private function isPlaying(): bool
+    {
+        return $this->game && $this->game->status === 'playing';
+    }
+
+    private function isOpponent(?int $userId): bool
+    {
+        return $this->game && (int) $userId !== (int) auth()->id() && $this->game->players->contains('user_id', $userId);
     }
 };
 ?>
-<div>
-    @if ($this->loading)
-        @push('style')
-            <link rel="stylesheet" href="{{ asset('assets/css/shimmer.css') }}" />
-        @endpush
-        <div class="skeleton-wrap">
-            <div class="grid">
-                <div class="card main">
-                    <div class="players-grid my-5">
-                        <div class="player-card-skeleton">
-                            <div class="player-avatar skeleton"></div>
-                            <div class="player-name skeleton">
-                                <div class="text-white"></div>
-                            </div>
-                            <div class="player-score skeleton"></div>
-                        </div>
-                        <div class="vs-text skeleton text-center">
-                            <span style="color: var(--text)"
-                                class="
-  
-                            rounded-circle px-3 py-3 text-center skeleton">VS</span>
-                        </div>
-                        <div class="player-card-skeleton">
-                            <div class="player-avatar skeleton"></div>
-                            <div class="player-name skeleton"></div>
-                            <div class="player-score skeleton"></div>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="skeleton h-14 w-90"></div>
-                        <div class="skeleton pill h-22 w-50"></div>
-                    </div>
-                    <div class="skeleton w-70p mt-20 mb-20 h-20"></div>
-                    <div class="options">
-                        <div class="skeleton r8 h-44"></div>
-                        <div class="skeleton r8 h-44"></div>
-                        <div class="skeleton r8 h-44"></div>
-                        <div class="skeleton r8 h-44"></div>
-                    </div>
-                    <div class="row">
-                        <div class="skeleton h-14 w-100"></div>
-                        <div class="skeleton h-14 w-60"></div>
-                    </div>
-                    <div class="row mt-20">
-                        <div class="skeleton w-40p r8 mr-1 h-38"></div>
-                        <div class="skeleton w-40p r8 h-38"></div>
-                    </div>
-                </div>
 
-                <div class="side">
-                    <div class="card side-card">
-                        <div class="skeleton mb-14 h-14 w-100"></div>
-                        <div class="skeleton w-80p mb-8 h-12"></div>
-                        <div class="skeleton w-60p mb-14 h-16"></div>
-                        <div class="skeleton w-80p mb-8 h-12"></div>
-                        <div class="skeleton w-40p h-16"></div>
-                    </div>
+<div class="game-screen" x-data="{
+    navOpen: false,
+    remaining: {{ $this->remainingSeconds ?? 0 }},
+    timer: null,
+    disconnectRemaining: {{ $this->disconnectRemainingSeconds === null ? 'null' : $this->disconnectRemainingSeconds }},
+    disconnectTimer: null,
+    hasTimer: {{ $game->ended_at ? 'true' : 'false' }},
+     imageModal: false,
+     notificationTimer: null,
+     winningLoaderTimer: null,
+     losingLoaderTimer: null,
+     drawLoaderTimer: null,
+    init() {
+        this.startTimer();
+        this.startDisconnectTimer();
+        this.$nextTick(() => this.connectPresence());
+    },
+    startTimer() {
+        if (!this.hasTimer || this.timer) return;
+        if (this.remaining <= 0) { this.$wire.expireGame(); return; }
+        this.timer = setInterval(() => {
+            this.remaining = Math.max(0, this.remaining - 1);
+            if (this.remaining === 0) {
+                clearInterval(this.timer);
+                this.timer = null;
+                this.$wire.expireGame();
+            }
+        }, 1000);
+    },
+    restartTimer(seconds) {
+        if (this.timer) clearInterval(this.timer);
+        this.timer = null;
+        this.hasTimer = seconds !== null;
+        this.remaining = seconds ?? 0;
+        this.startTimer();
+    },
+    startDisconnectTimer() {
+        if (this.disconnectTimer) clearInterval(this.disconnectTimer);
+        this.disconnectTimer = null;
+        if (this.disconnectRemaining === null) return;
+        if (this.disconnectRemaining <= 0) { this.$wire.expireDisconnectedOpponent(); return; }
+        this.disconnectTimer = setInterval(() => {
+            this.disconnectRemaining = Math.max(0, this.disconnectRemaining - 1);
+            if (this.disconnectRemaining === 0) {
+                clearInterval(this.disconnectTimer);
+                this.disconnectTimer = null;
+                this.$wire.expireDisconnectedOpponent();
+            }
+        }, 1000);
+    },
+    restartDisconnectTimer(seconds) {
+        this.disconnectRemaining = seconds;
+        this.startDisconnectTimer();
+    },
+    connectPresence() {
+        if (!window.Echo) {
+            window.addEventListener('echo:ready', () => this.connectPresence(), { once: true });
+            return;
+        }
+        const channelName = 'presence-game.{{ $gameId }}';
+        window.medGambitPresenceChannels ??= {};
+        if (window.medGambitPresenceChannels[channelName]) return;
+        window.medGambitPresenceChannels[channelName] = true;
+        window.Echo.join(channelName)
+            .here(users => this.$wire.syncPresence(users.map(user => Number(user?.id)).filter(id => Number.isInteger(id) && id > 0)))
+            .joining(user => user?.id && this.$wire.playerConnected(Number(user.id)))
+            .leaving(user => user?.id && this.$wire.playerDisconnected(Number(user.id)));
+    },
+    destroy() {
+        if (this.timer) clearInterval(this.timer);
+        if (this.disconnectTimer) clearInterval(this.disconnectTimer);
+    },
+     showNotification(detail) {
+         if (!detail.message) return;
+         const toast = document.getElementById('game-notification-toast');
+         if (!toast) return;
 
-                    <div class="card side-card">
-                        <div class="skeleton mb-14 h-14 w-110"></div>
-                        <div class="dots">
-                            <div class="skeleton r6 h-26"></div>
-                            <div class="skeleton r6 h-26"></div>
-                            <div class="skeleton r6 h-26"></div>
-                            <div class="skeleton r6 h-26"></div>
-                            <div class="skeleton r6 h-26"></div>
-                        </div>
-                    </div>
+        toast.querySelector('[data-game-notification-icon]').className = detail.winner ? 'bi bi-trophy-fill' : 'bi bi-activity';
+        toast.querySelector('[data-game-notification-message]').textContent = detail.message;
+         toast.classList.add('is-visible');
+         clearTimeout(this.notificationTimer);
+         this.notificationTimer = setTimeout(() => toast.classList.remove('is-visible'), 4500);
 
-                    <div class="card side-card center">
-                        <div class="skeleton center-x mb-16 h-14 w-90"></div>
-                        <div class="skeleton circle center-x mb-10"></div>
-                        <div class="skeleton center-x h-12 w-60"></div>
-                    </div>
+         if (detail.winner === true) {
+             window.EcgLoader?.show();
+             clearTimeout(this.winningLoaderTimer);
+             this.winningLoaderTimer = setTimeout(() => window.EcgLoader?.hide(), 4500);
+             window.FlatlineLoader?.hide();
+         } else if (detail.draw === true) {
+             window.EcgLoader?.hide();
+             window.FlatlineLoader?.hide();
+             window.DrawLoader?.show();
+             clearTimeout(this.drawLoaderTimer);
+             this.drawLoaderTimer = setTimeout(() => window.DrawLoader?.hide(), 4500);
+         } else if (detail.winner === false) {
+             window.EcgLoader?.hide();
+             window.FlatlineLoader?.show();
+             clearTimeout(this.losingLoaderTimer);
+             this.losingLoaderTimer = setTimeout(() => window.FlatlineLoader?.hide(), 4500);
+         } else {
+             window.EcgLoader?.hide();
+             window.FlatlineLoader?.hide();
+         }
+     },
+    formatTime() { return `${String(Math.floor(this.remaining / 60)).padStart(2, '0')}:${String(this.remaining % 60).padStart(2, '0')}`; },
+    formatDisconnectTime() { return `${String(Math.floor(this.disconnectRemaining / 60)).padStart(2, '0')}:${String(this.disconnectRemaining % 60).padStart(2, '0')}`; }
+}" x-on:game-timer-started.window="restartTimer($event.detail.seconds)"
+    x-on:game-notification.window="showNotification($event.detail)"
+    x-on:disconnect-timer-started.window="restartDisconnectTimer($event.detail.seconds)"
+    x-on:disconnect-timer-stopped.window="restartDisconnectTimer(null)">
+    @if ($loading)
+        <div class="game-state" role="status"><span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+            Waiting for the other player to start the duel…</div>
+    @elseif ($currentQuestion)
+        <main class="quiz-main" aria-live="polite">
+            <div class="arena-strip">
+                <div><span class="live-pill"><i></i> LIVE 1v1 DUEL</span><span
+                        class="arena-label">{{ ucfirst($game->difficulty ?? 'ranked') }} ·
+                        {{ ucfirst($game->length ?? 'match') }} mode</span></div>
+                <div class="scoreboard">
+                    <span><b>{{ strtoupper(substr(auth()->user()->name, 0, 2)) }}</b> You
+                        <strong>{{ $this->answeredCount }}/{{ $this->count }}</strong></span><em>VS</em>
+                    <span><b class="opponent">{{ $opponentInitials }}</b>{{ $opponentName }}
+                        <strong>{{ $progress }}/{{ $this->count }}</strong></span>
                 </div>
             </div>
-        </div>
-        @if ($this->game->challenge_token)
-            {{-- @dd($this->game->players()->get()) --}}
-            @if ($this->game->challenge_token)
-                <div class="position-absolute top-50 start-50 translate-middle w-100 px-3">
-                    <div class="mx-auto rounded-3 shadow-lg p-4 text-center"
-                        style="max-width: 450px; background: var(--bg); color: var(--text);" x-data="{
-                            copied: false,
-                            link: window.location.origin + '/game/friend/{{ $game->challenge_token }}',
-                            copy() {
-                                const temp = document.createElement('textarea');
-                                temp.value = this.link;
-                                temp.style.position = 'fixed';
-                                temp.style.opacity = '0';
-                                document.body.appendChild(temp);
-                                temp.focus();
-                                temp.select();
-                                try {
-                                    document.execCommand('copy');
-                                    this.copied = true;
-                                    setTimeout(() => this.copied = false, 2000);
-                                } catch (e) {
-                                    console.error('Copy failed', e);
-                                }
-                                document.body.removeChild(temp);
-                            }
-                        }">
-                        <h4 class="mb-2">Invite a Friend</h4>
 
-                        <p class="mb-4 opacity-75">
-                            Share this challenge token with your friend to join the game.
-                        </p>
-
-                        <div class="rounded-3 p-3 mb-3" style="background: var(--text); color: var(--bg);">
-                            <small class="d-block mb-2 opacity-75">Challenge Token</small>
-
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="flex-grow-1 font-monospace fw-semibold text-truncate"
-                                    style="color: var(--bg);" x-text="link"></div>
-
-                                <button type="button" class="btn btn-sm"
-                                    style="background: var(--bg); color: var(--text); min-width: 70px;"
-                                    x-on:click="copy()">
-                                    <span x-show="!copied">Copy</span>
-                                    <span x-show="copied" x-cloak>✓ Copied!</span>
-                                </button>
-                            </div>
+            <button class="mobile-nav-trigger" type="button" x-on:click="navOpen = !navOpen"
+                x-bind:aria-expanded="navOpen.toString()"><i class="bi bi-list"></i> Question {{ $current }} of
+                {{ $this->count }} · {{ $currentQuestion->name }}</button>
+            <div class="quiz-layout">
+                <aside class="question-sidebar" x-bind:class="{ 'open': navOpen }" aria-label="Question navigator">
+                    <div class="sidebar-head">
+                        <div class="sidebar-title"><span class="live-dot"></span> QUIZ NAVIGATOR <small>LIVE</small>
                         </div>
-
-                        <div class="small opacity-75">
-                            <i class="ti ti-loader-2 me-1"></i>
-                            Waiting for your friend to join...
+                        <div class="progress-row"><strong>Question <span>{{ $current }}</span> <small>of
+                                    {{ $this->count }}</small></strong><span>{{ $this->count ? round(($this->answeredCount / $this->count) * 100) : 0 }}%
+                                complete</span></div>
+                        <div class="progress-track"><i
+                                style="width: {{ $this->count ? ($this->answeredCount / $this->count) * 100 : 0 }}%"></i>
                         </div>
-                    </div>
-                </div>
-            @endif
-        @endif
-    @else
-        {{-- ===================== CONTENT ===================== --}}
-        <div class="content-grid">
-
-            {{-- ===================== CENTER ===================== --}}
-            <section class="battle-col">
-                <div class="alert alert-danger bg-danger border border-0 text-white" role="alert" wire:offline>
-                    You Are Offline
-                </div>
-
-                {{-- ===================== VS CARD ===================== --}}
-                <div class="vs-card">
-                    <div class="vs-top">
-                        <div class="player">
-                            <div class="avatar avatar-blue lg">
-                                {{ Str::upper(Str::limit(auth()->user()->name, 1, '')) }}</div>
-                            <div>
-                                <div class="">{{ auth()->user()->name }}</div>
-                                <div class="player-elo">
-                                    ELO {{ auth()->user()->rank }} <i class="fa-solid fa-trophy"></i>
-                                    {{ $this->playersCount }}
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="score-mid" style="position: relative">
-
-                            <span class="vs-pill">VS</span>
-                            @if ($this->message)
-                                <div id="game-message"
-                                    class="toasts text-center {{ $this->winner ? 'text-success' : 'text-danger' }}  my-2"
-                                    x-data="{
-                                        messageTimer: null,
-                                    
-                                        init() {
-                                            this.$watch('$wire.message', (message) => {
-                                                clearTimeout(this.messageTimer);
-                                    
-                                                if (!message) {
-                                                    return;
-                                                }
-                                    
-                                                this.messageTimer = setTimeout(() => {
-                                                    $wire.set('message', '');
-                                                }, 500);
-                                            });
-                                        }
-                                    }">
-                                    <div>
-                                        @if ($this->winner)
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                                                viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                                                class="lucide lucide-podium">
-                                                <path d="M12 6V2h-1" />
-                                                <path
-                                                    d="M9 15a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v5a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1v-3a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1" />
-                                                <path d="M9 21V11a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v10" />
-                                            </svg>
-                                        @else
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                                                viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                                                class="lucide lucide-circle-x">
-                                                <circle cx="12" cy="12" r="10" />
-                                                <path d="m15 9-6 6" />
-                                                <path d="m9 9 6 6" />
-                                            </svg>
-                                        @endif
-                                    </div>
-                                    <div>
-                                        {{ $this->message }}
-                                    </div>
-                                </div>
+                        <div class="sidebar-meta"><span class="{{ $opponentOnline ? '' : 'opponent-offline' }}">●
+                                {{ $opponentName }}: {{ $progress }}/{{ $this->count }}
+                                {{ $opponentOnline ? '' : '(offline)' }}</span>
+                            @if ($message)
+                                <b>{{ $message }}</b>
                             @endif
                         </div>
-
-                        <div class="player player-right">
-                            <div>
-                                <div>
-                                    {{ $this->player1?->id === auth()->id() ? $this->player2?->name : $this->player1?->name }}
-                                </div>
-
-                                <div class="player-elo right">
-                                    ELO
-                                    {{ $this->player1?->id === auth()->id() ? $this->player2?->rank : $this->player1?->rank }}
-                                    <i class="fa-solid fa-trophy"></i>
-                                </div>
-                            </div>
-
-                            <div class="avatar avatar-peach lg">
-                                {{ Str::upper(Str::limit($this->player1?->id === auth()->id() ? $this->player2?->name : $this->player1?->name, 1, '')) }}
-                            </div>
-                        </div>
-                    </div>
-                    {{-- TODO Vs  --}}
-                    {{-- <div class="dual-bar" id="dual-bar">
-                        <div class="dual-bar-blue"></div>
-                        <div class="dual-bar-red"></div>
-                    </div> --}}
-                </div>
-                @php
-                    $question = $this->currentQuestion;
-                @endphp
-
-                <div class="question-card">
-
-                    <div class="question-head">
-                        <span class="question-index">
-                            Question {{ $this->current }} / {{ $this->count }}
-                        </span>
-
-                        <span class="badge-medium"> {{ $game?->difficulty }} </span>
-
-                    </div>
-
-                    {{-- QUESTION --}}
-                    <p class="question-text">{!! $question->content !!}</p>
-
-                    {{-- OPTIONS --}}
-                    <div class="options">
-                        @foreach ($question->options as $option)
-                            <div class="option
-                                                                                                                                                                                                                                                                                                                                                                                                                            {{ isset($answers[$question->id]) && $answers[$question->id] == $option->id ? 'selected' : '' }}"
-                                wire:click="submit({{ $option->id }}, {{ $question->id }})">
-                                <span class="option-key">
-                                    {{ chr(64 + $loop->iteration) }}
-                                </span>
-
-                                <span class="option-label"> {{ $option->content }} </span>
-
-                                <span class="option-check">
-                                    <i class="fa-solid fa-check"></i>
-                                </span>
-                            </div>
-                        @endforeach
-                    </div>
-
-                    {{-- QUESTION FOOT --}}
-                    <div class="question-foot">
-
-
-                        {{-- TIMER --}}
-                        @if ($this->remainingSeconds !== null)
-                            <div wire:ignore class="timer" x-data="{
-                                seconds: {{ $this->remainingSeconds ?? 0 }},
-                                timer: null,
-                            
-                                get minutes() {
-                                    return Math.floor(this.seconds / 60)
-                                },
-                            
-                                get displaySeconds() {
-                                    return this.seconds % 60
-                                },
-                            
-                                start() {
-                            
-                                    this.timer = setInterval(() => {
-                            
-                                        this.seconds--
-                            
-                                        if (this.seconds <= 0) {
-                            
-                                            clearInterval(this.timer)
-                            
-                                            $wire.quitGame()
-                            
-                                        }
-                            
-                                    }, 1000)
-                            
-                                },
-                                return () => clearInterval(this.timer);
-                            
-                            }" x-init="start()">
-                                <i class="fa-regular fa-clock"></i>
-
-                                <span x-text="minutes"></span>
-
-                                <span>:</span>
-
-                                <span x-text="String(displaySeconds).padStart(2, '0')"></span>
+                        @if ($this->disconnectRemainingSeconds !== null)
+                            <div class="disconnect-countdown" x-show="disconnectRemaining !== null">
+                                <i class="bi bi-wifi-off"></i> Reconnect window
+                                <strong x-text="formatDisconnectTime()"></strong>
                             </div>
                         @endif
                     </div>
-                </div>
-
-                {{-- ===================== ACTIONS ===================== --}}
-                <div class="actions-row">
-                    {{-- PREVIOUS --}}
-                    <button type="button" class="btn btn-ghost" wire:click="previous" @disabled($this->current === 1)>
-                        <i class="fa-solid fa-chevron-left"></i>
-
-                        Previous
-                    </button>
-
-
-
-                    @if ($this->current !== $this->count)
-                        <button type="button" class="btn btn-primary" wire:click="next">
-                            Next
-                            <i class="fa-solid fa-chevron-right"></i>
-                        </button>
-                    @else
-                        <button type="button" class="btn btn-primary" wire:click="submitAttempt">
-                            Submit
-
-                            <i class="fa-solid fa-check"></i>
-                        </button>
-                    @endif
-
-
-                    {{-- VALIDATION ERROR --}}
-                    @error('answers')
-                        <h1 class="text-danger fs-5 my-2 text-center">
-                            Please Add Answers Left Questions Answers =
-                            {{ $this->count - count($this->answers) }}
-                        </h1>
-                    @enderror
-            </section>
-
-            {{-- ===================== RIGHT SIDEBAR ===================== --}}
-            <aside class="side-col">
-                {{-- ===================== BATTLE STATUS ===================== --}}
-                <div class="panel">
-                    <div class="panel-title-row" x-data="{ online: navigator.onLine }" x-init="window.addEventListener('online', () => (online = true));
-                    window.addEventListener('offline', () => (online = false));">
-                        <span class="panel-title">Battle Status</span>
-
-                        <span class="live-pill">
-                            <template x-if="online">
-                                <span class="flex items-center gap-2">
-                                    <span class="live-dot"></span>
-                                    <span>Live</span>
-                                </span>
-                            </template>
-
-                            <template x-if="! online">
-                                <span class="flex items-center gap-2">
-                                    <span class="live-dot-offline"></span>
-                                    <span class="text-danger">Offline</span>
-                                </span>
-                            </template>
-                        </span>
+                    <div class="question-list" role="list">
+                        @foreach ($game->questions as $index => $question)
+                            @php($number = $index + 1)
+                            <button wire:key="game-question-{{ $question->id }}"
+                                class="question-item {{ $current === $number ? 'current' : '' }} {{ isset($answers[(string) $question->id]) ? 'answered' : '' }}"
+                                type="button" wire:click="updateCurrent({{ $number }})"
+                                x-on:click="navOpen = false" role="listitem">
+                                <span class="q-label"><span
+                                        class="q-num">{{ str_pad($number, 2, '0', STR_PAD_LEFT) }}</span><span
+                                        class="q-name">{{ $question->name }}</span></span><span
+                                    class="q-status">{{ isset($answers[(string) $question->id]) ? '✓' : ($current === $number ? '●' : '') }}</span>
+                            </button>
+                        @endforeach
                     </div>
-                    {{-- Reward --}}
-                    <div class="stat-row">
-                        <i class="fa-solid fa-trophy stat-icon"></i>
+                    <div class="sidebar-foot"><span>Choose any question to
+                            jump</span><strong>{{ $this->answeredCount }}/{{ $this->count }} done</strong></div>
+                </aside>
 
-                        <div>
-                            <div class="stat-label">Win Points</div>
-
-                            <div class="stat-value">{{ $this->currentElo ?? 0 }}</div>
+                <section class="case-card" aria-labelledby="caseTitle">
+                    <div class="case-header">
+                        <div class="case-meta"><span>QUESTION <b>{{ $current }}</b> OF
+                                {{ $this->count }}</span><span>{{ $currentQuestion->topic ?: 'Clinical medicine' }}</span><span
+                                class="{{ $opponentOnline ? '' : 'opponent-offline' }}">● Opponent:
+                                {{ $opponentName }}{{ $opponentOnline ? '' : ' (offline)' }}</span></div>
+                        <div class="case-tools"><span class="accuracy">Accuracy: <b>{{ $this->accuracy }}%</b></span>
+                            @if ($game->ended_at)
+                                <span class="timer" x-bind:class="{ 'timer-expired': remaining === 0 }"><i
+                                        class="bi bi-clock"></i> <b x-text="formatTime()"></b></span>
+                            @endif
                         </div>
                     </div>
-                    <div class="stat-row">
-                        <svg class="text-opacity-10 text-danger" xmlns="http://www.w3.org/2000/svg" width="20"
-                            height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="4" stroke-linecap="round" stroke-linejoin="round"
-                            class="lucide lucide-arrow-down">
-                            <path d="M12 5v14" />
-                            <path d="m19 12-7 7-7-7" />
-                        </svg>
-                        <div>
-                            <div class="stat-label">Lose Points</div>
-
-                            <div class="stat-value">{{ $this->currentInCorrectElo ?? 0 }}</div>
+                    <div class="question-scroll">
+                        <div class="question-heading">
+                            <div><span class="eyebrow">CASE {{ $current }} ·
+                                    {{ $currentQuestion->topic ?: 'CLINICAL MEDICINE' }}</span>
+                                <h1 id="caseTitle">{{ $currentQuestion->name }}</h1>
+                            </div><span class="type-badge">SINGLE CHOICE</span>
                         </div>
-                    </div>
-
-
-                    {{-- Battle Type --}}
-                    <div class="stat-row">
-                        <svg class="text-warning" xmlns="http://www.w3.org/2000/svg" width="20" height="20"
-                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-refresh-ccw">
-                            <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-                            <path d="M3 3v5h5" />
-                            <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
-                            <path d="M16 16h5v5" />
-                        </svg>
-                        <div>
-                            <div class="stat-label fw-bold " style="color: var(--text)">Frequency</div>
-
-                            <div class="stat-value">{{ $question->playedCount?->count ?? 0 }} </div>
-                        </div>
-                    </div>
-                    @if ($this->disconnectRemainingSeconds !== null)
-                        <div wire:ignore class="timer text-danger" x-data="{
-                            seconds: {{ $this->disconnectRemainingSeconds }},
-                        
-                            timer: null,
-                        
-                            start() {
-                        
-                                this.timer = setInterval(() => {
-                        
-                                    if (this.seconds <= 0) {
-                        
-                                        clearInterval(this.timer)
-                        
-                                        $wire.quitGame()
-                        
-                                        return
-                                    }
-                        
-                                    this.seconds--
-                        
-                                }, 1000)
-                            }
-                        }" x-init="start()">
-
-                            <i class="fa-solid fa-wifi"></i>
-
-                            <span>
-                                Opponent reconnects in
-                            </span>
-
-                            <strong x-text="seconds"></strong>
-
-                        </div>
-                    @endif
-
-
-
-
-                </div>
-
-                {{-- ===================== BATTLE PROGRESS ===================== --}}
-                <div class="panel" wire:show="!finished">
-                    <div class="panel-title-row">
-                        <span class="panel-title"> Battle Progress </span>
-
-                        <span class="progress-frac"> {{ $current }} / {{ $this->count }} </span>
-                    </div>
-
-                    <div class="progress-track">
-                        <div class="progress-line-bg"></div>
-
-                        <div class="progress-line-fill"
-                            style="
-                                                            width:
-                                                            {{ $this->count > 1 ? (($current - 1) / ($this->count - 1)) * 90 : 0 }}%;
-                                                        ">
-                        </div>
-
-                        <div class="progress-dots">
-                            @foreach ($game->questions as $question)
-                                <button type="button"
-                                    class="dot
-                                                                                                                                                                @if (isset($answers[$question->id])) correct
-                                                                                                                                                                @elseif($current === $loop->iteration)
-                                                                                                                                                                      current
-                                                                                                                                                                @else
-                                                                                                                                                                      pending @endif
-                                                                                                                                                            "
-                                    wire:click="updateCurrent({{ $loop->iteration }})">
-                                    {{ $loop->iteration }}
+                        <div class="vignette">{!! $currentQuestion->content !!}</div>
+                        @if ($currentQuestion->image)
+                            <button class="question-image-trigger" type="button" x-on:click="imageModal = true">
+                                <i class="bi bi-image"></i>
+                                <span><strong>See image</strong><small>Open the supporting clinical image</small></span>
+                                <i class="bi bi-arrow-up-right ms-auto"></i>
+                            </button>
+                        @endif
+                        <div class="prompt"><span class="eyebrow">SELECT THE MOST APPROPRIATE ANSWER</span></div>
+                        <div class="quiz-options" role="radiogroup" aria-label="Answer options">
+                            @foreach ($currentQuestion->options as $option)
+                                <button wire:key="game-option-{{ $option->id }}"
+                                    class="quiz-option {{ ($answers[(string) $currentQuestion->id] ?? null) === $option->id ? 'is-selected' : '' }}"
+                                    type="button"
+                                    wire:click="submit({{ $option->id }}, {{ $currentQuestion->id }})"
+                                    wire:loading.attr="disabled" @disabled($finished)
+                                    aria-checked="{{ ($answers[(string) $currentQuestion->id] ?? null) === $option->id ? 'true' : 'false' }}">
+                                    <span class="letter-badge">{{ $option->name }}</span><span
+                                        class="answer-text">{{ $option->content }}</span><span
+                                        class="check-indicator"><i></i></span>
                                 </button>
                             @endforeach
                         </div>
+                        @if ($finished && $currentQuestion->main_explanation)
+                            <div class="explanation"><strong><i class="bi bi-info-circle-fill"></i> CLINICAL
+                                    EXPLANATION</strong>
+                                <p>{{ $currentQuestion->main_explanation }}</p>
+                            </div>
+                        @endif
                     </div>
-                </div>
-                <div class="panel justify-content-center align-items-center" wire:show="finished">
-                    Waiting For Your Opponent
-                </div>
-
-                {{-- ===================== PERFORMANCE ===================== --}}
-                <div class="panel center-panel">
-                    <div class="panel-title">Opponent Progress</div>
-
-                    <div class="gauge-wrap">
-                        <svg viewBox="0 0 140 80" width="150" height="88">
-                            <path d="M 13 74 A 54 54 0 0 1 127 74" fill="none" class="gauge-bg" stroke-width="3"
-                                stroke-linecap="round" />
-
-                            <path id="gauge-arc" d="M 13 74 A 54 54 0 0 1 127 74" fill="none" class="gauge-arc"
-                                stroke-width="3" stroke-linecap="round"
-                                stroke-dasharray="{{ count($answers) != 0 ? $this->progress * (100 / $this->count) : 0 }}"
-                                pathLength="100" />
-                        </svg>
-
-                        <div class="gauge-value">
-                            <span class="text-primary"> {{ $this->progress }} </span>
-                            / {{ $this->count }}
+                    <div class="quiz-actions">
+                        <div class="keyboard-hint">Answers are saved as you choose them. Finish after all questions are
+                            answered.</div>
+                        <div class="action-buttons">
+                            <button class="btn btn-outline-secondary" type="button" wire:click="previous"
+                                @disabled($current === 1)><i class="bi bi-chevron-left"></i> Previous</button>
+                            @if ($current < $this->count)
+                                <button class="btn btn-primary" type="button" wire:click="next">Next question <i
+                                        class="bi bi-chevron-right"></i></button>
+                            @else
+                                <button class="btn btn-primary" type="button" wire:click="submitAttempt"
+                                    @disabled($finished)>Finish game <i class="bi bi-check-lg"></i></button>
+                            @endif
                         </div>
-
-                        <div class="gauge-label">Progress</div>
                     </div>
-                </div>
-        </div>
-
-        </aside>
-
-
-        {{-- ===================== FOOTER ===================== --}}
-        <footer class="footer">
-            <i class="fa-solid fa-shield-halved"></i>
-            Every question is a battle. Every battle makes you better.
-        </footer>
-
+                </section>
+            </div>
+        </main>
+    @else
+        <div class="game-state">This game has no questions available.</div>
     @endif
-    @script
-        <script>
-            const themeToggle = document.getElementById('theme-toggle');
-            const root = document.documentElement;
-
-            if (themeToggle) {
-                themeToggle.addEventListener('click', function() {
-                    const isDark = root.getAttribute('data-theme') === 'dark';
-
-                    root.setAttribute('data-theme', isDark ? 'light' : 'dark');
-
-                    themeToggle.innerHTML = isDark ?
-                        '<i class="fa-solid fa-moon"></i>' :
-                        '<i class="fa-solid fa-sun"></i>';
-                });
-            }
-            $wire.on('game-message-received', () => {
-                clearTimeout(window.gameMessageTimer);
-
-                window.gameMessageTimer = setTimeout(() => {
-                    $wire.set('message', '');
-                }, 3000);
-            });
-
-            let gameId = @js($this->gameId);
-
-
-            window.Echo.join(`presence-game.${gameId}`)
-                .here((users) => {
-                    console.log("Players Count", users.length);
-
-                })
-                .joining((user) => {
-                    console.log("player Joined")
-                    $wire.playerConnected();
-                    $wire.set("playersCount", 2);
-                })
-                .leaving((user) => {
-                    console.log('Player left:', user);
-
-
-                    $wire.playerDisconnected(user.id);
-                })
-                .listen('.player.connected', (event) => {
-                    $wire.set("disconnected_at", null);
-                    $wire.set("playersCount", 2);
-                    $wire.playerConnected(event.userId);
-                    console.log("I Am Here");
-
-                    console.log(event);
-
-                });
-        </script>
-    @endscript
+    @if ($currentQuestion?->image)
+        <div class="question-image-modal" x-cloak x-show="imageModal" x-transition.opacity
+            x-on:keydown.escape.window="imageModal = false" role="dialog" aria-modal="true"
+            aria-labelledby="imageModalTitle">
+            <button class="question-image-modal-backdrop" type="button" x-on:click="imageModal = false"
+                aria-label="Close image preview"></button>
+            <section class="question-image-modal-dialog">
+                <header class="question-image-modal-header">
+                    <div><span class="eyebrow">SUPPORTING CLINICAL IMAGE</span>
+                        <h2 id="imageModalTitle">{{ $currentQuestion->name }}</h2>
+                    </div>
+                    <button class="btn btn-outline-secondary btn-sm" type="button" x-on:click="imageModal = false"
+                        aria-label="Close image preview"><i class="bi bi-x-lg"></i></button>
+                </header>
+                <div class="question-image-modal-body">
+                    <img src="{{ $currentQuestion->image }}"
+                        alt="Supporting image for {{ $currentQuestion->name }}">
+                    <aside class="question-image-caption">
+                        <span class="eyebrow">IMAGE CAPTION</span>
+                        <p>{{ $currentQuestion->name }}</p>
+                        @if ($currentQuestion->topic)
+                            <small>{{ $currentQuestion->topic }}</small>
+                        @endif
+                    </aside>
+                </div>
+            </section>
+        </div>
+     @endif
+    <ecg-loader hidden wire:ignore></ecg-loader>
+    <main class="flatline-stage" hidden wire:ignore aria-label="Losing notification">
+        <svg class="flatline-svg" viewBox="0 0 1000 300" role="img" aria-labelledby="flatline-title">
+            <title id="flatline-title">Animated flatline</title>
+            <defs>
+                <filter id="line-glow" x="-30%" y="-400%" width="160%" height="900%">
+                    <feGaussianBlur in="SourceGraphic" stdDeviation="2" result="blur-tight" />
+                    <feGaussianBlur in="SourceGraphic" stdDeviation="5" result="blur-med" />
+                    <feGaussianBlur in="SourceGraphic" stdDeviation="12" result="blur-wide" />
+                    <feMerge>
+                        <feMergeNode in="blur-wide" /><feMergeNode in="blur-med" />
+                        <feMergeNode in="blur-tight" /><feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                </filter>
+            </defs>
+            <line class="flatline" x1="150" y1="150" x2="850" y2="150" pathLength="700" filter="url(#line-glow)" />
+        </svg>
+    </main>
+    <main class="draw-stage" hidden wire:ignore aria-label="Draw notification">
+        <svg class="draw-svg" viewBox="0 0 1000 400" role="img" aria-labelledby="draw-title">
+            <title id="draw-title">Animated draw waveform</title>
+            <defs>
+                <filter id="draw-pulse-glow" x="-30%" y="-30%" width="160%" height="160%">
+                    <feGaussianBlur in="SourceGraphic" stdDeviation="2.5" result="blur" />
+                    <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+                </filter>
+                <filter id="draw-pen-flare" x="-100%" y="-100%" width="300%" height="300%">
+                    <feGaussianBlur in="SourceGraphic" stdDeviation="5" result="b1" />
+                    <feGaussianBlur in="SourceGraphic" stdDeviation="2" result="b2" />
+                    <feMerge><feMergeNode in="b1" /><feMergeNode in="b2" /><feMergeNode in="SourceGraphic" /></feMerge>
+                </filter>
+                <radialGradient id="pen-bloom-draw" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stop-color="var(--draw-start)" />
+                    <stop offset="35%" stop-color="var(--draw-highlight)" stop-opacity=".8" />
+                    <stop offset="70%" stop-color="var(--draw-primary)" stop-opacity=".3" />
+                    <stop offset="100%" stop-color="var(--draw-primary)" stop-opacity="0" />
+                </radialGradient>
+                <linearGradient id="draw-stroke-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="var(--draw-start)" /><stop offset="36%" stop-color="var(--draw-start)" />
+                    <stop offset="43%" stop-color="var(--draw-highlight)" /><stop offset="48%" stop-color="var(--draw-primary)" />
+                    <stop offset="100%" stop-color="var(--draw-primary)" />
+                </linearGradient>
+            </defs>
+            <g class="draw-stage-master">
+                <path class="drawn-waveform-path" d="M 100 200 L 460 200 C 476 200, 488 110, 508 110 C 528 110, 538 200, 552 200 C 566 200, 576 290, 596 290 C 616 290, 628 200, 644 200 L 900 200" pathLength="940" fill="none" filter="url(#draw-pulse-glow)" stroke="url(#draw-stroke-gradient)" stroke-width="3" />
+                <g class="pen-tracker" pointer-events="none">
+                    <circle cx="0" cy="0" r="16" fill="url(#pen-bloom-draw)" />
+                    <circle class="pen-bloom-circle" cx="0" cy="0" r="4.5" filter="url(#draw-pen-flare)" />
+                    <circle cx="0" cy="0" r="2.2" fill="var(--draw-start)" />
+                </g>
+            </g>
+        </svg>
+    </main>
+    <div id="game-notification-toast" class="game-notification" wire:ignore role="status" aria-live="polite">
+        <i class="bi bi-activity" data-game-notification-icon></i>
+        <div><small>Match update</small><strong data-game-notification-message></strong></div>
+    </div>
 </div>

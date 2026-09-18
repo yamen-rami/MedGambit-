@@ -1,0 +1,116 @@
+.flatline-stage {
+  --flatline-overlay: transparent;
+  --flatline-start: #334155;
+  --flatline-danger: #dc2626;
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  display: grid;
+  width: 100%;
+  height: 100%;
+  place-items: center;
+  pointer-events: none;
+  background: transparent;
+}
+
+.flatline-stage[hidden] {
+  display: none;
+}
+
+html[data-bs-theme="dark"] .flatline-stage,
+html[data-theme="dark"] .flatline-stage {
+  --flatline-overlay: transparent;
+  --flatline-start: #f8fafc;
+  --flatline-danger: #f87171;
+}
+
+@media (prefers-color-scheme: dark) {
+  html:not([data-bs-theme="light"]):not([data-theme="light"]) .flatline-stage {
+    --flatline-overlay: transparent;
+    --flatline-start: #f8fafc;
+    --flatline-danger: #f87171;
+  }
+}
+
+.flatline-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  background: transparent;
+}
+
+.flatline {
+  fill: none;
+  stroke: var(--flatline-start);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 700;
+  stroke-dashoffset: 700;
+  filter: drop-shadow(0 0 6px rgb(255 255 255 / 90%))
+    drop-shadow(0 0 16px rgb(255 255 255 / 45%));
+  animation:
+    draw-flatline 5.6s cubic-bezier(0.25, 0.1, 0.25, 1) infinite,
+    shift-flatline-color 5.6s linear infinite;
+}
+
+@keyframes draw-flatline {
+  0%,
+  1.8% {
+    stroke-dashoffset: 700;
+  }
+
+  35.7%,
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes shift-flatline-color {
+  0%,
+  35.7% {
+    stroke: var(--flatline-start);
+    filter: drop-shadow(0 0 6px color-mix(in srgb, var(--flatline-start) 90%, transparent))
+      drop-shadow(0 0 16px color-mix(in srgb, var(--flatline-start) 45%, transparent));
+  }
+
+  41.1%,
+  89.3% {
+    stroke: var(--flatline-danger);
+    filter: drop-shadow(0 0 8px color-mix(in srgb, var(--flatline-danger) 95%, transparent))
+      drop-shadow(0 0 20px color-mix(in srgb, var(--flatline-danger) 55%, transparent));
+  }
+
+  96.4%,
+  100% {
+    stroke: var(--flatline-danger);
+    filter: drop-shadow(0 0 4px color-mix(in srgb, var(--flatline-danger) 40%, transparent));
+  }
+}
+
+@keyframes fade-flatline {
+  0%,
+  1.8% {
+    opacity: 0;
+  }
+
+  2.5%,
+  89.3% {
+    opacity: 1;
+  }
+
+  96.4%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flatline {
+    animation: none;
+    stroke: var(--flatline-danger);
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+}

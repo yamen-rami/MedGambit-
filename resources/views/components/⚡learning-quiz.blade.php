@@ -1,5 +1,4 @@
 <?php
-
 use App\Models\Questions;
 use App\Models\QuizAttempt;
 use App\Services\QuizService;
@@ -8,14 +7,15 @@ use Livewire\Attributes\On;
 use Livewire\Component;
 
 new class extends Component {
-    public $quiz;
-    public int $correctCount = 0;
-    public int $wrongCount = 0;
-    public $currentQuestion;
-    public int $current = 1;
-    public $activeOptionId = null; // Changed to null for strict comparison
+    public $quiz,
+        $currentQuestion,
+        $attempt,
+        $activeOptionId = null;
+    public int $correctCount = 0,
+        $wrongCount = 0,
+        $current = 1;
     public array $answers = [];
-    public $attempt;
+    public array $answerResults = [];
 
     public function mount($quiz)
     {
@@ -24,16 +24,14 @@ new class extends Component {
             ->where('user_id', auth()->id())
             ->where('quiz_id', $this->quiz->id)
             ->first();
-
         if (!$this->attempt) {
             abort(402, 'Something went wrong');
         }
-
         $this->current = $this->attempt->current;
         $this->correctCount = $this->attempt->correctCount ?? 0;
         $this->wrongCount = $this->attempt->wrongCount ?? 0;
         $this->answers = $this->attempt->answers->pluck('option_id', 'question_id')->toArray();
-
+        $this->answerResults = $this->attempt->answers->pluck('is_correct', 'question_id')->toArray();
         $this->loadQuestion();
     }
 
@@ -43,10 +41,7 @@ new class extends Component {
         if (!$questionId) {
             return;
         }
-
-        $this->currentQuestion = Questions::with('options', 'correctAnswer', 'playedCount', 'specialties', 'branches' ,"reference")->findOrFail($questionId);
-
-        // If already answered, automatically open the explanation for the chosen option
+        $this->currentQuestion = Questions::with(['options', 'correctAnswer'])->findOrFail($questionId);
         $this->activeOptionId = $this->answers[$questionId] ?? null;
     }
 
@@ -55,13 +50,11 @@ new class extends Component {
     {
         return $this->quiz->questions->count();
     }
-
     #[Computed]
     public function currentElo()
     {
         return $this->currentQuestion->elo_correct ?? 0;
     }
-
     #[Computed]
     public function currentInCorrectElo()
     {
@@ -70,38 +63,19 @@ new class extends Component {
 
     public function submit($optionId, $questionId)
     {
-        // Don't allow changing an already answered question
         if (array_key_exists($questionId, $this->answers)) {
             return;
         }
-
         $question = $this->currentQuestion;
         if (!$question || (int) $question->id !== (int) $questionId || !$question->options->contains('id', (int) $optionId) || !$this->attempt) {
             return;
         }
-
-        $question->loadMissing('correctAnswer');
         $isCorrect = $question->correctAnswer?->id === (int) $optionId;
-
-        if ($isCorrect) {
-            $this->correctCount++;
-            $this->attempt->increment('correctCount');
-        } else {
-            $this->wrongCount++;
-            $this->attempt->increment('wrongCount');
-        }
-
-        $this->attempt->answers()->updateOrCreate(
-            ['question_id' => $questionId],
-            [
-                'status' => 'answered',
-                'is_correct' => $isCorrect,
-                'option_id' => $optionId,
-            ],
-        );
-
-        // Open the explanation for the selected option
+        $isCorrect ? $this->correctCount++ : $this->wrongCount++;
+        $this->attempt->increment($isCorrect ? 'correctCount' : 'wrongCount');
+        $this->attempt->answers()->updateOrCreate(['question_id' => $questionId], ['status' => 'answered', 'is_correct' => $isCorrect, 'option_id' => $optionId]);
         $this->answers[$questionId] = (int) $optionId;
+        $this->answerResults[$questionId] = $isCorrect;
         $this->activeOptionId = (int) $optionId;
     }
 
@@ -111,372 +85,124 @@ new class extends Component {
             $this->updateCurrent($this->current + 1);
         }
     }
-
     public function previous()
     {
         if ($this->current > 1) {
             $this->updateCurrent($this->current - 1);
         }
     }
-
     public function updateCurrent($current)
     {
-        $max = $this->count;
-        if ($current < 1 || $max < $current) {
+        if ($current < 1 || $this->count < $current) {
             return;
         }
-
         $this->current = (int) $current;
         $this->attempt->current = (int) $current;
         $this->attempt->save();
-
-        // loadQuestion will handle resetting/setting activeOptionId appropriately
         $this->loadQuestion();
     }
 
     #[On('quit-quiz')]
     public function quitQuiz()
     {
-        $quizService = app(QuizService::class);
-        $quizService->updateAttemptLearning(auth()->id(), $this->quiz->id, $this->answers);
-
+        app(QuizService::class)->updateAttemptLearning(auth()->id(), $this->quiz->id, $this->answers);
         return redirect()->route('quizResult', $this->quiz);
     }
-
     public function submitAttempt()
     {
-        $questionsCount = $this->count;
-
-        $this->validate([
-            'answers' => ['required', 'array', "min:$questionsCount"],
-        ]);
-        if($this->attempt->status === "finished"){
-            return ; 
-            
+        $this->validate(['answers' => ['required', 'array', 'min:' . $this->count]]);
+        if ($this->attempt->status === 'finished') {
+            return;
         }
-
-        $quizService = app(QuizService::class);
-        $quizService->updateAttemptLearning(auth()->id(), $this->quiz->id, $this->answers);
-
+        app(QuizService::class)->updateAttemptLearning(auth()->id(), $this->quiz->id, $this->answers);
         return redirect()->route('quizResult', $this->quiz);
     }
 };
 ?>
-<div class="">
-    <x-slot:topic>Learning Mode</x-slot:topic>
-    <!-- ===================== QUIZ FILTERS ===================== -->
-    
-    {{-- ===================== CONTENT ===================== --}}
-    <div class="content-grid">
-        {{-- ===================== CENTER ===================== --}}
-        <section class="battle-col">
-            @php
-                $question = $this->currentQuestion;
-            @endphp
-
-            <div class="question-card">
-                {{-- QUESTION HEADER --}}
-                <div class="question-head">
-                    <span class="question-index">
-                        Question {{ $this->current }} / {{ $this->count }}
-                    </span>
-
-                    <span class="badge-medium"> {{ $quiz->difficulty ?? 'Medium' }} </span>
-                </div>
-
-                {{-- QUESTION --}}
-                <p class="question-text">{!! $question->content !!}</p>
-
-                {{-- OPTIONS --}}
-                <div class="options" x-data="{ activeOptionId: $wire.activeOptionId }">
-                    @php
-                        $correct = $question->correctAnswer?->id;
-                    @endphp
-                    @foreach ($question->options as $option)
-                        @php
-                            // Calculate the border class based on whether the question has been answered
-                            $borderClass = isset($answers[$question->id])
-                                ? ($option->id == $correct
-                                    ? 'border-success'
-                                    : 'border-danger')
-                                : '';
-                        @endphp
-
-                        <div class="option" x-cloak {{-- Apply border only if the question has been answered --}} :class="'{{ $borderClass }}'"
-                            wire:click="submit({{ $option->id }}, {{ $question->id }})"
-                            @click="$wire.set('activeOptionId', $wire.activeOptionId == {{ $option->id }} ? null : {{ $option->id }})"
-                            wire:key='{{ $option->id }}'>
-
-                            <span class="option-key">
-                                @if ($loop->iteration === 1)
-                                    A
-                                @elseif ($loop->iteration === 2)
-                                    B
-                                @elseif ($loop->iteration === 3)
-                                    C
-                                @elseif ($loop->iteration === 4)
-                                    D
-                                @else
-                                    E
-                                @endif
-                            </span>
-
-                            <span class="option-label"> {{ $option->content }} </span>
-
-                            <span class="option-check">
-                                <i class="fa-solid fa-check"></i>
-                            </span>
-
-                            <div></div>
-
-                            <div class="d-flex">
-                                {{-- Only show if this specific option's ID matches the activeOptionId --}}
-                                <div x-show="$wire.activeOptionId == {{ $option->id }}" x-collapse>
-                                    <div>
-                                        <p class="d-block">{{ $option->explanation }}</p>
-                                    </div>
-                                </div>
-                            </div>
+@php
+    $questionCount = $this->count;
+    $questionNumber = $this->current;
+    $answeredCount = count($answers);
+    $remainingCount = max(0, $questionCount - $answeredCount);
+    $progress = $questionCount ? round(($answeredCount / $questionCount) * 100) : 0;
+    $answeredOptionId = $currentQuestion ? $answers[$currentQuestion->id] ?? null : null;
+    $hasAnswered = $answeredOptionId !== null;
+@endphp
+<main class="brand-main">
+    <button class="sidebar-trigger" id="sidebarTrigger" type="button"><span
+            class="material-symbols-outlined">format_list_numbered</span> Quiz progress <span
+            class="material-symbols-outlined">chevron_right</span></button>
+    <div class="brand-layout">
+        <aside class="question-sidebar" id="questionSidebar" aria-label="Quiz progress">
+            <div class="sidebar-heading">
+                <div><span>QUIZ PROGRESS</span><strong>{{ $quiz->name ?: 'Medical quiz' }}</strong></div><button
+                    id="sidebarClose" type="button" aria-label="Close progress"><span
+                        class="material-symbols-outlined">close</span></button>
+            </div>
+            <div class="progress-summary">
+                <div><b>Question <em>{{ $questionNumber }}</em></b><span>of {{ $questionCount }}</span></div>
+                <strong>{{ $progress }}%</strong>
+            </div>
+            <div class="progress-track"><span style="width: {{ $progress }}%"></span></div>
+            <div class="score-grid">
+                <span><b>{{ $correctCount }}</b>Correct</span><span><b>{{ $wrongCount }}</b>Wrong</span><span><b>{{ $remainingCount }}</b>Remain</span>
+            </div>
+            <div class="sidebar-meta"><span><span class="small-empty-circle"></span> LEARNING MODE</span><b>LEARNING
+                    ON</b></div>
+            <div class="question-list" id="questionList">
+                @foreach ($quiz->questions as $navQuestion)
+                    @php($navAnswerId = $answers[$navQuestion->id] ?? null)
+                    @php($navIsCorrect = (bool) ($answerResults[$navQuestion->id] ?? false))
+                    <button type="button" wire:click="updateCurrent({{ $loop->iteration }})"
+                        class="question-row {{ $questionNumber === $loop->iteration ? 'current' : '' }} {{ $navAnswerId !== null ? ($navIsCorrect ? 'correct' : 'wrong') : '' }}"
+                        @if ($questionNumber === $loop->iteration) aria-current="step" @endif><span
+                            class="row-number">{{ str_pad($loop->iteration, 2, '0', STR_PAD_LEFT) }}</span><span
+                            class="row-title">{{ $navQuestion->name ?: strip_tags($navQuestion->topic ?: 'Clinical question') }}</span><i
+                            class="row-status bi {{ $navAnswerId === null ? 'bi-circle' : ($navIsCorrect ? 'bi-check-circle-fill' : 'bi-x-circle-fill') }}"></i></button>
+                @endforeach
+            </div>
+        </aside>
+        <div class="question-backdrop" id="questionBackdrop"></div>
+        <section class="question-panel" aria-labelledby="questionTitle">
+            <div class="panel-scroll">
+                <div class="panel-topline"><span>QUESTION {{ $questionNumber }} · {!! $currentQuestion?->topic !!}</span><span
+                        class="difficulty">DIFFICULTY ·
+                        {{ strtoupper($currentQuestion?->difficulty ?: $quiz->difficulty ?: 'MEDIUM') }}</span></div>
+                <h2 id="questionTitle">{{ $currentQuestion?->name ?: 'Clinical question' }}</h2>
+                <div class="case-vignette">{!! $currentQuestion?->content !!}</div>
+                <div class="answer-list" role="radiogroup" aria-label="Answer options">
+                    @foreach ($currentQuestion?->options ?? [] as $option)
+                        @php($isSelected = (int) $answeredOptionId === (int) $option->id)
+                        @php($isCorrect = (int) $currentQuestion->correctAnswer?->id === (int) $option->id)
+                        <div
+                            class="answer-item answer-option {{ $isSelected ? ($isCorrect ? 'correct' : 'incorrect') : '' }} {{ $hasAnswered && $isCorrect ? 'correct-answer' : '' }}">
+                            <button class="answer-choice" type="button"
+                                wire:click="submit({{ $option->id }}, {{ $currentQuestion->id }})"
+                                aria-checked="{{ $isSelected ? 'true' : 'false' }}"><span
+                                    class="letter">{{ $option->name ?: chr(64 + $loop->iteration) }}</span><span>{{ $option->content }}</span><span
+                                    class="radio"></span></button>
+                            @if ($hasAnswered)
+                                <div class="option-explanation">{!! $option->explanation !!}</div>
+                            @endif
                         </div>
                     @endforeach
                 </div>
-
-                {{-- Todo <div class="question-foot">
-                    <button type="button" class="report-link">
-                        <i class="fa-regular fa-flag"></i>
-                        Report Question
-                    </button>
-                </div> --}}
-            </div>
-
-            {{-- ===================== ACTIONS ===================== --}}
-            <div class="actions-row">
-                <button type="button" class="btn btn-ghost" wire:click="previous" @disabled($this->current < 1)>
-                    <i class="fa-solid fa-chevron-left"></i>
-                    Previous
-                </button>
-
-
-
-                {{-- NEXT / SUBMIT --}}
-                @if ($this->current !== $this->count)
-                    <button type="button" class="btn btn-primary" wire:click="next">
-                        Next
-
-                        <i class="fa-solid fa-chevron-right"></i>
-                    </button>
-                @else
-                    <button type="button" class="btn btn-primary" wire:click="submitAttempt" @disabled($this->attempt->status === "finished")>
-                        Submit
-
-                        <i class="fa-solid fa-check"></i>
-                    </button>
+                @if ($hasAnswered)
+                    <div class="explanation-card"><strong><i class="bi bi-lightbulb-fill"></i> HIGH YIELD</strong>
+                        <div>{!! $currentQuestion?->high_yield !!}</div><strong><i class="bi bi-check-circle-fill"></i> MAIN
+                            EXPLANATION</strong>
+                        <div>{!! $currentQuestion?->main_explanation !!}</div>
+                    </div>
                 @endif
             </div>
-            <div class="question-card" x-show="$wire.activeOptionId">
-                <h6>Question Explanation :</h6>
-                <p>{!! $question->main_explanation !!}</p>
-                <h6>Question High Yield</h6>
-                <p>{!!  $question->high_yield !!}</p>
+            <div class="question-actions"><button class="btn btn-outline-secondary" type="button" wire:click="previous"
+                    @disabled($questionNumber === 1)><i class="bi bi-arrow-left"></i> Previous</button>
+                @if ($questionNumber < $questionCount)
+                    <button class="btn btn-primary" type="button" wire:click="next">Next question <i
+                        class="bi bi-arrow-right"></i></button>@else<button class="btn btn-primary" type="button"
+                        wire:click="submitAttempt">Submit quiz <i class="bi bi-check-lg"></i></button>
+                @endif
             </div>
-
-            {{-- VALIDATION ERROR --}}
-            @error('answers')
-                <h1 class="text-danger fs-5 my-2 text-center">
-                    Please Add Answers Left Questions Answers =
-                    {{ $this->count - count($this->answers) }}
-                </h1>
-            @enderror
         </section>
-
-        {{-- ===================== RIGHT SIDEBAR ===================== --}}
-        <aside class="side-col">
-             <div class="panel">
-                    <div class="panel-title-row" x-data="{ online: navigator.onLine }" x-init="window.addEventListener('online', () => (online = true));
-                    window.addEventListener('offline', () => (online = false));">
-                        <span class="panel-title">Question weight</span>
-
-                        <span class="live-pill">
-                            
-
-                            <template x-if="! online">
-                                <span class="flex items-center gap-2">
-                                    <span class="live-dot-offline"></span>
-                                    <span class="text-danger">Offline</span>
-                                </span>
-                            </template>
-                        </span>
-                    </div>
-                    {{-- Reward --}}
-                    <div class="stat-row">
-                        <i class="fa-solid fa-trophy stat-icon"></i>
-
-                        <div>
-                            <div class="stat-label">Win Points</div>
-
-                            <div class="stat-value">{{ $this->currentElo ?? 0 }}</div>
-                        </div>
-                    </div>
-                    <div class="stat-row">
-                        <svg class="text-opacity-10 text-danger" xmlns="http://www.w3.org/2000/svg" width="20"
-                            height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="4" stroke-linecap="round" stroke-linejoin="round"
-                            class="lucide lucide-arrow-down">
-                            <path d="M12 5v14" />
-                            <path d="m19 12-7 7-7-7" />
-                        </svg>
-                        <div>
-                            <div class="stat-label">Lose Points</div>
-
-                            <div class="stat-value">{{ $this->currentInCorrectElo ?? 0 }}</div>
-                        </div>
-                    </div>
-
-
-                    {{-- Battle Type --}}
-                    <div class="stat-row">
-                        <svg class="text-warning" xmlns="http://www.w3.org/2000/svg" width="20" height="20"
-                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-refresh-ccw">
-                            <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-                            <path d="M3 3v5h5" />
-                            <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
-                            <path d="M16 16h5v5" />
-                        </svg>
-                        <div>
-                            <div class="stat-label fw-bold " style="color: var(--text)">Frequency</div>
-
-                            <div class="stat-value">{{ $question->playedCount?->count ?? 0 }} </div>
-                        </div>
-                    </div>
-                    
-
-
-
-
-                </div>
-
-            {{-- ===================== BATTLE PROGRESS ===================== --}}
-            <div class="panel">
-                <div class="panel-title-row">
-                    <span class="panel-title"> Quiz Progress </span>
-
-                    <span class="progress-frac"> {{ $current }} / {{ $this->count }} </span>
-                </div>
-
-                <div class="progress-track">
-                    <div class="progress-line-bg"></div>
-
-                    <div class="progress-line-fill"
-                        style="
-                                width:
-                                {{ $this->count > 1 ? (($current - 1) / ($this->count - 1)) * 90 : 0 }}%;
-                            ">
-                    </div>
-
-                    <div class="progress-dots">
-                        @foreach ($quiz->questions as $question)
-                            <button type="button"
-                                class="dot
-                                                                                                                  @if (isset($answers[$question->id])) correct
-                                                                                                                  @elseif($current === $loop->iteration)
-                                                                                                                    current
-                                                                                                                  @else
-                                                                                                                    pending @endif
-                                                                                                              "
-                                wire:click="updateCurrent({{ $loop->iteration }})">
-                                {{ $loop->iteration }}
-                            </button>
-                        @endforeach
-                    </div>
-                </div>
-            </div>
-
-            {{-- ===================== PERFORMANCE ===================== --}}
-            <div class="panel center-panel">
-                <div class="panel-title">Your Performance</div>
-
-                <div class="gauge-wrap">
-                    <svg viewBox="0 0 140 80" width="150" height="88">
-                        <path d="M 13 74 A 54 54 0 0 1 127 74" fill="none" class="gauge-bg" stroke-width="2"
-                            stroke-linecap="round" />
-
-                        <path id="gauge-arc" value="100" d="M 13 74 A 54 54 0 0 1 127 74" fill="none"
-                            class="gauge-arc" stroke-width="2" stroke-dasharray="{{ count($answers) * 5 }}"
-                            pathLength="100" stroke-linecap="round" />
-                    </svg>
-                    {{-- @dd(100 - count($answers)) --}}
-                    {{-- @dd(count($answers) * $this->count) --}}
-                    @php
-                        $questionsCount = $this->count;
-                        $answeredCount = count($answers);
-
-                        $progress = $questionsCount > 0 ? ($answeredCount / $questionsCount) * 100 : 0;
-                    @endphp
-
-                    <div class="gauge-value">{{ round($progress) }}%</div>
-
-                    <div class="gauge-label">Progress By Percentage</div>
-                </div>
-
-                <div class="perf-row">
-                    <div class="perf-item">
-                        <div class="perf-num perf-good">{{ $correctCount }}</div>
-
-                        <div class="perf-label">Correct</div>
-                    </div>
-                    <div class="perf-item">
-                        <div class="perf-num perf-bad">{{ $wrongCount }}</div>
-
-                        <div class="perf-label">Incorrect</div>
-                    </div>
-                </div>
-            </div>
-
-            
-            <div class="">
-                <div class="filter-heading">
-                    <i class="menu-icon icon-base fa-solid fa-graduation-cap"></i>
-
-                    <span>Reference</span>
-                </div>
-
-                <div class="">
-
-                    <div class="filter-chips" id="specialityChips">
-                        <button type="button" class="filter-chip active">
-                            <span>{{ $this->currentQuestion->reference->name ?? 'No Reference Found For This Question' }}</span>
-                        </button>
-
-
-
-                    </div>
-                </div>
-            </div>
-        </aside>
     </div>
-
-    {{-- ===================== FOOTER ===================== --}}
-    <footer class="footer">
-        <i class="fa-solid fa-shield-halved"></i>
-
-        Every question is a battle. Every battle makes you better.
-    </footer>
-</div>
-
-{{-- ===================== DARK MODE ONLY ===================== --}}
-<script>
-    const themeToggle = document.getElementById('theme-toggle');
-    const root = document.documentElement;
-
-    if (themeToggle) {
-        themeToggle.addEventListener('click', function() {
-            const isDark = root.getAttribute('data-theme') === 'dark';
-
-            root.setAttribute('data-theme', isDark ? 'light' : 'dark');
-
-            themeToggle.innerHTML = isDark ? '<i class="fa-solid fa-moon"></i>' :
-                '<i class="fa-solid fa-sun"></i>';
-        });
-    }
-</script>
+</main>

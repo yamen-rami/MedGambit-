@@ -18,8 +18,14 @@ Broadcast::channel('game.{gameId}', function ($user, $gameId) {
         ->exists();
 });
 Broadcast::channel('presence-game.{gameId}', function ($user, $gameId) {
-    return Players::where('game_id', $gameId)->where('user_id', $user->id)
-        ->exists();
+    if (! Players::where('game_id', $gameId)->where('user_id', $user->id)->exists()) {
+        return false;
+    }
+
+    return [
+        'id' => (int) $user->id,
+        'name' => $user->name,
+    ];
 });
 Broadcast::channel('game.finished.{gameId}', function ($user, $gameId) {
     return Players::where('game_id', $gameId)->where('user_id', $user->id)

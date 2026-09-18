@@ -31,7 +31,7 @@
     @livewireStyles
 </head>
 
-<body>
+<body class="@yield('body_class')">
     <x-navbar />
 
     <main id="main-content">

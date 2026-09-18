@@ -33,19 +33,24 @@ class GameController extends Controller
 
     public function gameResults(Game $game)
     {
-        //
-        abort_unless($game->players()->where('user_id', auth()->id())->exists(), 403);
-        $game->loadMissing('players', 'attempts', 'questions');
+        $game->loadMissing('players', 'questions.correctAnswer');
+        abort_unless($game->players->contains('user_id', auth()->id()), 403);
+
         if ($game->status !== 'finished') {
             abort(404, 'Game Status Is Playing');
         }
-        $winnerAttempt = $game->attempts()->with('user')->where('is_winner', true)->first();
-        if (! $winnerAttempt) {
-            return;
-        }
-        $winner = $winnerAttempt->user;
-        $attempts = $game->attempts()->with('user', 'answers')->orderBy('is_winner', 'desc')->get();
 
+        // One attempts query, with all data required by the results matrix.
+        // Ordering here guarantees that the first card is always the winner.
+        $attempts = $game->attempts()
+            ->with(['user', 'answers.option'])
+            ->orderByDesc('is_winner')
+            ->orderBy('id')
+            ->get();
+
+        abort_if($attempts->isEmpty(), 404, 'Game has no attempts');
+
+        $winner = $attempts->firstWhere('is_winner', true)?->user;
         $questions = $game->questions;
 
         return view('games.gameResult', compact('game', 'winner', 'attempts', 'questions'));
@@ -54,7 +59,31 @@ class GameController extends Controller
     public function friendGameCreate(string $challenge_token)
     {
         $user = auth()->user();
+        $game = Game::where('challenge_token', $challenge_token)->firstOrFail();
 
+        if ($game->players()->where('user_id', $user->id)->exists()) {
+            if ($game->status === 'pending') {
+                return view('games.waiting', compact('game'));
+            }
+
+            return redirect()->route('gameRedirect', [
+                'challenge_token' => $game->challenge_token,
+            ]);
+        }
+
+        abort_if($game->status !== 'pending', 403, 'This challenge is no longer available.');
+        abort_if($game->players()->count() >= $game->max_players, 403, 'This challenge is full.');
+
+        $this->gameService->joinFriend($user->id, $game->id);
+
+        return redirect()->route('gameRedirect', [
+            'challenge_token' => $game->challenge_token,
+        ]);
+    }
+
+    public function friendGame(string $challenge_token)
+    {
+        $user = auth()->user();
         $game = Game::where('challenge_token', $challenge_token)->firstOrFail();
 
         if ($game->players()->where('user_id', $user->id)->exists()) {
@@ -63,18 +92,12 @@ class GameController extends Controller
             ]);
         }
 
-    }
-
-    public function friendGame(string $challenge_token)
-    {
-        $user = auth()->user();
-        $game = Game::where('challenge_token', $challenge_token)->firstOrFail();
         abort_unless(
-            $game->players()->count() < $game->max_players,
+            $game->status === 'pending' && $game->players()->count() < $game->max_players,
             403,
             'You Are Not Allowed'
         );
-        $h = $this->gameService->joinFriend($user->id, $game->id);
+        $this->gameService->joinFriend($user->id, $game->id);
 
         return redirect()->route('gameRedirect', [
             'challenge_token' => $game->challenge_token,

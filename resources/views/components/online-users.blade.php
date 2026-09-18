@@ -1,12 +1,12 @@
-@props(['initialCount' => 0])
+@props(['initialCount' => 0, 'id' => 'online-users-count'])
 
-<span id="online-users-count">{{ number_format($initialCount) }}</span>
+<span id="{{ $id }}">{{ number_format($initialCount) }}</span>
 
 @push('scripts')
     <script>
         (() => {
             const start = () => {
-                const countElement = document.getElementById('online-users-count');
+                const countElement = document.getElementById(@js($id));
 
                 if (!countElement || countElement.dataset.subscribed === 'true' || !window.Echo) {
                     return;

@@ -277,7 +277,8 @@ new class extends Component {
                     class="{{ $isCurrent ? 'current' : '' }} {{ $isAnswered ? 'answered' : '' }}"><span>{{ str_pad($loop->iteration, 2, '0', STR_PAD_LEFT) }}
                         {{ $navQuestion->name ?: 'Clinical question' }}</span>
                     @if ($isAnswered)
-                    <i class="bi bi-check-circle-fill"></i>@else<i></i>
+                    <i class="bi bi-check-circle-fill"></i>@else
+                        <i></i>
                     @endif
                 </button>
             @endforeach

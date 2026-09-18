@@ -53,6 +53,20 @@ it('updates the question count when difficulty and length filters change', funct
         ->assertSee('1 matching questions');
 });
 
+it('never accepts more than 20 questions from the client', function () {
+    $user = User::factory()->create();
+    Questions::factory()->count(30)->create([
+        'difficulty' => 'medium',
+        'length' => 'medium',
+    ]);
+
+    Livewire::actingAs($user)
+        ->test('quiz-config')
+        ->set('count', 150)
+        ->assertSet('count', 20)
+        ->assertSee('20 matching questions');
+});
+
 it('shows the authenticated user links in the quiz sidebar', function () {
     $user = User::factory()->create();
     $profileUrl = route('user.profile', $user);

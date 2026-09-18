@@ -2,30 +2,27 @@
 
 namespace App\Services;
 
-use App\Events\connectedUsers;
-use App\Events\GameStarted;
-use App\Models\Game;
-use App\Models\GameAttempt;
-use App\Models\Players;
-use App\Models\Questions;
-use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+
+use App\Events\{GameStarted, connectedUsers};
+use App\Models\{Game, GameAttempt, Players, Questions, User};
 
 class GameService
 {
     public function searchOrCreate(
         User $user,
-        ?string $difficulty = null,
-        ?string $length = null,
-        ?int $duration = 20,
+        ?string $difficulty,
+        ?string $length,
+        ?int $duration,
+        ?int $count,
         ?Collection $sp = null,
         ?Collection $branches = null,
         ?Collection $skills = null,
         ?Collection $references = null,
     ) {
-        return DB::transaction(function () use ($user, $difficulty, $length, $duration, $sp, $branches, $skills, $references) {
+        return DB::transaction(function () use ($user, $difficulty, $length, $duration, $sp, $branches, $skills, $references, $count) {
             $game = Game::where('status', 'pending')
                 ->whereDoesntHave('players', function ($query) use ($user) {
                     $query->where('user_id', $user->id);
@@ -63,6 +60,7 @@ class GameService
                 player_1: $player1,
                 player_2: $player2,
                 difficulty: $difficulty,
+                count: $count,
                 length: $length,
                 specialties: $sp,
                 branches: $branches,
@@ -81,8 +79,9 @@ class GameService
     public function createQuiz(
         ?User $player_1,
         ?User $player_2,
-        ?string $difficulty = null,
-        ?string $length = null,
+        ?string $difficulty,
+        ?string $length,
+        ?int $count = 20 ,
         ?Collection $specialties = null,
         ?Collection $skills = null,
         ?Collection $branches = null,
@@ -118,8 +117,21 @@ class GameService
                 });
             })
             ->whereNotIn('id', $ignore)
-            ->limit(20)
+            ->limit($count)
             ->get();
+        $qCount = $questions->count();
+        if ($qCount < $count) {
+            $missingCount = $count - $qCount;
+
+            $missingQuestions = Questions::query()
+                // fallback should be LESS restrictive
+                ->whereNotIn('id', $ignore)
+                ->whereNotIn('id', $questions->pluck('id'))
+                ->limit($missingCount)
+                ->get();
+
+            $questions = $questions->merge($missingQuestions);
+        }
 
         return $questions;
     }
@@ -152,7 +164,7 @@ class GameService
         $game->update([
             'status' => 'playing',
             'started_at' => $now,
-            'ended_at' => $game->duration ? $now->addSeconds($game->duration) : null,
+            'ended_at' => $game->duration ? $now->copy()->addSeconds($game->duration) : null,
         ]);
 
         $game->attempts()->whereNull('started_at')->update([
@@ -194,7 +206,7 @@ class GameService
             $attempt->update([
                 'ended_at' => $now,
                 'status' => 'finished',
-                'time_taken' => $attempt->started_at ? $attempt->started_at->diffInSeconds($now) : 0,
+                'time_taken' => $attempt->started_at ? (int) $attempt->started_at->diffInSeconds($now) : 0,
                 'score' => $correct,
                 'current_rank' => $user->rank,
                 'new_rank' => $rank,
@@ -225,20 +237,26 @@ class GameService
         return $winner;
     }
 
-    public function finishGame(Collection $attempts)
+    /**
+     * Pick the winner only after every player has completed their attempt.
+     *
+     * This method is intentionally idempotent because both clients can receive
+     * the finished broadcast at roughly the same time.
+     */
+    public function finishGame(Collection $attempts): bool
     {
         if ($attempts->isEmpty()) {
-            return;
+            return false;
         }
 
-        DB::transaction(function () use ($attempts): void {
+        return DB::transaction(function () use ($attempts): bool {
             $lockedAttempts = GameAttempt::query()
                 ->whereIn('id', $attempts->pluck('id'))
                 ->lockForUpdate()
                 ->get();
 
             if ($lockedAttempts->isEmpty()) {
-                return;
+                return false;
             }
 
             $game = Game::query()
@@ -246,17 +264,46 @@ class GameService
                 ->find($lockedAttempts->first()->game_id);
 
             if (! $game || $game->status === 'finished') {
-                return;
+                return $game?->status === 'finished';
+            }
+
+            if ($game->players()->where('status', '!=', 'finished')->exists()) {
+                return false;
             }
 
             $winner = $this->getWinner($lockedAttempts);
             if (! $winner) {
-                return;
+                return false;
             }
 
+            $lockedAttempts->each->update(['is_winner' => false]);
             $winner->update(['is_winner' => true]);
             $game->update(['status' => 'finished']);
+
+            return true;
         });
+    }
+
+    /**
+     * End an in-progress game (for example when its configured duration runs
+     * out). Unfinished attempts are scored from the answers already saved.
+     */
+    public function completeGame(Game $game): bool
+    {
+        $game->refresh();
+
+        if ($game->status === 'finished') {
+            return true;
+        }
+
+        $attempts = $game->attempts()->with('answers.question')->get();
+        foreach ($attempts->where('status', '!=', 'finished') as $attempt) {
+            $player = $game->players()->where('user_id', $attempt->user_id)->first();
+            $player?->update(['status' => 'finished']);
+            $this->editAttempt($attempt, $game);
+        }
+
+        return $this->finishGame($game->fresh()->attempts);
     }
 
     public function friendGame(
@@ -266,9 +313,10 @@ class GameService
         $sp = null,
         $branches = null,
         $skills = null,
-        $references = null
+        $references = null,
+        ?int $count,
     ) {
-        return DB::transaction(function () use ($difficulty, $length, $duration, $sp, $branches, $skills, $references) {
+        return DB::transaction(function () use ($difficulty, $length, $duration, $sp, $branches, $skills, $references, $count) {
             $game = Game::create([
                 'status' => 'pending',
                 'max_players' => 2,
@@ -276,6 +324,7 @@ class GameService
                 'difficulty' => $difficulty ? $difficulty : 'easy',
                 'length' => $length ? $length : 'short',
                 'duration' => $duration,
+                "count" => $count ,
             ]);
             $userId = auth()->id();
             $this->createPlayer($userId, $game->id);
@@ -325,6 +374,7 @@ class GameService
                 player_2: $game->players[1]->user,
                 difficulty: $game->difficulty,
                 length: $game->length,
+                count: $game->count ,
                 specialties: $game->specialties->count() > 0 ? $game->specialties : null,
                 branches: $game->branches->count() > 0 ? $game->branches : null,
                 skills: $game->skills->count() > 0 ? $game->skills : null,
@@ -380,12 +430,14 @@ class GameService
                 'user' => $player1->user,
                 'message' => $player1Message,
                 'winning' => $player1Score > $player2Score,
+                'draw' => $player1Score === $player2Score,
             ],
 
             'player2' => [
                 'user' => $player2->user,
                 'message' => $player2Message,
                 'winning' => $player2Score > $player1Score,
+                'draw' => $player1Score === $player2Score,
             ],
         ];
     }

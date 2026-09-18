@@ -2,11 +2,11 @@
 
 namespace App\Models;
 
-use Database\Factories\GameFactory;
-use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\{Builder, Model};
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+
+use Database\Factories\GameFactory;
 
 class Game extends Model
 {
@@ -14,7 +14,7 @@ class Game extends Model
     use HasFactory;
 
     protected $fillable = ['max_players', 'status', 'challenge_token', 'started_at', 'ended_at', 'length', 'difficulty', 'duration',
-        'disconnected_at'];
+        'disconnected_at' , 'count'];
 
     protected $casts = [
         'started_at' => 'datetime',

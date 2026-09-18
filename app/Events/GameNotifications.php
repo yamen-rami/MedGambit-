@@ -17,6 +17,7 @@ class GameNotifications implements ShouldBroadcast
         public User $user,
         public string $message,
         public bool $winner,
+        public bool $draw = false,
     ) {}
 
     public function broadcastOn(): array
@@ -31,6 +32,7 @@ class GameNotifications implements ShouldBroadcast
         return [
             'message' => $this->message,
             'winner' => $this->winner,
+            'draw' => $this->draw,
         ];
     }
 

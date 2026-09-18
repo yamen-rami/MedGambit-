@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Questions;
+use App\Models\{GameAttempt , Game};
 use App\Services\GameService;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -9,23 +10,47 @@ use Livewire\Component;
 
 new class extends Component {
     public array $branchesList = [];
-
     public array $specialitiesList = [];
-
     public array $skillsList = [];
-
-    public string $difficulty = '' ;
-
-    public string $length = '';
-
-    public $duration;
-
-    public $branches;
-
-    public $skills;
     public array $references = [];
+    public string $difficulty = 'medium';
+    public string $length = 'medium';
+    public $duration;
+    public int $count = 20;
 
-    public $specialities;
+    private const QUESTION_COUNTS = [5, 10, 15, 20];
+
+    public function setDifficulty(string $difficulty): void
+    {
+        if (in_array($difficulty, ['easy', 'medium', 'hard', 'nerd'], true)) {
+            $this->difficulty = $difficulty;
+        }
+    }
+
+    public function setLength(string $length): void
+    {
+        if (in_array($length, ['short', 'medium', 'long'], true)) {
+            $this->length = $length;
+        }
+    }
+
+    public function updatedCount($count): void
+    {
+        $count = (int) $count;
+        $this->count = in_array($count, self::QUESTION_COUNTS, true) ? $count : 20;
+    }
+
+    #[Computed]
+    public function playedGamesToday(): int
+    {
+        return Game::query()->whereDate('created_at', today())->count();
+    }
+
+    #[Computed]
+    public function questionBankCount(): int
+    {
+        return $this->questions?->count() ?? 0;
+    }
 
     #[Computed]
     public function questions()
@@ -34,178 +59,174 @@ new class extends Component {
             return null;
         }
 
-        $questions = Questions::query()
-            ->when($this->references, function ($query) {
-                $query->whereHas('reference', fn($q) => $q->whereIn('references.id', $this->references));
-            })
-            ->when($this->difficulty, fn($query) => $query->where('difficulty', $this->difficulty))
-            ->when($this->length, fn($query) => $query->where('length', $this->length))
-            ->when($this->branchesList, fn($query) => $query->whereHas('branches', fn($query) => $query->whereIn('branch_of_medicines.id', $this->branchesList)))
-            ->when($this->skillsList, fn($query) => $query->whereHas('skills', fn($query) => $query->whereIn('skills_for_questions.id', $this->skillsList)))
-            ->when($this->specialitiesList, fn($query) => $query->whereHas('specialties', fn($query) => $query->whereIn('specialties.id', $this->specialitiesList)))
-            ->limit(20)
-            ->get();
+        $questions = Questions::query()->when($this->references, fn($query) => $query->whereHas('reference', fn($query) => $query->whereIn('references.id', $this->references)))->when($this->difficulty, fn($query) => $query->where('difficulty', $this->difficulty))->when($this->length, fn($query) => $query->where('length', $this->length))->when($this->branchesList, fn($query) => $query->whereHas('branches', fn($query) => $query->whereIn('branch_of_medicines.id', $this->branchesList)))->when($this->skillsList, fn($query) => $query->whereHas('skills', fn($query) => $query->whereIn('skills_for_questions.id', $this->skillsList)))->when($this->specialitiesList, fn($query) => $query->whereHas('specialties', fn($query) => $query->whereIn('specialties.id', $this->specialitiesList)))->limit($this->count)->get();
 
         return $questions->isEmpty() ? null : $questions;
     }
 
-    public function friendGame()
+    private function validationRules(): array
     {
-        if ($this->questions?->count() < 2) {
-            throw ValidationException::withMessages([
-                'count' => 'The Count Should Be At Least 3 Questions',
-            ]);
-        }
-        $this->validate([
-            'difficulty' => ['nullable', 'string'],
-            'difficulty.*' => [Rule::in(['easy', 'medium', 'hard', 'nerd'])],
-            'length' => ['nullable', 'string'],
-            'length.*' => [Rule::in(['short', 'medium', 'long'])],
+        return [
+            'difficulty' => ['nullable', Rule::in(['easy', 'medium', 'hard', 'nerd'])],
+            'length' => ['nullable', Rule::in(['short', 'medium', 'long'])],
+            'duration' => ['nullable', 'integer', 'in:300,600,900,1200,1800,3600'],
+            'count' => ['required', 'integer', Rule::in(self::QUESTION_COUNTS)],
             'branchesList' => ['nullable', 'array'],
             'branchesList.*' => ['exists:branch_of_medicines,id'],
             'skillsList' => ['nullable', 'array'],
             'skillsList.*' => ['exists:skills_for_questions,id'],
             'specialitiesList' => ['nullable', 'array'],
             'specialitiesList.*' => ['exists:specialties,id'],
-            "references" => ["nullable" , "array"],
-            "references.*" => ['exists:references,id'],
-        ]);
-        $gameService = app(GameService::class);
-        $game = $gameService->friendGame(
-            difficulty: $this->difficulty,
-             length: $this->length,
-              duration: $this->duration,
-               sp: $this->specialitiesList,
-                branches: $this->branchesList,
-                 skills: $this->skillsList,
-                  references :$this->references);
+            'references' => ['nullable', 'array'],
+            'references.*' => ['exists:references,id'],
+        ];
+    }
 
+    public function friendGame()
+    {
+        $this->validate($this->validationRules());
 
+        if ($this->questions?->count() < 2) {
+            throw ValidationException::withMessages(['count' => 'At least 2 questions are required.']);
+        }
+
+        $game = app(GameService::class)->friendGame(difficulty: $this->difficulty, length: $this->length, duration: $this->duration, sp: $this->specialitiesList,
+        count:$this->count ,
+        branches: $this->branchesList, skills: $this->skillsList, references: $this->references);
         return redirect()->route('friend.game.started', $game->challenge_token);
     }
 };
 ?>
 
 <div>
-    <div class="card quiz-config-card">
-        <div class="card-body">
-            <div class="quiz-config-header">
-                <h5 class="quiz-config-title">Configure Game</h5>
-                <p class="quiz-config-subtitle">Set the parameters for your next game set.</p>
-            </div>
+    <main class="quiz-main">
+        <aside class="quiz-sidebar">
+            <div class="quiz-sidebar-title">Arena match setup</div>
+            <h2>Tactical Config</h2>
+            <nav class="quiz-nav ">
+                <a class="active " href="{{ route('config.game') }}">1v1 Ranked Duel <span
+                        class="badge text-bg-primary">LIVE</span></a>
+                <a href="#">Played Games Today <span
+                        class="badge text-bg-secondary">{{ $this->playedGamesToday }}</span></a>
+                <a href="#">Active Players <span class="badge text-bg-success"><x-online-users
+                            id="game-online-users-desktop" /></span></a>
 
-            <div class="row">
-                <div class="col-md-6 mb-4">
-                    <label for="branches" class="form-label">Branches For Medicine</label>
-                    <div class="select2-primary" wire:ignore>
-                        <select id="branches" class="select2 form-select branches" data-livewire-select2 multiple></select>
-                    </div>
-                    @error('branchesList')
-                        <p class="text-danger py-2">{{ $message }}</p>
-                    @enderror
-                </div>
-                <div class="col-md-6 mb-4">
-                    <label for="sp" class="form-label">Speciality</label>
-                    <div class="select2-primary" wire:ignore>
-                        <select id="sp" class="select2 form-select specialities" data-livewire-select2 multiple></select>
-                    </div>
-                    @error('specialitiesList')
-                        <p class="text-danger py-2">{{ $message }}</p>
-                    @enderror
-                </div>
+            </nav>
+            <div class="quiz-server">
+                <small>QUESTION BANK</small>
+                <strong>{{ $this->questionBankCount }} MATCHING QUESTIONS</strong>
             </div>
+        </aside>
 
-            <div class="row">
-                <div class="col-md-6">
-                    <label for="skills" class="form-label">Ideas From </label>
-                    <div class="select2-primary" wire:ignore>
-                        <select id="references" class="form-select select2" name="references" data-livewire-select2 multiple>
-                            <option value=""></option>
+        <div class="quiz-content">
+            <button class="btn btn-outline-secondary mobile-quiz-sidebar" type="button" data-bs-toggle="offcanvas"
+                data-bs-target="#gameSidebar" aria-controls="gameSidebar">
+                <span class="material-symbols-outlined align-middle me-1">tune</span>Match modes
+            </button>
+
+            <div class="quiz-card">
+                <div class="quiz-label">Arena match setup · tactical config</div>
+                <h1 class="quiz-title">Configure Game</h1>
+
+                <form id="gameConfigForm" wire:submit.prevent="friendGame">
+                    <div class="quiz-field">
+                        <span class="quiz-label">Difficulty</span>
+                        <div class="quiz-choice-group four" role="radiogroup" aria-label="Difficulty">
+                            @foreach (['easy' => 'Easy', 'medium' => 'Medium', 'hard' => 'Hard', 'nerd' => 'Nerd'] as $value => $label)
+                                <button class="quiz-choice {{ $difficulty === $value ? 'active' : '' }}" type="button"
+                                    wire:click="setDifficulty('{{ $value }}')"
+                                    aria-pressed="{{ $difficulty === $value ? 'true' : 'false' }}">{{ $label }}</button>
+                            @endforeach
+                        </div>
+                    </div>
+
+
+
+                    <div class="quiz-field">
+                        <span class="quiz-label">Question length</span>
+                        <div class="quiz-choice-group three" role="radiogroup" aria-label="Question length">
+                            @foreach (['short' => 'Short', 'medium' => 'Medium', 'long' => 'Long'] as $value => $label)
+                                <button class="quiz-choice {{ $length === $value ? 'active' : '' }}" type="button"
+                                    wire:click="setLength('{{ $value }}')"
+                                    aria-pressed="{{ $length === $value ? 'true' : 'false' }}">{{ $label }}</button>
+                            @endforeach
+                        </div>
+                    </div>
+
+                    @foreach ([['id' => 'branches', 'label' => 'Branches', 'property' => 'branchesList', 'url' => 'getBranches'], ['id' => 'sp', 'label' => 'Specialties', 'property' => 'specialitiesList', 'url' => 'getSpeciality'], ['id' => 'skills', 'label' => 'Skills', 'property' => 'skillsList', 'url' => 'getSkills'], ['id' => 'references', 'label' => 'References', 'property' => 'references', 'url' => 'getReferences']] as $select)
+                        <div class="quiz-field">
+                            <label for="{{ $select['id'] }}" class="quiz-label">{{ $select['label'] }}</label>
+                            <div class="quiz-select2-wrapper" wire:ignore><select id="{{ $select['id'] }}"
+                                    class="form-select" multiple></select></div>
+                            @error($select['property'])
+                                <div class="invalid-feedback d-block">{{ $message }}</div>
+                            @enderror
+                        </div>
+                    @endforeach
+                    <div class="quiz-field">
+                        <label for="count" class="quiz-label">Count of questions</label>
+                        <select id="count" wire:model.live="count" class="form-select">
+                            @foreach ([20, 15, 10, 5] as $questionCount)
+                                <option value="{{ $questionCount }}">{{ $questionCount }}</option>
+                            @endforeach
                         </select>
+                        @error('count')
+                            <div class="invalid-feedback d-block">{{ $message }}</div>
+                        @enderror
                     </div>
-                    @error('references')
-                        <p class="text-danger py-2">{{ $message }}</p>
-                    @enderror
-                </div>
-                <div class="col-md-6 mb-4">
-                    <label for="skills" class="form-label">Skills For Question</label>
-                    <div class="select2-primary" wire:ignore>
-                        <select id="skills" class="select2 form-select" data-livewire-select2 multiple></select>
+                    <div class="quiz-field">
+                        <label for="duration" class="quiz-label">Game timer</label>
+                        <div wire:ignore>
+                            <select id="duration" class="form-select">
+                                <option value="">No duration</option>
+                                <option value="300">5 minutes</option>
+                                <option value="600">10 minutes</option>
+                                <option value="900">15 minutes</option>
+                                <option value="1200">20 minutes</option>
+                                <option value="1800">30 minutes</option>
+                                <option value="3600">60 minutes</option>
+                            </select>
+                        </div>
+                        @error('duration')
+                            <div class="invalid-feedback d-block">{{ $message }}</div>
+                        @enderror
                     </div>
-                    @error('skillsList')
-                        <p class="text-danger py-2">{{ $message }}</p>
+
+                    <div class="quiz-options align-items-center">
+                        <span class="quiz-option justify-content-start"><span
+                                class="material-symbols-outlined text-primary me-2">filter_alt</span><span>{{ $this->questionBankCount }}
+                                matching questions</span></span>
+                        <button class="btn btn-primary btn-lg" type="submit" wire:loading.attr="disabled"><span
+                                class="material-symbols-outlined align-middle me-2">sports_esports</span>Find
+                            opponent</button>
+                    </div>
+                    @error('count')
+                        <div class="alert alert-danger mt-3 mb-0">{{ $message }}</div>
                     @enderror
-                </div>
+                </form>
             </div>
+        </div>
+    </main>
 
-            <div class="row">
-                <div class="col-md-6 mb-4" wire:ignore>
-                    <label for="difficulty" class="form-label">Difficulty</label>
-                    <div class="select2-primary">
-                        <select id="difficulty" class="select2 form-select" data-livewire-select2>
-                            <option value="">Select Difficulty</option>
+    <div class="offcanvas offcanvas-start" tabindex="-1" id="gameSidebar" aria-labelledby="gameSidebarLabel">
+        <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="gameSidebarLabel">Tactical Config</h5><button type="button"
+                class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body">
+            <div class="quiz-sidebar-title">Arena match setup</div>
+            <nav class="quiz-nav mt-3">
+                <a class="active" href="{{ route('config.game') }}">1v1 Ranked Duel <span
+                        class="badge text-bg-primary">LIVE</span></a>
+                <a href="#">Played Games Today <span
+                        class="badge text-bg-secondary">{{ $this->playedGamesToday }}</span></a>
+                <a href="#">Active Players <span class="badge text-bg-success"><x-online-users
+                            id="game-online-users-mobile" /></span></a>
 
-                            <option value="easy">Easy</option>
-                            <option value="medium">Medium</option>
-                            <option value="hard">Hard</option>
-                            <option value="nerd">Nerd</option>
-                        </select>
-                    </div>
-                    @error('difficulty')
-                        <p class="text-danger py-2">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <div class="col-md-6 mb-4" wire:ignore>
-                    <label for="length" class="form-label">Length</label>
-                    <div class="select2-primary">
-                        <select id="length" class="select2 form-select" data-livewire-select2>
-                            <option value="">Select Length</option>
-                            <option value="short">Short</option>
-                            <option value="medium">Medium</option>
-                            <option value="long">Long</option>
-                        </select>
-                    </div>
-                    @error('length')
-                        <p class="text-danger py-2">{{ $message }}</p>
-                    @enderror
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col-md-12 mb-4" wire:ignore>
-                    <label for="duration" class="form-label">Quiz Timer</label>
-                    <div class="select2-primary">
-                        <select id="duration" wire:model.live="duration" class="select2 form-select" data-livewire-select2>
-                            <option value="">No duration</option>
-                            <option value="{{ 1 * 60 }}">5 Minutes</option>
-                            <option value="{{ 10 * 60 }}">10 Minutes</option>
-                            <option value="{{ 15 * 60 }}">15 Minutes</option>
-                            <option value="{{ 20 * 60 }}">20 Minutes</option>
-                            <option value="{{ 30 * 60 }}">30 Minutes</option>
-                            <option value="{{ 60 * 60 }}">60 Minutes</option>
-                            <option value="{{ 90 * 60 }}">90 Minutes</option>
-                            <option value="{{ 120 * 60 }}">120 Minutes</option>
-                        </select>
-                    </div>
-                    @error('duration')
-                        <p class="text-danger py-2">{{ $message }}</p>
-                    @enderror
-                </div>
-            </div>
-
-            <div class="quiz-config-footer">
-                <p class="quiz-question-found">
-                    Question Found {{ $this->questions?->count() == null ? 0 : $this->questions?->count() }}
-                </p>
-                @error('count')
-                    <p class="text-danger my-3">{{ $message }}</p>
-                @enderror
-
-                <div class="quiz-config-actions">
-                    <button class="btn btn-outline-info me-4" wire:click="friendGame">Friend Game</button>
-                    {{-- <button class="btn btn-success" wire:click="submit">Start </button> --}}
-                </div>
+            </nav>
+            <div class="quiz-server mt-4">
+                <small>QUESTION BANK</small>
+                <strong>{{ $this->questionBankCount }} MATCHING QUESTIONS</strong>
             </div>
         </div>
     </div>
@@ -215,54 +236,37 @@ new class extends Component {
     <script>
         const initializeConfigGameSelects = () => {
             const select2 = window.MedGambitSelect2;
-
-            if (!select2) {
-                return;
-            }
-
+            if (!select2) return;
             const selectedIds = (value) => value.map(Number);
-
             select2.init('#branches', {
                 ajaxUrl: @js(route('getBranches')),
                 placeholder: 'Search branches',
-                onChange: (value) => $wire.set('branchesList', selectedIds(value)),
+                onChange: (value) => $wire.set('branchesList', selectedIds(value))
             });
             select2.init('#sp', {
                 ajaxUrl: @js(route('getSpeciality')),
                 placeholder: 'Search specialties',
-                onChange: (value) => $wire.set('specialitiesList', selectedIds(value)),
+                onChange: (value) => $wire.set('specialitiesList', selectedIds(value))
             });
             select2.init('#skills', {
                 ajaxUrl: @js(route('getSkills')),
                 placeholder: 'Search skills',
-                onChange: (value) => $wire.set('skillsList', selectedIds(value)),
+                onChange: (value) => $wire.set('skillsList', selectedIds(value))
             });
             select2.init('#references', {
                 ajaxUrl: @js(route('getReferences')),
                 placeholder: 'Search references',
-                onChange: (value) => $wire.set('references', selectedIds(value)),
-            });
-            select2.init('#difficulty', {
-                placeholder: 'Select difficulty',
-                multiple: false,
-                onChange: (value) => $wire.set('difficulty', value),
-            });
-            select2.init('#length', {
-                placeholder: 'Select length',
-                multiple: false,
-                onChange: (value) => $wire.set('length', value),
+                onChange: (value) => $wire.set('references', selectedIds(value))
             });
             select2.init('#duration', {
-                placeholder: 'Select quiz timer',
+                placeholder: 'Select game timer',
                 multiple: false,
-                onChange: (value) => $wire.set('duration', value),
+                onChange: (value) => $wire.set('duration', value || null)
             });
         };
-
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initializeConfigGameSelects, { once: true });
-        } else {
-            initializeConfigGameSelects();
-        }
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initializeConfigGameSelects, {
+            once: true
+        });
+        else initializeConfigGameSelects();
     </script>
 @endscript
