@@ -122,6 +122,9 @@ new class extends Component {
     public function submitAttempt()
     {
         $this->validate(['answers' => ['required', 'array', 'min:' . $this->count]]);
+        if($this->attempt->status === "finished"){
+            return ;
+        }
         app(QuizService::class)->updateAttempt(auth()->id(), $this->quiz->id, $this->answers);
         return redirect()->route('quizResult', $this->quiz);
     }
@@ -240,8 +243,8 @@ new class extends Component {
                         <div><button class="quiz-button secondary" type="button" wire:click="previous"
                                 @disabled($questionNumber === 1)><i class="bi bi-arrow-left"></i>Previous</button>
                             @if ($questionNumber < $questionCount)
-                                <button class="quiz-button primary" type="button" wire:click="next">Next question<i
-                                    class="bi bi-arrow-right"></i></button>@else<button class="quiz-button primary"
+                                <button class="quiz-button primary"  type="button" wire:click="next">Next question<i
+                                    class="bi bi-arrow-right"></i></button>@else<button @disabled($attempt->status === "finished") class="quiz-button primary"
                                     type="button" wire:click="submitAttempt">Submit quiz<i
                                         class="bi bi-check-lg"></i></button>
                             @endif

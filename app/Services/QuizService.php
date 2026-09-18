@@ -204,8 +204,8 @@ class QuizService
         // give the quiz type detected
         // Start A Quiz
         $quiz = Quiz::create([
-            'name' => $name ?? 'Detected Topic',
-            'topic' => 'Detected Topic',
+            'name' => $name ?? 'System Exam Mode',
+            'topic' => 'System Exam Mode',
             'type' => 'detected',
             'duration' => $duration ? $duration : null,
             'difficulty' => $difficulty ? $difficulty : 'easy',
@@ -229,8 +229,8 @@ class QuizService
     public function learningQuiz(Collection $questions, ?string $name = null, $length = 'short', $count = 3, $difficulty = 'easy')
     {
         $quiz = Quiz::create([
-            'name' => $name ?? 'Detected Learning Quiz ',
-            'topic' => 'Detected Learning Quiz ',
+            'name' => $name ?? 'System Learning Quiz',
+            'topic' => 'System Learning Quiz',
             'type' => 'learning',
             'duration' => null,
             'difficulty' => $difficulty ? $difficulty : 'easy',

@@ -176,7 +176,7 @@ new class extends Component {
                         @php($isCorrect = (int) $currentQuestion->correctAnswer?->id === (int) $option->id)
                         <div
                             class="answer-item answer-option {{ $isSelected ? ($isCorrect ? 'correct' : 'incorrect') : '' }} {{ $hasAnswered && $isCorrect ? 'correct-answer' : '' }}">
-                            <button class="answer-choice" type="button"
+                            <button @ class="answer-choice" type="button"
                                 wire:click="submit({{ $option->id }}, {{ $currentQuestion->id }})"
                                 aria-checked="{{ $isSelected ? 'true' : 'false' }}"><span
                                     class="letter">{{ $option->name ?: chr(64 + $loop->iteration) }}</span><span>{{ $option->content }}</span><span
@@ -199,8 +199,10 @@ new class extends Component {
                     @disabled($questionNumber === 1)><i class="bi bi-arrow-left"></i> Previous</button>
                 @if ($questionNumber < $questionCount)
                     <button class="btn btn-primary" type="button" wire:click="next">Next question <i
-                        class="bi bi-arrow-right"></i></button>@else<button class="btn btn-primary" type="button"
-                        wire:click="submitAttempt">Submit quiz <i class="bi bi-check-lg"></i></button>
+                            class="bi bi-arrow-right"></i></button>
+                @else
+                    <button @disabled($attempt->status === "finished") class="btn btn-primary" type="button" wire:click="submitAttempt">Submit quiz <i
+                            class="bi bi-check-lg"></i></button>
                 @endif
             </div>
         </section>
