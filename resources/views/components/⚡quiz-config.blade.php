@@ -180,8 +180,14 @@ new class extends Component {
 
             <div class="quiz-card">
                 <div class="quiz-label">Quiz builder · targeted practice</div>
-                <h1 class="quiz-title">Configure Exam</h1>
-
+                <h1 class="quiz-title">Customize Your Quizzes</h1>
+                <p>There a two different modes of quizzes
+                </p>
+                <ol>
+                    <li> Learning Mode Without Elo
+                    </li>
+                    <li>Exam Mode With Elo Changes </li>
+                </ol>
                 <form id="quizForm" wire:submit.prevent="submit">
                     <div class="quiz-field">
                         <span class="quiz-label">Difficulty</span>
@@ -291,10 +297,10 @@ new class extends Component {
                         <div class="alert alert-danger mt-3 mb-0">{{ $message }}</div>
                     @enderror
 
-                    <button class="btn btn-outline-secondary w-100 mt-3" type="button" wire:click="learningQuiz"
+                    <span class="bg-warning btn      w-100 mt-3" type="button" wire:click="learningQuiz"
                         wire:loading.attr="disabled">
                         Start learning quiz
-                    </button>
+                    </span>
                 </form>
             </div>
         </div>

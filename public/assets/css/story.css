@@ -16,15 +16,16 @@
     display: inline-flex;
     align-items: center;
     gap: 8px;
+    /* font-size: 20px; */
     padding: 7px 12px;
     border: 1px solid var(--mg-border);
     border-radius: 999px;
     color: var(--mg-primary);
     background: var(--mg-surface);
     font:
-        600 10px "JetBrains Mono",
+        600 13px "JetBrains Mono",
         monospace;
-    letter-spacing: 0.08em;
+    /* letter-spacing: 0.08em; */
 }
 .story-kicker i {
     width: 7px;

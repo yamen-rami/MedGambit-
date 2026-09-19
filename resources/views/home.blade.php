@@ -5,13 +5,13 @@
 @section('content')
     <section class="story-hero">
         <div>
-            <div class="story-kicker"><i></i> EDITORIAL PRODUCT STORY · PROTOCOL 2.4</div>
-            <h1>Medicine is hard.<br><span>Practice should be worth the struggle.</span></h1>
-            <p>Train your clinical thinking, challenge others, learn from mistakes, and improve one question at a time.
+            <div class="story-kicker fw-bold ">! Your inner medical nerd has found a home.</div>
+            <h1>Medicine is too <br> <span class="text-primary">interesting</span> to just memorize<span></span></h1>
+            <p>Learn from thousands of questions, from easy to truly nerdy, then prove it against real opponents.
             </p>
-            <div class="story-actions"><a class="btn btn-primary btn-lg" href="#practice"><span
+            <div class="story-actions"><a class="btn btn-primary btn-lg" href="{{ route("gambits") }}"><span
                         class="material-symbols-outlined align-middle me-1">play_circle</span>Start practicing</a><a
-                    class="btn btn-outline-secondary btn-lg" href="#arena"><span
+                    class="btn btn-outline-secondary btn-lg" href="{{ route("config.game") }}"><span
                         class="material-symbols-outlined align-middle me-1">swords</span>Enter the arena</a></div>
         </div>
     </section>
@@ -78,9 +78,8 @@
             <article class="story-section" id="review">
                 <div class="story-node"></div>
                 <div class="story-label">05 — Review · Post-mortem analysis</div>
-                <h2>A wrong answer should tell you what to do next.</h2>
-                <p>The score tells you how you performed. The review tells you how to improve: correct answers, weak
-                    skills, weak specialties, and the next practice target.</p>
+                <h2>The Ideas Behind the Questions That Matter.</h2>
+                <p>MedGambit draws inspiration from leading medical question banks and reshapes their core concepts into original questions that make knowledge stick.</p>
                 <div class="progress mt-4" role="progressbar" aria-label="Review progress">
                     <div class="progress-bar" style="width: 72%"></div>
                 </div>
@@ -95,7 +94,9 @@
             </article>
             <article class="story-section" id="precision">
                 <div class="story-node"></div>
-                <div class="story-label">07 — Precision · Cognitive vectors</div>
+                <div class="story-label">
+
+                </div>
                 <h2>A question can test more than one thing.</h2>
                 <p>MedGambit considers the skill required to solve each question, making practice more precise than
                     subject-only question banks.</p>
@@ -123,7 +124,7 @@
             <article class="story-section" id="why">
                 <div class="story-node"></div>
                 <div class="story-label">09 — Why MedGambit · Synthesis</div>
-                <h2>Practice precisely. Learn deeply. Improve continuously.</h2>
+                <h2>Why MedGambit </h2>
                 <div class="story-card p-0 overflow-hidden">
                     <div class="p-3 border-bottom"><strong>Practice precisely.</strong><span
                             class="d-block text-secondary small mt-1">Find the questions you actually need.</span></div>
@@ -145,10 +146,7 @@
             </article>
         </div>
     </div>
-    <footer class="story-footer">
-        <div class="container d-flex flex-wrap justify-content-between gap-3"><span>MEDGAMBIT · CLINICAL DIAGNOSTIC
-                ARENA</span><span>4,800+ VIGNETTES ONLINE · DX-NODE-04</span></div>
-    </footer>
+ 
 @endsection
 @push('scripts')
     <script src="{{ asset('assets/js/story.js') }}"></script>
