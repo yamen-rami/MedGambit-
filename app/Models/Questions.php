@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasPublicImage;
 use Database\Factories\QuestionsFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -13,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 class Questions extends Model
 {
     /** @use HasFactory<QuestionsFactory> */
-    use HasFactory;
+    use HasFactory, HasPublicImage;
 
     protected $fillable = [
         'name',

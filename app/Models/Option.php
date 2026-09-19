@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasPublicImage;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -9,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Option extends Model
 {
-    use HasFactory;
+    use HasFactory, HasPublicImage;
 
     //  ? fillable
     protected $fillable = ['name', 'content', 'correct_answer', 'image', 'explanation', 'questions_id'];

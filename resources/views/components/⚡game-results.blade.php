@@ -96,7 +96,7 @@ new class extends Component {
                     $passed = max(0, $questionCount - $correct - $incorrect);
                     $accuracy = $questionCount ? round(($correct / $questionCount) * 100) : 0;
                     $viewer = (int) auth()->id() === (int) $player?->id;
-                    $image = $player?->image ? asset('storage/' . ltrim($player->image, '/')) : null;
+                    $image = $player?->image_url;
                 @endphp
                 <article class="battle-card {{ $index === 0 ? 'winner' : '' }}">
                     <div class="player-head">

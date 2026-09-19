@@ -650,7 +650,7 @@ new class extends Component {
                         aria-label="Close image preview"><i class="bi bi-x-lg"></i></button>
                 </header>
                 <div class="question-image-modal-body">
-                    <img src="{{ $currentQuestion->image }}"
+                    <img src="{{ $currentQuestion->image_url }}"
                         alt="Supporting image for {{ $currentQuestion->name }}">
                     <aside class="question-image-caption">
                         <span class="eyebrow">IMAGE CAPTION</span>

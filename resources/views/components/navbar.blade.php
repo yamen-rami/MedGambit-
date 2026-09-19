@@ -52,7 +52,7 @@
             <div class="profile" aria-label="User profile">
                 <div class="{{ auth()->user()->image ? '' : 'avatar' }}">
                     @if (auth()->user()->image)
-                        <img class="avatar" src="{{ asset(auth()->user()->image) }}" alt="">
+                        <img class="avatar" src="{{ auth()->user()->image_url }}" alt="">
                     @else
                         {{ ucfirst(Str::limit(auth()->user()->name, 1, '')) }}
                     @endif

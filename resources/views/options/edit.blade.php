@@ -28,7 +28,7 @@
                     height="400px"
                     id="optionPreview"
                     class="rounded-5"
-                    src="{{ asset($option->image) }}"
+                    src="{{ $option->image_url }}"
                     alt=""
                 />
                 @error('image')

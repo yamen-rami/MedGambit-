@@ -233,7 +233,7 @@
                                     <a class="nav-link dropdown-toggle hide-arrow p-0" href="javascript:void(0);"
                                         data-bs-toggle="dropdown">
                                         <div class="avatar avatar-online">
-                                            <img src="{{ asset(auth()->user()->image === null ? 'assets/img/avatars/1.png' : auth()->user()->image) }}"
+                                            <img src="{{ auth()->user()->image_url ?? asset('assets/img/avatars/1.png') }}"
                                                 alt class="rounded-circle" />
                                         </div>
                                     </a>
@@ -243,7 +243,7 @@
                                                 <div class="d-flex">
                                                     <div class="me-3 flex-shrink-0">
                                                         <div class="avatar avatar-online">
-                                                            <img src="{{ asset(auth()->user()->image === null ? 'assets/img/avatars/1.png' : auth()->user()->image) }}"
+                                                            <img src="{{ auth()->user()->image_url ?? asset('assets/img/avatars/1.png') }}"
                                                                 alt class="w-px-40 rounded-circle h-auto" />
                                                         </div>
                                                     </div>

@@ -6,7 +6,7 @@
                 <p><strong>Question Content : </strong></p>
                 <p><span>{!!   $question->content !!}</span></p>
                 <div class="my-2 text-center">
-                    <img width="70%" height="400px" class="rounded-5" src="{{ asset($question->image) }}" alt="" />
+                    <img width="70%" height="400px" class="rounded-5" src="{{ $question->image_url }}" alt="" />
                 </div>
                 <hr />
                 {{-- --}}
@@ -76,7 +76,7 @@
                         <div class="popout" id="popout-{{ $option->id }}">
                             <div>
                                 <div>
-                                    <img class="optionImage" src="{{ asset($option->image) }}" alt="Option " />
+                                    <img class="optionImage" src="{{ $option->image_url }}" alt="Option " />
                                 </div>
                             </div>
                             <button class="btn optionButton" onclick="closeButton({{ $option->id }})">
@@ -195,7 +195,7 @@
         <div class="popout" id="popout-{{ $option->id }}">
             <div>
                 <div>
-                    <img class="optionImage" src="{{ asset($option->image) }}" alt="Option " />
+                    <img class="optionImage" src="{{ $option->image_url }}" alt="Option " />
                 </div>
             </div>
             <button class="btn optionButton" onclick="closeButton({{ $option->id }})">

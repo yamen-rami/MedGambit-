@@ -151,7 +151,7 @@ class QuestionsController extends Controller
             $question->skills()->attach($questionData['skills']);
             $question->branches()->attach($questionData['branches']);
             foreach ($questionData['options'] as $option) {
-                if (in_array('image', $option, true)) {
+                if (isset($option['image'])) {
                     $option['image'] = $option['image']->store('questions', 'public');
                 }
                 $question->options()->create($option);
@@ -198,7 +198,7 @@ class QuestionsController extends Controller
         DB::transaction(function () use ($request, $questionData, $id) {
             $question = Questions::findOrFail($id);
             $oldImage = $question->image;
-            if ($request->has('image')) {
+            if ($request->hasFile('image')) {
                 $questionData['image'] = $questionData['image']->store('questions', 'public');
             }
             $question->update(Arr::except($questionData, ['speciality', 'branches', 'skills']));
@@ -206,7 +206,7 @@ class QuestionsController extends Controller
             $question->branches()->syncOrFail($questionData['branches'] ?? []);
             $question->specialties()->syncOrFail($questionData['speciality'] ?? []);
 
-            if ($request->has('image') && $oldImage) {
+            if ($request->hasFile('image') && $oldImage) {
                 Storage::disk('public')->delete($oldImage);
             }
             /*

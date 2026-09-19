@@ -512,7 +512,7 @@ new class extends Component
                                         class="avatar avatar-xs pull-up"
                                         title="{{ $question->content }}"
                                     >
-                                        <img src="{{ asset($question->image) }}" alt="Avatar" class="rounded-circle" />
+                                        <img src="{{ $question->image_url }}" alt="Avatar" class="rounded-circle" />
                                     </li>
                                 </ul>
                             </td>

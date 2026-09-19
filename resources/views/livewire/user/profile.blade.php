@@ -3,7 +3,7 @@
         <div class="identity">
             <div class="profile-avatar">
                 @if ($user->image)
-                    <img src="{{ asset('storage/' . $user->image) }}" alt="{{ $user->name }}">
+                    <img src="{{ $user->image_url }}" alt="{{ $user->name }}">
                 @else
                     {{ $user->initials() }}
                 @endif

@@ -161,7 +161,7 @@
                             </div>
                             <div>
                                 <img id="preview" class="rounded-5" width="100%" height="300px"
-                                    src="{{ asset($question->image) }}" alt="No Image Found" />
+                                    src="{{ $question->image_url }}" alt="No Image Found" />
                             </div>
                             <div class="mt-4 mb-4">
                                 <label for="exampleFormControlInput1" class="form-label">Question Image </label>

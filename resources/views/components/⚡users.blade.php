@@ -218,14 +218,16 @@ new class extends Component {
             unset($validated['password']);
         }
         $validated['graduated'] = $validated['graduated'] == 'false' ? false : true;
-        $imagePath = null;
-        if (isset($this->selectedUser->image)) {
-            if (isset($validated['image'])) {
-                $imagePath = $this->image->store('users', 'public');
+        if ($this->image) {
+            $oldImage = $this->selectedUser->image;
+            $validated['image'] = $this->image->store('users', 'public');
+
+            if ($oldImage) {
+                Storage::disk('public')->delete($oldImage);
             }
-            Storage::disk('public')->delete($oldImage);
+        } else {
+            unset($validated['image']);
         }
-        $validated['image'] = $imagePath;
         $this->selectedUser->update($validated);
         flash()->success('User has updated');
         $this->resetPage();
@@ -763,7 +765,7 @@ new class extends Component {
                                     <div class="avatar avatar-sm">
 
                                         @if ($user->image)
-                                            <img src="{{ asset('storage/' . $user->image) }}"
+                                            <img src="{{ $user->image_url }}"
                                                 alt="{{ $user->name }}" class="rounded-circle">
                                         @else
                                             <span class="avatar-initial rounded-circle bg-label-primary">
@@ -1078,7 +1080,7 @@ new class extends Component {
                                     @enderror
                                 </div>
                                 <div>
-                                    <img width="200px" height="200px" src="{{ asset($selectedUser?->image) }}"
+                                    <img width="200px" height="200px" src="{{ $selectedUser?->image_url }}"
                                         alt="Here ">
                                 </div>
                                 <div class="my-2">
