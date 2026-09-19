@@ -1,3 +1,6 @@
-<x-user-layout>
-    <x-slot:title>Showing {{ $reference->name }}</x-slot:title>
-</x-user-layout>
+@extends('layouts.main')
+
+@section('title', 'Showing '.$reference->name)
+
+@section('content')
+@endsection
