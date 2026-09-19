@@ -289,7 +289,7 @@ new class extends Component {
                             <span>{{ $this->questionBankCount }} matching questions</span>
                         </span>
                         <button class="btn btn-primary btn-lg" type="submit" wire:loading.attr="disabled">
-                            <span class="material-symbols-outlined align-middle me-2">quiz</span>Create quiz
+                            <span class="material-symbols-outlined align-middle me-2">quiz</span>Exam Mode 
                         </button>
                     </div>
 
@@ -297,9 +297,12 @@ new class extends Component {
                         <div class="alert alert-danger mt-3 mb-0">{{ $message }}</div>
                     @enderror
 
-                    <span class="bg-warning btn      w-100 mt-3" type="button" wire:click="learningQuiz"
+                    <span class="bg-white btn  w-100 mt-3 text-dark"  type="button" wire:click="learningQuiz"
                         wire:loading.attr="disabled">
-                        Start learning quiz
+                        <span class="fs-6">
+
+                            Start learning quiz
+                        </span>
                     </span>
                 </form>
             </div>

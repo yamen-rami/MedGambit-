@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\Game;
+use App\Models\GameAttempt;
 use App\Models\Questions;
 use App\Models\Quiz;
 use App\Models\QuizAttempt;
@@ -54,4 +56,47 @@ test('profile accuracy is based only on answered questions', function () {
 
     $this->actingAs($user)->get(route('user.profile', $user))->assertOk()
         ->assertViewHas('answerStats', fn ($stats) => (int) $stats->correct === 1 && (int) $stats->answered === 2);
+});
+
+test('profile paginates quizzes and games independently', function () {
+    $user = User::factory()->create();
+    $opponent = User::factory()->create();
+
+    foreach (range(1, 11) as $number) {
+        $quiz = profileQuiz(['name' => "Profile quiz {$number}"]);
+        QuizAttempt::create([
+            'user_id' => $user->id,
+            'quiz_id' => $quiz->id,
+            'status' => 'finished',
+            'score' => 1,
+        ]);
+
+        $game = Game::create([
+            'status' => 'finished',
+            'difficulty' => 'medium',
+            'length' => 'medium',
+        ]);
+        GameAttempt::create([
+            'game_id' => $game->id,
+            'user_id' => $user->id,
+            'status' => 'finished',
+            'is_winner' => true,
+            'score' => 1,
+        ]);
+        GameAttempt::create([
+            'game_id' => $game->id,
+            'user_id' => $opponent->id,
+            'status' => 'finished',
+            'is_winner' => false,
+            'score' => 0,
+        ]);
+    }
+
+    $this->actingAs($user)
+        ->get(route('user.profile', ['user' => $user, 'quizPage' => 2, 'gamePage' => 2]))
+        ->assertOk()
+        ->assertSee('Profile quiz 1')
+        ->assertDontSee('Profile quiz 11')
+        ->assertSee('game/results/1')
+        ->assertDontSee('game/results/11');
 });

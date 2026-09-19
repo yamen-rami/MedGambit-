@@ -39,6 +39,7 @@ class playerAnswered implements ShouldBroadcast
     public function broadcastWith(): array
     {
         return [
+            
         ];
     }
 

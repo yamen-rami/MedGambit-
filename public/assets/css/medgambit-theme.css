@@ -70,6 +70,20 @@
   --bs-warning: var(--mg-warning);
   --bs-link-color: var(--mg-primary);
   --bs-link-hover-color: var(--mg-primary);
+  --bs-pagination-color: var(--mg-primary);
+  --bs-pagination-bg: var(--mg-surface);
+  --bs-pagination-border-color: var(--mg-border);
+  --bs-pagination-hover-color: var(--mg-primary);
+  --bs-pagination-hover-bg: var(--mg-surface-hover);
+  --bs-pagination-hover-border-color: var(--mg-border-strong);
+  --bs-pagination-focus-color: var(--mg-primary);
+  --bs-pagination-focus-bg: var(--mg-surface-hover);
+  --bs-pagination-active-color: var(--mg-on-primary);
+  --bs-pagination-active-bg: var(--mg-primary);
+  --bs-pagination-active-border-color: var(--mg-primary);
+  --bs-pagination-disabled-color: var(--mg-text-muted);
+  --bs-pagination-disabled-bg: var(--mg-surface-elevated);
+  --bs-pagination-disabled-border-color: var(--mg-border);
   --bs-card-bg: var(--mg-surface);
   --bs-card-border-color: var(--mg-border);
   --bs-tertiary-bg: var(--mg-surface-elevated);
@@ -516,19 +530,51 @@ body {
   --bs-table-color: var(--mg-text-secondary);
 }
 .page-link {
+  min-width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 8px;
   color: var(--mg-primary);
   background: var(--mg-surface);
   border-color: var(--mg-border);
+  border-radius: 5px;
+  font:
+    10px "JetBrains Mono",
+    monospace;
+  transition:
+    color 0.2s ease,
+    background-color 0.2s ease,
+    border-color 0.2s ease;
+}
+.pagination {
+  margin: 0;
+}
+.pagination .page-item + .page-item {
+  margin-left: 3px;
 }
 .page-link:hover {
   color: var(--mg-primary);
   background: var(--mg-surface-hover);
   border-color: var(--mg-border-strong);
 }
+.page-link:focus {
+  color: var(--mg-primary);
+  background: var(--mg-surface-hover);
+  border-color: var(--mg-primary);
+  box-shadow: 0 0 0 0.2rem var(--mg-primary-tint);
+}
 .page-item.active .page-link {
   color: var(--mg-on-primary);
   background: var(--mg-primary);
   border-color: var(--mg-primary);
+}
+.page-item.disabled .page-link,
+.page-link.disabled {
+  color: var(--mg-text-muted);
+  background: var(--mg-surface-elevated);
+  border-color: var(--mg-border);
 }
 .badge {
   border-radius: 6px;

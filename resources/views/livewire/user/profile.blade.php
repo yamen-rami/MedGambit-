@@ -136,7 +136,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse ($this->filteredAttempts() as $attempt)
+                    @forelse ($attempts as $attempt)
                         <tr>
                             <td>
                                 <div class="opponent">
@@ -172,6 +172,9 @@
                 </tbody>
             </table>
         </div>
+        <div class="px-3 py-3">
+            {{ $attempts->links() }}
+        </div>
     </section>
 
     <section class="panel battles-panel">
@@ -198,7 +201,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse ($this->filteredGames() as $gameAttempt)
+                    @forelse ($games as $gameAttempt)
                         <tr>
                             <td>
                                 <div class="opponent"><span>G</span>
@@ -231,6 +234,9 @@
                     @endforelse
                 </tbody>
             </table>
+        </div>
+        <div class="px-3 py-3">
+            {{ $games->links() }}
         </div>
     </section>
 </main>

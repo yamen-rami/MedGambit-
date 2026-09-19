@@ -3,43 +3,33 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
-use Illuminate\Http\Request;
 
 class UserController extends Controller
 {
-    public function profile(Request $request, User $user)
-    {
-        $filter = $request->string('filter', 'all')->toString();
-        $sort = $request->string('sort', 'newest')->toString();
-        $filter = in_array($filter, ['all', 'completed', 'incomplete'], true) ? $filter : 'all';
-        $sort = in_array($sort, ['highest', 'lowest', 'newest', 'oldest'], true) ? $sort : 'newest';
+    public function profile(User $user)
+    {   
+        // Keep profile counters as database aggregates. Loading every attempt and
+        // its quiz here defeats the pagination used by the Livewire tables.
+        $attemptStats = $user->attempts()
+            ->selectRaw("count(*) as total,
+                sum(case when status = 'finished' then 1 else 0 end) as completed,
+                sum(case when status = 'pending' then 1 else 0 end) as incomplete")
+            ->first();
 
-        $search = $request->string('search')->trim()->toString();
-        $attemptsQuery = $user->attempts()->with('quiz:id,name,topic,type,questions_number');
-        if ($search !== '') {
-            $attemptsQuery->whereHas('quiz', fn ($query) => $query->where('name', 'like', "%{$search}%"));
-        }
-        if ($filter === 'completed') {
-            $attemptsQuery->where('status', 'finished');
-        } elseif ($filter === 'incomplete') {
-            $attemptsQuery->where('status', 'pending');
-        }
-        $attempts = (match ($sort) {
-            'highest' => $attemptsQuery->orderByDesc('score'),
-            'lowest' => $attemptsQuery->orderBy('score'),
-            'oldest' => $attemptsQuery->oldest(),
-            default => $attemptsQuery->latest(),
-        })->paginate(10)->withQueryString();
-
-        $allAttempts = $user->attempts()->with('quiz:id,questions_number')->get();
         $stats = (object) [
-            'total' => $allAttempts->count(),
-            'completed' => $allAttempts->where('status', 'finished')->count(),
-            'incomplete' => $allAttempts->where('status', 'pending')->count(),
+            'total' => (int) ($attemptStats->total ?? 0),
+            'completed' => (int) ($attemptStats->completed ?? 0),
+            'incomplete' => (int) ($attemptStats->incomplete ?? 0),
         ];
-        $finishedAttempts = $allAttempts->where('status', 'finished');
-        $correctAnswers = $finishedAttempts->sum(fn ($attempt) => (int) $attempt->score);
-        $questionCount = $finishedAttempts->sum(fn ($attempt) => (int) ($attempt->quiz?->questions_number ?? 0));
+
+        $answerTotals = $user->attempts()
+            ->where('quiz_attempts.status', 'finished')
+            ->join('quizzes', 'quizzes.id', '=', 'quiz_attempts.quiz_id')
+            ->selectRaw('coalesce(sum(quiz_attempts.score), 0) as correct, coalesce(sum(quizzes.questions_number), 0) as answered')
+            ->first();
+        $correctAnswers = (int) ($answerTotals->correct ?? 0);
+        $questionCount = (int) ($answerTotals->answered ?? 0);
+
         $answerStats = (object) [
             'correct' => $correctAnswers,
             'wrong' => max(0, $questionCount - $correctAnswers),
@@ -48,7 +38,7 @@ class UserController extends Controller
         $rankPosition = User::where('rank', '>', $user->rank)->count() + 1;
         $user->loadCount('playedQuestions');
 
-        return view('user.profile', compact('user', 'attempts', 'filter', 'sort', 'search', 'stats', 'answerStats', 'rankPosition'));
+        return view('user.profile', compact('user', 'stats', 'answerStats', 'rankPosition'));
     }
     //
 }

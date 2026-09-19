@@ -2,19 +2,27 @@
 
 namespace App\Livewire\User;
 
+use App\Models\GameAttempt;
+use App\Models\User;
 use Illuminate\Contracts\View\View;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
-
-use App\Models\User;
 use Livewire\Component;
+use Livewire\WithPagination;
 
 class Profile extends Component
 {
+    use WithPagination;
+
+    protected string $paginationTheme = 'bootstrap';
+
     public User $user;
-    public array $attemptRows = [];
+
     public object $stats;
+
     public object $answerStats;
+
     public int $rankPosition;
 
     public string $quizSearch = '';
@@ -29,56 +37,47 @@ class Profile extends Component
 
     public bool $editing = false;
 
-    public array $games = [];
-
-    public function mount(User $user, $attempts, object $stats, object $answerStats, int $rankPosition): void
+    public function mount(User $user, object $stats, object $answerStats, int $rankPosition): void
     {
         $this->user = $user;
-        $this->attemptRows = $this->formatAttempts($attempts->getCollection())->all();
         $this->stats = $stats;
         $this->answerStats = $answerStats;
         $this->rankPosition = $rankPosition;
         $this->name = $user->name;
         $this->email = $user->email;
-        $this->games = $user->gameAttempts()
-            ->with(['game.attempts.user'])
-            ->latest()
-            ->get() 
-            ->map(function ($gameAttempt) use ($user): array {
-                $opponent = $gameAttempt->game?->attempts
-                    ->first(fn ($opponentAttempt) => $opponentAttempt->user_id !== $user->id)?->user;
-                return [
-                    'game_id' => $gameAttempt->game_id,
-                    'difficulty' => $gameAttempt->game?->difficulty ?? 'standard',
-                    'opponent_name' => $opponent?->name ?? 'Opponent unavailable',
-                    'opponent_email' => $opponent?->email ?? 'No opponent data',
-                    'is_winner' => (bool) $gameAttempt->is_winner,
-                    'score' => $gameAttempt->score ?? 0,
-                    'status' => $gameAttempt->status,
-                    'created_at' => $gameAttempt->created_at?->format('M d, Y'),
-                ];
-            })
-            ->values()
-            ->all();
     }
 
-    public function filteredAttempts(): Collection
+    public function updatingQuizSearch(): void
     {
-        $search = trim($this->quizSearch);
+        $this->resetPage('quizPage');
+    }
 
-        if ($search === '') {
-            return collect($this->attemptRows);
-        }
-        return $this->user->attempts()
+    public function updatingQuizFilter(): void
+    {
+        $this->resetPage('quizPage');
+    }
+
+    public function updatingGameFilter(): void
+    {
+        $this->resetPage('gamePage');
+    }
+
+    public function filteredAttempts(): LengthAwarePaginator
+    {
+        $attempts = $this->user->attempts()
             ->with('quiz:id,name,topic,type,questions_number')
-            ->whereHas('quiz', function ($query) use ($search): void {
-                $query->where('name', 'like', "%{$search}%");
+            ->when(trim($this->quizSearch) !== '', function ($query): void {
+                $query->whereHas('quiz', function ($query): void {
+                    $query->where('name', 'like', '%'.trim($this->quizSearch).'%');
+                });
             })
             ->when($this->quizFilter === 'completed', fn ($query) => $query->where('status', 'finished'))
             ->when($this->quizFilter === 'incomplete', fn ($query) => $query->where('status', 'pending'))
             ->latest()
-            ->get()
-            ->pipe(fn (Collection $attempts): Collection => $this->formatAttempts($attempts));
+            ->orderByDesc('id')
+            ->paginate(10, ['*'], 'quizPage');
+
+        return $attempts->setCollection($this->formatAttempts($attempts->getCollection()));
     }
 
     private function formatAttempts(Collection $attempts): Collection
@@ -109,13 +108,39 @@ class Profile extends Component
         });
     }
 
-    public function filteredGames(): Collection
+    public function filteredGames(): LengthAwarePaginator
     {
-        return collect($this->games)->when($this->gameFilter !== 'all', function (Collection $games): Collection {
-            return $games->filter(fn (array $game) => $this->gameFilter === 'winning'
-                ? $game['is_winner']
-                : ! $game['is_winner']);
-        });
+        $gameAttempts = $this->user->gameAttempts()
+            ->with('game:id,difficulty')
+            ->when($this->gameFilter === 'winning', fn ($query) => $query->where('is_winner', true))
+            ->when($this->gameFilter === 'losing', fn ($query) => $query->where(function ($query): void {
+                $query->where('is_winner', false)->orWhereNull('is_winner');
+            }))
+            ->latest()
+            ->orderByDesc('id')
+            ->paginate(10, ['*'], 'gamePage');
+
+        $opponents = GameAttempt::query()
+            ->whereIn('game_id', $gameAttempts->getCollection()->pluck('game_id')->unique())
+            ->where('user_id', '!=', $this->user->id)
+            ->with('user:id,name,email')
+            ->get()
+            ->groupBy('game_id');
+
+        return $gameAttempts->setCollection($gameAttempts->getCollection()->map(function ($gameAttempt) use ($opponents): array {
+            $opponent = $opponents->get($gameAttempt->game_id)?->first()?->user;
+
+            return [
+                'game_id' => $gameAttempt->game_id,
+                'difficulty' => $gameAttempt->game?->difficulty ?? 'standard',
+                'opponent_name' => $opponent?->name ?? 'Opponent unavailable',
+                'opponent_email' => $opponent?->email ?? 'No opponent data',
+                'is_winner' => (bool) $gameAttempt->is_winner,
+                'score' => $gameAttempt->score ?? 0,
+                'status' => $gameAttempt->status,
+                'created_at' => $gameAttempt->created_at?->format('M d, Y'),
+            ];
+        }));
     }
 
     public function startEditing(): void
@@ -154,6 +179,8 @@ class Profile extends Component
     public function render(): View
     {
         return view('livewire.user.profile', [
+            'attempts' => $this->filteredAttempts(),
+            'games' => $this->filteredGames(),
             'accuracy' => $this->answerStats->answered > 0
                 ? round(($this->answerStats->correct / $this->answerStats->answered) * 100, 1)
                 : 0,
