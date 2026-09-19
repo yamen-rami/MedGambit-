@@ -1,6 +1,6 @@
 <x-app>
     <x-slot:title>Create Reference</x-slot:title>
-    <form action="{{ route("skills.store") }}" method="post">
+    <form action="{{ route('references.store') }}" method="post">
         @csrf
         <div class="col-lg-12">
             <div class="row">

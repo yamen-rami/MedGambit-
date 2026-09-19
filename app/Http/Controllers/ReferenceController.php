@@ -60,6 +60,6 @@ class ReferenceController extends Controller
         $reference->delete();
         flash()->error('Reference Has Deleted');
 
-        return redirect()->route('references.destroy');
+        return redirect()->route('references.index');
     }
 }

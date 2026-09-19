@@ -1,6 +1,6 @@
 <x-app>
     <x-slot:title>Update Reference</x-slot:title>
-    <form action="{{ route('skills.update', $reference->id) }}" method="post" i>
+    <form action="{{ route('references.update', $reference) }}" method="post">
         @csrf
         @method('PATCH')
         <div class="col-lg-12">
@@ -14,7 +14,6 @@
                                 label="Name"
                                 name="name"
                             >
-                                @dd(old('name'))
                                 @error('name')
                                     <p class="text-danger">{{ $message }}</p>
                                 @enderror
@@ -25,5 +24,7 @@
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
     </form>
 </x-app>
