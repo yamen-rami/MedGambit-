@@ -123,8 +123,13 @@ sudo -u www-data php artisan event:cache
 sudo -u www-data php artisan route:cache
 sudo -u www-data php artisan view:cache
 
-install -m 644 /dev/null /etc/nginx/sites-available/medgambit
-cat > /etc/nginx/sites-available/medgambit <<'NGINX'
+rm -f /etc/nginx/sites-enabled/default
+
+if [[ -f /etc/letsencrypt/live/medgambit.com/fullchain.pem && -e /etc/nginx/sites-enabled/medgambit ]]; then
+    echo "Preserving the existing Let's Encrypt Nginx configuration."
+else
+    install -m 644 /dev/null /etc/nginx/sites-available/medgambit
+    cat > /etc/nginx/sites-available/medgambit <<'NGINX'
 server {
     listen 80 default_server;
     listen [::]:80 default_server;
@@ -185,8 +190,9 @@ server {
 }
 NGINX
 
-rm -f /etc/nginx/sites-enabled/default
-ln -sfn /etc/nginx/sites-available/medgambit /etc/nginx/sites-enabled/medgambit
+    ln -sfn /etc/nginx/sites-available/medgambit /etc/nginx/sites-enabled/medgambit
+fi
+
 nginx -t
 systemctl reload nginx
 
