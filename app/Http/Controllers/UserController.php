@@ -8,8 +8,6 @@ class UserController extends Controller
 {
     public function profile(User $user)
     {   
-        // Keep profile counters as database aggregates. Loading every attempt and
-        // its quiz here defeats the pagination used by the Livewire tables.
         $attemptStats = $user->attempts()
             ->selectRaw("count(*) as total,
                 sum(case when status = 'finished' then 1 else 0 end) as completed,
